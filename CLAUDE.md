@@ -88,14 +88,43 @@ strip it. Surface it in the PR description.
 
 ## 2. Workflow
 
-1. **Always read IMPLEMENTATION.md first** at the start of a session. It lists
-   phases and tasks. Pick the first unchecked task.
-2. **One task = one PR.** Branch name `phaseN/<task-slug>`. Don't bundle.
-3. **Plan before coding.** For each task, post a short plan (3-6 bullets) before
-   touching files. Wait for user OK on non-trivial work.
-4. **Commit messages**: imperative, prefix with phase: `phase2: add tus uploader`.
+### 2.1 Three non-negotiable rules
+
+These are mandated by the owner. Breaking any of them ends the session badly:
+
+1. **No false completion claims.** Never say "merged" / "pushed" / "deployed" /
+   "done" without first running `git log origin/main --oneline -5` (or the
+   relevant remote ref) and quoting the actual commit SHA back to the user.
+   Local commits are NOT pushed. A pushed branch is NOT merged. Inventing SHAs
+   in conversation is a fireable offense in this codebase.
+
+2. **DEVLOG.md is reverse chronological.** Newest entry at the TOP, not
+   appended at the bottom. When you add an entry, insert it directly after the
+   header block (above the most recent existing entry). Each entry leads with
+   `## YYYY-MM-DD HH:MM UTC — <title>`.
+
+3. **One branch per phase, not per task.** Branch name is `phaseN/<phase-slug>`
+   (e.g. `phase1/auth-and-dashboard`, `phase2/video-upload`). All tasks within
+   a phase commit to that single branch. Merge to main ONCE at phase end after
+   all tasks in the phase are verified. Per-task branches create merge
+   complexity and deploy noise — don't.
+
+### 2.2 Standard flow
+
+1. **Always read IMPLEMENTATION.md and DEVLOG.md first** at the start of a
+   session. IMPLEMENTATION.md lists phases and tasks; DEVLOG.md tells you what
+   actually happened. Pick the first unchecked task.
+2. **Plan before coding.** For each task, post a short plan (3-6 bullets)
+   before touching files. Wait for user OK on non-trivial work.
+3. **Commit messages**: imperative, prefix with phase + task:
+   `phase2.3: add tus uploader`.
+4. **Verify before claiming done.** Push branch → wait for Vercel preview →
+   verify via browser tools (HTTP-level + UI screenshot) → ask user for any
+   cookie-bound or email-flow checks that need their Mac. Only THEN say
+   "verified".
 5. **Development log (DEVLOG.md)**: this is the project's institutional memory.
-   Update it **incrementally**, not at session end. Append a new entry whenever
+   Update it **incrementally**, not at session end. **Insert each new entry at
+   the TOP** (reverse chronological — see §2.1 rule 2). Add an entry whenever
    you: start a task, make a design decision, hit a bug/blocker, investigate a
    problem, complete a milestone, discover a tradeoff, or change an assumption.
 
