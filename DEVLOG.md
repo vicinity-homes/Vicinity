@@ -10,6 +10,38 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-08 23:40 UTC — Phase 1.5: dashboard empty state
+
+**Objective**: Replace the placeholder dashboard home with the real V1 empty state for logged-in agents who haven't created a listing yet.
+
+**Actions**:
+- New branch `phase1/dashboard-content` off `origin/main` `c04ac18`. Per CLAUDE.md §2.1 rule 3 this branch is shared across the remaining Phase 1 tasks (1.5 / 1.6 / 1.7); merge once at phase end.
+- Rewrote `app/dashboard/page.tsx`: dashed-border card on `--card` background, brand-tinted home icon, h1 "No listings yet", muted sub-copy, primary CTA "+ New listing" (`--brand` gold #c9a227, dark text) linking to `/listings/new`.
+- No new dependencies. Server Component. ~70 lines, single file changed.
+
+**Decisions**:
+- CTA links to `/listings/new` (which 404s until Phase 4 lands the route) instead of being a `disabled` button. Reasons: (a) feels like a real product during Vivian preview; (b) Phase 4 wires it up automatically with no UI churn; (c) Mom Test — a dead-feeling button is worse signal than a real button to a not-yet-built page.
+- All color/spacing through existing CSS tokens (`--brand`, `--card`, `--border`, `--muted`). No hardcoded hex other than the inline `#0c0c0c` for CTA text-on-gold contrast (matches `--bg`).
+- Used inline-`style={{...}}` with CSS variables for tokens because Tailwind's arbitrary-value syntax doesn't compose with custom properties without extending the config; pattern is consistent with the existing TopBar.
+
+**Issues**:
+- Biome `a11y/noSvgWithoutTitle` flagged the home icon. Fixed by adding `aria-hidden="true"` (decorative icon, not informational).
+
+**Resolution**:
+- `node_modules/.bin/tsc --noEmit` clean.
+- `node_modules/.bin/biome check app/dashboard/page.tsx` clean.
+- Pushed `phase1/dashboard-content` to origin (SHA recorded after push).
+
+**Learnings**:
+- Continuing the established pattern of CSS-variable-driven theming via inline `style` keeps the design tokens enforced without touching `tailwind.config.ts`. If we hit a fourth or fifth component repeating this, lift to `theme.extend.colors` then.
+
+**Next steps**:
+- Vercel preview review (user, on Mac) — confirm gold + dark调性 reads as "demo-grade".
+- Then 1.6: confirm signout route is solid (was added during 1.4) — likely doc-only update to IMPLEMENTATION.md + a manual verification note.
+- Then 1.7: write up the manual E2E test pass for Phase 1.
+
+---
+
 ## 2026-06-08 16:10 UTC — Phase 1.4 verified + merged to main
 
 **Objective**: Close out task 1.4.
