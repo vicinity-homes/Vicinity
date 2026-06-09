@@ -155,20 +155,20 @@ under 30 minutes including video upload time.
 Goal: a buyer fills the lead form, agent receives email within 5 seconds,
 dashboard shows the lead live.
 
-- [ ] **5.1** Wire up `LeadModal` (built in 3.6) to POST `/api/leads`.
-- [ ] **5.2** `app/api/leads/route.ts` — POST, zod-validated, anon-key insert
+- [x] **5.1** Wire up `LeadModal` (built in 3.6) to POST `/api/leads`.
+- [x] **5.2** `app/api/leads/route.ts` — POST, zod-validated, anon-key insert
       (RLS allows public insert).
-- [ ] **5.3** `supabase/functions/notify-lead/` Edge Function — fires from
+- [x] **5.3** `supabase/functions/notify-lead/` Edge Function — fires from
       a Postgres trigger on `leads` insert. Calls Resend, sets `notified_at`.
-- [ ] **5.4** Resend email template (English only, no WeChat field). Subject:
+- [x] **5.4** Resend email template (English only, no WeChat field). Subject:
       `New inquiry · {address}`. CTA → `/dashboard/leads/{id}`.
-- [ ] **5.5** `app/dashboard/leads/page.tsx` — list view with Realtime
+- [x] **5.5** `app/dashboard/leads/page.tsx` — list view with Realtime
       subscription. New leads appear without refresh.
-- [ ] **5.6** `app/dashboard/leads/[id]/page.tsx` — detail view with full
+- [x] **5.6** `app/dashboard/leads/[id]/page.tsx` — detail view with full
       message + buyer contact info + reply-by-email shortcut.
-- [ ] **5.7** Idempotency: trigger only fires once per lead row;
+- [x] **5.7** Idempotency: trigger only fires once per lead row;
       Edge Function checks `notified_at IS NULL` before sending.
-- [ ] **5.8** Tests: zod schema validation; manual test: submit a lead,
+- [x] **5.8** Tests: zod schema validation; manual test: submit a lead,
       confirm email lands in inbox (not spam) within 5s.
 
 **Definition of done**: a real-world test from a non-vicinity email

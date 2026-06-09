@@ -10,6 +10,28 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 14:19 UTC — Phase 5 merged to main + closed
+
+**Objective**: Phase 5 全部 8 个 task e2e 通过 (17/17 manual walkthrough),ff-merge phase5/lead-capture → main,关单。
+
+**Actions**:
+- `git merge --ff-only origin/phase5/lead-capture` on main locally,base 188de42 → HEAD 3ccc746,fast-forward 干净。
+- `git push origin main` → origin/main 现在 3ccc746。
+- 远端 phase5/lead-capture branch 保留(不 delete,沿用 phase 历史 branch 铁规)。
+- IMPLEMENTATION.md 5.1-5.8 全部 tick `[x]`。
+
+**Verification**: `git log origin/main --oneline -8` 实跑,真 SHA 3ccc746 (5.7-5.8) → d8d95a5 (5.6) → b5ff3f7 (5.5) → 8ce0047 (5.3 fixup#2) → 786379e (5.3 fixup#1) → 6beefd1 (devlog) → 169fc73 (5.4) → acae0de (5.3)。
+
+**Phase 5 总览 (闭环)**: 公开 listing 页 LeadModal 真 fetch → POST /api/leads (zod + server-side agent_id 反查) → leads INSERT trigger via pg_net → notify-lead Edge Function 读 vault.service_role_key → Resend 发邮件 → notified_at stamp (idempotent gate)。Agent /dashboard/leads 三层 freshness (SSR + Realtime postgres_changes + 8s polling) → 详情页 reply mailto 预填。
+
+**Tech debt 留下**:
+- `lib/zod/schemas.ts` 和 `lib/zod/leads.ts` 都有 LeadCreate,前者已死(route + tests 全用后者)。下次 phase 顺手收拢,本 phase 守 surgical-changes 不动。
+- Phase 5 累计 4 个 migration (0006/0007/0008/0009) 全部已 apply 到 production。0006-0008 是 trigger function 的演进 (extensions.http_post → vault → net schema),保留为线性历史不 squash。
+
+**Next steps**: Phase 6 kickoff 等用户拉。Phase 5 关闭。
+
+---
+
 ## 2026-06-11 17:30 UTC — phase5.5-5.8: leads dashboard + tests + manual e2e
 
 **Objective**: Wrap Phase 5 — give the agent a live inbox at /dashboard/leads, a detail/reply view at /dashboard/leads/[id], formalize the idempotency story, and document the 5s end-to-end manual test.
