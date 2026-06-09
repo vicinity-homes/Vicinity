@@ -10,6 +10,20 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 21:10 UTC — Phase 3.3 hotfix: Cloudflare Stream host parsing
+
+**Objective**: Fix broken poster images on `/v/<slug>/__upload_test__` preview. URL was rendering as `customer-xxx.cloudflarestream.com.cloudflarestream.com/...` (domain doubled) → poster 404 → all-black cards, hiding the gold accents / agent strip / action rail behind broken images.
+
+**Actions**: `lib/cloudflare/stream.ts` — extracted `streamHost()` helper used by both `hlsUrl()` and `thumbnailUrl()`. Now strips `https://` and trailing `/`, and only appends `.cloudflarestream.com` if not already present. Accepts both `customer-xxx` and `customer-xxx.cloudflarestream.com` env values.
+
+**Decisions**: Code-side fix (option A) over env edit (option B) per user direction — defensive parsing prevents re-occurrence regardless of which format gets pasted into Vercel env.
+
+**Learnings**: When user-provided env values can be either short or full form, normalize at read time. Don't assume the "documented" shape — check what's actually in there.
+
+**Next steps**: User verifies preview at the new SHA; if posters render, gold/rail/agent strip should now be visible. Then proceed to 3.4 (hls.js playback).
+
+---
+
 ## 2026-06-09 20:30 UTC — Phase 3.3: video feed UI (poster-only)
 
 **Objective**: Replace the 3.1 skeleton on `/v/[agentSlug]/[listingSlug]` with a real vertical scroll-snap video feed in the demo's gold/cream/ink palette. Mobile-first, TikTok-style. Per Phase 3 plan: poster-only this task — `<video>` + hls.js lands in 3.4.

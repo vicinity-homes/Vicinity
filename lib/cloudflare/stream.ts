@@ -70,15 +70,26 @@ export async function createDirectUpload(opts: {
  * NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN.
  */
 export function hlsUrl(videoId: string): string {
-  const sub = process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN;
-  if (!sub) throw new Error('NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN not set');
-  return `https://${sub}.cloudflarestream.com/${videoId}/manifest/video.m3u8`;
+  return `https://${streamHost()}/${videoId}/manifest/video.m3u8`;
 }
 
 export function thumbnailUrl(videoId: string): string {
-  const sub = process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN;
-  if (!sub) throw new Error('NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN not set');
-  return `https://${sub}.cloudflarestream.com/${videoId}/thumbnails/thumbnail.jpg`;
+  return `https://${streamHost()}/${videoId}/thumbnails/thumbnail.jpg`;
+}
+
+/**
+ * Resolve the Cloudflare Stream host from env. Accepts either the bare
+ * subdomain (`customer-xxx`) or the full host (`customer-xxx.cloudflarestream.com`)
+ * — both formats appear in the wild depending on where the value was copied
+ * from in the Cloudflare dashboard.
+ */
+function streamHost(): string {
+  const raw = process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN;
+  if (!raw) throw new Error('NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN not set');
+  const trimmed = raw.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+  return trimmed.endsWith('.cloudflarestream.com')
+    ? trimmed
+    : `${trimmed}.cloudflarestream.com`;
 }
 
 /**
