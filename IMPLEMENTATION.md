@@ -62,9 +62,10 @@ empty `/dashboard` → `agents` table has the new row.
 Goal: an agent can upload a video from the dashboard and see it transition
 from `processing` → `ready` automatically.
 
-- [ ] **2.1** `app/api/video/create-upload/route.ts` — POST, zod-validated,
+- [x] **2.1** `app/api/video/create-upload/route.ts` — POST, zod-validated,
       auth-gated. Calls `createDirectUpload()` from `lib/cloudflare/stream.ts`.
-      Pre-creates the `listing_videos` (or `community_videos`) row.
+      Pre-creates the `listing_videos` row. (Phase 2 scope: listings only;
+      `scope='community'` is rejected for V2.) (2026-06-09)
 - [ ] **2.2** `components/dashboard/VideoUploader.tsx` — Client Component.
       tus-js-client, progress bar, retry on disconnect.
 - [ ] **2.3** `app/api/webhooks/cloudflare-stream/route.ts` — POST. Verifies

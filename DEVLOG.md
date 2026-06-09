@@ -10,6 +10,26 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 01:30 UTC — Phase 2.1 create-upload Route Handler
+
+**Objective**: Land task 2.1 — `POST /api/video/create-upload` that reserves a Cloudflare Stream direct-upload URL and pre-inserts a `listing_videos` row so the webhook handler (task 2.3) has something to flip to `ready`.
+
+**Actions**: New file `app/api/video/create-upload/route.ts` (~90 lines). Reused the existing `VideoCreateUpload` zod schema from `lib/zod/schemas.ts` (already authored in Phase 0, includes 2GB byte cap). Reused `createDirectUpload()` from `lib/cloudflare/stream.ts`. Flow: anon Supabase client + RLS for auth → zod parse → reject `scope='community'` (Phase 2 scope is listings only) → verify listing ownership via RLS-fenced select (404 on miss to avoid leaking listing existence) → call `createDirectUpload({ uploadLength, maxDurationSeconds: 300 })` → insert `listing_videos` row with status='processing' → return `{ uploadUrl, videoId, rowId }`.
+
+**Decisions**: (a) Anon key + RLS for both ownership check and insert — no `service_role` here; webhook handler in 2.3 is the only Phase 2 caller that needs service_role (per CLAUDE.md §3 rule 7). (b) `maxDurationSeconds: 300` enforced server-side at the Cloudflare API call (task 2.5 server-side cap, half here, half via zod's 2GB byte limit). (c) Refused `scope='community'` rather than fanning out to community_videos — keeps surgical scope; community uploads are a V2 admin flow. (d) On listing miss, returned 404 not 403 to avoid leaking which listing IDs exist to non-owners. (e) Errors from Cloudflare returned as 502 (bad upstream), errors from DB insert as 500. (f) Unrelated CF errors include the listing ID intentionally absent from the response payload — only `error` codes are surfaced to the client.
+
+**Issues**: TypeScript narrowed `from('listing_videos').insert(...)` to `never` because `lib/supabase/database.types.ts` is still the Phase 0 stub (`Tables: Record<string, never>`). The TODO in `app/dashboard/layout.tsx:24` flags the same issue. Resolved by casting the client to `any` for the listing_videos insert, with biome-ignore + comment pointing to the phase-end regen plan. Same shape as the existing `agents` query workaround in `app/dashboard/layout.tsx`. Pre-existing tech debt; not solved here.
+
+**Resolution**: `tsc --noEmit` clean, `biome check` clean (after `--write` reordered imports). No new dependencies. Phase 2 branch `phase2/video-upload` opened off `main` (a2f8026).
+
+**Learnings**: The Phase 0 zod schema design (`scope`/`parent_id` pair instead of `listing_id`) was deliberately polymorphic to absorb community uploads later. Fine to keep, but the route handler must explicitly reject the unsupported variant — silently accepting `scope='community'` would write `parent_id` into `listing_videos.listing_id` and fail RLS at insert time, returning a confusing 500. Better to 400 up front with `scope_not_supported`.
+
+**Next steps**: Task 2.2 — `components/dashboard/VideoUploader.tsx` Client Component that POSTs to this endpoint, then drives `tus-js-client` against the returned `uploadUrl` with a progress bar. Then 2.3 webhook handler. Endpoint can't be e2e-tested yet (no UI to call it, no real listing row to target without listings CRUD); typecheck + Vercel preview build is the verification gate for 2.1.
+
+---
+
+
+
 ## 2026-06-09 00:15 UTC — Phase 1.7 manual test doc written; Phase 1 complete
 
 **Objective**: Land the Phase 1.7 deliverable — a runnable E2E manual test script in `docs/manual-tests.md` — and close out Phase 1 on the `phase1/dashboard-content` branch.
