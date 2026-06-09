@@ -1,3 +1,4 @@
+import { thumbnailUrl } from '@/lib/cloudflare/stream';
 import { createClient } from '@/lib/supabase/server';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -141,11 +142,52 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { agentSlug, listingSlug } = await params;
   const data = await fetchPageData(agentSlug, listingSlug);
-  if (!data) return { title: 'Listing not found' };
-  const { listing, agent } = data;
+  if (!data) return { title: 'Listing not found · Vicinity' };
+  const { listing, agent, listingVideos } = data;
+
+  const title = `${listing.address} · ${listing.city}, ${listing.state}`;
+  const priceText = listing.price ? `$${listing.price.toLocaleString()}` : null;
+  const specs = [
+    listing.beds != null ? `${listing.beds} bd` : null,
+    listing.baths != null ? `${listing.baths} ba` : null,
+    listing.sqft != null ? `${listing.sqft.toLocaleString()} sqft` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const description = [priceText, specs, `Listed by ${agent.name}`].filter(Boolean).join(' — ');
+
+  // Image priority: explicit cover_url → first listing_video thumbnail → none.
+  // thumbnailUrl() throws if subdomain env not set; swallow so metadata still
+  // renders without an image rather than 500-ing the whole page.
+  let imageUrl: string | null = listing.cover_url ?? null;
+  if (!imageUrl && listingVideos[0]) {
+    try {
+      imageUrl = thumbnailUrl(listingVideos[0].cf_video_id);
+    } catch {
+      imageUrl = null;
+    }
+  }
+
+  const url = `/v/${agentSlug}/${listingSlug}`;
+  const images = imageUrl ? [{ url: imageUrl, width: 1280, height: 720 }] : undefined;
+
   return {
-    title: `${listing.address} · ${agent.name}`,
-    description: `${listing.address}, ${listing.city}, ${listing.state}`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url,
+      type: 'website',
+      siteName: 'Vicinity',
+      images,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: imageUrl ? [imageUrl] : undefined,
+    },
   };
 }
 

@@ -10,6 +10,39 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 19:00 UTC — Phase 3.2: OG / Twitter card metadata
+
+**Objective**: Make `/v/[agentSlug]/[listingSlug]` produce a proper social-share preview (iMessage / Slack / Twitter / Facebook) — title, description, image. Phase 3.2 task in IMPLEMENTATION.md.
+
+**Actions**:
+- `app/(public)/v/[agentSlug]/[listingSlug]/page.tsx` — `generateMetadata` extended:
+  - `title`: `${address} · ${city}, ${state}`
+  - `description`: composes price + beds/baths/sqft + `Listed by ${agent.name}`, filtering nulls (handles partially-filled listings gracefully).
+  - `openGraph`: type=website, siteName=Vicinity, url=`/v/...`, image priority `listing.cover_url` → `thumbnailUrl(listingVideos[0].cf_video_id)` → none. 1280×720 default dims.
+  - `twitter`: `summary_large_image` card, same image.
+- Reuses existing `fetchPageData()` — no extra DB roundtrip.
+- `thumbnailUrl()` throws if `NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN` missing; wrapped in try/catch so metadata degrades to image-less rather than 500-ing.
+
+**Decisions**:
+- `metadataBase` is already set in root `app/layout.tsx` from `NEXT_PUBLIC_APP_URL`, so relative `url: /v/...` resolves correctly for OG. No new env var.
+- Image dims hard-coded 1280×720 — Cloudflare Stream default thumbnail aspect, matches OG recommended 1.91:1 close enough that crawlers won't reject. Phase 4 may swap when listings have explicit cover_url with known dims.
+- 404 path returns `{ title: 'Listing not found · Vicinity' }` only — no OG block, intentionally bare so unfurlers don't cache a misleading preview.
+
+**Issues**: biome formatter flagged a multi-line `.filter().join()` expression that fit on one line — auto-fixed via `biome check --write`.
+
+**Resolution**: typecheck clean, biome clean on edited file. Same `phase3/public-listing-feed` branch; awaiting push.
+
+**Learnings**:
+- `generateMetadata` is allowed to do its own data fetch but Next 14 caches identical RSC fetches within a request, so reusing `fetchPageData()` from the page itself is free (no double roundtrip).
+- For social-share thumbnails, Cloudflare Stream's default `/thumbnails/thumbnail.jpg` is fine for V1 — no need to pre-extract specific frames or generate poster images. Phase 4+ can add `?time=Xs` for hand-picked frames.
+
+**Next steps**:
+- Push to origin, verify preview deploy.
+- Validate OG via `curl -I` + dump `<head>` and grep `og:title` / `og:image`. iMessage/Slack unfurl is true e2e — user does that on Mac.
+- 3.3 next: VideoFeed/Card/ActionRail (borrow demo tone, rebuild for video).
+
+---
+
 ## 2026-06-09 18:00 UTC — Phase 3 kickoff: 3.1 public listing route + demo publish toggle
 
 **Objective**: Open Phase 3 with task 3.1 — public listing page at `/v/[agentSlug]/[listingSlug]`, ISR `revalidate=3600`, 404 for unpublished/missing, minimal skeleton render. Phase 4 owns real listings CRUD; for 3.1 we need a way to flip the agent's reserved `__upload_test__` listing to `published` so the new route has live data without writing CRUD UI early.
