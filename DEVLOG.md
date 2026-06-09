@@ -10,6 +10,26 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 04:05 UTC — Phase 2 Realtime root cause: REPLICA IDENTITY
+
+**Objective**: Realtime channel SUBSCRIBED with valid JWT (user uuid logged), but zero `postgres_changes` payloads ever arrive on INSERT or UPDATE. Polling fallback works, so DB writes are happening. Server-side RLS-on-Realtime is silently dropping events.
+
+**Actions**: New migration `supabase/migrations/0004_replica_identity_full.sql`:
+- `alter table public.listing_videos replica identity full;`
+- `alter table public.community_videos replica identity full;`
+
+**Decisions**: The `listing_videos` RLS policy joins `listing_id → listings → agents → auth.uid()`. Realtime evaluates RLS on every WAL event; with default REPLICA IDENTITY, Postgres writes only PK + changed columns to the WAL row image. UPDATE events thus carry `listing_id = NULL` in OLD, and the join in the USING clause returns no rows, so the event is dropped before reaching the client. (INSERT carries the full new row so should pass — its absence is more puzzling, but FULL fixes both at once.) FULL writes the entire row on every change; WAL volume increase is negligible at V1 video write rate (a handful of rows per agent per session).
+
+**Issues**: Diagnosed by inspecting policy structure rather than running queries against prod (no Supabase CLI on EC2). Risk: if Realtime is still silent after this migration is pushed, the next suspect is the `realtime.list_changes` policy or a publication misconfiguration on the Supabase project itself.
+
+**Resolution**: User must run `supabase db push` on Mac to apply 0004 to prod, then hard-reload `/dashboard/upload-test` and re-test. Realtime status pill should still show SUBSCRIBED; on upload, console should now show `[Realtime] payload: INSERT` followed by `[Realtime] payload: UPDATE` ~30-60s later.
+
+**Learnings**: Supabase Realtime + RLS policies that JOIN to other tables almost always need REPLICA IDENTITY FULL. Worth documenting in the project's RLS conventions: any table whose RLS policy is not of the form `using (user_id = auth.uid())` (i.e. requires data from columns other than the PK) should ship with `replica identity full` if it's added to `supabase_realtime`.
+
+**Next steps**: After user confirms Realtime payloads arrive in console, decide whether to keep the visible debug pill (helpful) or hide it behind a debug flag (cleaner). Either way, the polling fallback stays — it's a 30-line insurance policy with zero cost when no rows are processing.
+
+---
+
 ## 2026-06-09 03:40 UTC — Phase 2 Realtime debug instrumentation
 
 **Objective**: Diagnose why Supabase Realtime is silent on `/dashboard/upload-test` (polling fallback works, Realtime never fires). Add visible instrumentation rather than guess.
