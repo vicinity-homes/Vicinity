@@ -10,6 +10,24 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 15:08 UTC — phase6.5: dashboard rollup + Phase 6 close
+
+**Objective**: Add agent-wide rollup numbers to the dashboard top, then tick Phase 6 closed in IMPLEMENTATION.md.
+
+**Actions**:
+- `app/dashboard/page.tsx`: import `getRollupStats`, compute `publishedIds` (filter rows where `status === 'published'`), call once, render a "Across N published listings" panel above the listings list. Hidden entirely when `publishedIds.length === 0` so empty/draft-only dashboards stay calm.
+- IMPLEMENTATION.md: ticked 6.1 / 6.2 / 6.3 / 6.4 / 6.5.
+
+**Decisions**:
+- Rollup is published-only: drafts and archived listings have no public surface, so their event counts are zero anyway. Excluding them sharpens the headline number when an agent has 5 drafts and 1 published listing — the panel reflects reality (1 listing's traffic), not "across 6 listings: 12 views" which reads as a per-listing miss.
+- No "compare to last week" yet. Phase 7 internal beta should generate enough data to know whether trend deltas are useful before we commit to the UX.
+
+**Verification**: `pnpm exec tsc --noEmit` clean. `pnpm exec biome check` clean. `pnpm exec vitest run lib/analytics` 5/5 still green.
+
+**Phase 6 done**. All five tasks merged commit-by-commit on `phase6/ai-copy-and-analytics` off `be44684`. Ready for ff-merge to main once owner reviews diffs.
+
+---
+
 ## 2026-06-09 15:02 UTC — phase6.4b: per-listing analytics SSR page
 
 **Objective**: Render the four numbers from `getListingStats` at `/dashboard/listings/[id]/analytics`.

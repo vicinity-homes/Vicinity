@@ -178,17 +178,17 @@ delivers to the agent's primary inbox in <5 seconds.
 
 ## Phase 6 — AI copy + analytics dashboard
 
-- [ ] **6.1** `app/api/generate-copy/route.ts` — POST listing fields →
+- [x] **6.1** `app/api/generate-copy/route.ts` — POST listing fields →
       `generateListingCopy()` → returns 3-paragraph English description.
       Auth-gated. Rate-limit per agent (e.g. 10/min).
-- [ ] **6.2** Edit form button "Generate description" → fills `description[]`
+- [x] **6.2** Edit form button "Generate description" → fills `description[]`
       with returned paragraphs as editable text.
-- [ ] **6.3** `app/api/generate-social/route.ts` + UI for Facebook + Instagram
+- [x] **6.3** `app/api/generate-social/route.ts` + UI for Facebook + Instagram
       copy. (Xiaohongshu deliberately omitted — see CLAUDE.md §1.)
-- [ ] **6.4** `app/dashboard/listings/[id]/analytics/page.tsx` — per-listing
+- [x] **6.4** `app/dashboard/listings/[id]/analytics/page.tsx` — per-listing
       view: total views, unique sessions, lead conversion %, video
       completion rate. Read from `events` table.
-- [ ] **6.5** `app/dashboard/page.tsx` rollup: total views/leads across
+- [x] **6.5** `app/dashboard/page.tsx` rollup: total views/leads across
       agent's published listings.
 
 ---

@@ -9,6 +9,7 @@
  * RLS scopes the result to the calling agent's own listings.
  */
 
+import { getRollupStats } from '@/lib/analytics/listing-stats';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -42,6 +43,15 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function RollupStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded border border-bronze/20 bg-ink p-3">
+      <div className="text-[10px] uppercase tracking-wide text-cream/50">{label}</div>
+      <div className="mt-1 text-xl font-semibold tabular-nums">{value.toLocaleString()}</div>
+    </div>
+  );
+}
+
 export default async function DashboardHomePage({ searchParams }: PageProps) {
   const { archived } = await searchParams;
   const showArchived = archived === '1';
@@ -64,6 +74,12 @@ export default async function DashboardHomePage({ searchParams }: PageProps) {
 
   const { data: listings } = (await query) as { data: ListingRow[] | null };
   const rows = listings ?? [];
+
+  // Phase 6.5 — rollup stats across the *published* subset only. Drafts and
+  // archived listings have no traffic by definition (no public URL), so
+  // mixing them in just dilutes the headline numbers.
+  const publishedIds = rows.filter((l) => l.status === 'published').map((l) => l.id);
+  const rollup = await getRollupStats(supabase, publishedIds);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -95,6 +111,23 @@ export default async function DashboardHomePage({ searchParams }: PageProps) {
           Show archived
         </Link>
       </div>
+
+      {publishedIds.length > 0 && (
+        <section className="mb-6 rounded border border-bronze/30 bg-ink2 p-4">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="text-xs font-medium uppercase tracking-wide text-cream/60">
+              Across {publishedIds.length} published{' '}
+              {publishedIds.length === 1 ? 'listing' : 'listings'}
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <RollupStat label="Page views" value={rollup.pageViews} />
+            <RollupStat label="Unique sessions" value={rollup.uniqueSessions} />
+            <RollupStat label="Video completes" value={rollup.videoCompletes} />
+            <RollupStat label="Leads" value={rollup.leads} />
+          </div>
+        </section>
+      )}
 
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-bronze/40 bg-ink2 px-8 py-16 text-center">
