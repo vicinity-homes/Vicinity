@@ -10,6 +10,25 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 14:48 UTC — phase6.3a: generate-social route
+
+**Objective**: Land the Facebook/Instagram social-copy endpoint. Reuses the rate-limit primitive under a separate `kind='social_copy'` bucket.
+
+**Actions**:
+- New `app/api/generate-social/route.ts`. Input is `{listing_id, highlights?}` (highlights ≤5 × 80 chars, transient — not persisted). Auth → resolve agent → look up listing via RLS-scoped client (so cross-agent listing IDs return null cleanly) → rate-limit `'social_copy'` → call `generateSocialCopy(...)` (Phase 0 lib) → return `{facebook, instagram}`.
+
+**Decisions**:
+- listing_id over free-form fields (different from /api/generate-copy): social copy needs a public URL pointing at *this* listing, so we resolve agent+listing slugs server-side and build `${origin}/v/${agentSlug}/${listingSlug}`. Client cannot forge the URL host either — origin comes from the request `Origin` header, falling back to `NEXT_PUBLIC_SITE_URL`, then `req.url`'s origin.
+- highlights stays out of `listings`. CLAUDE.md §0.2 — no speculative schema. If we need persistence later, a JSON column or a join table can land then; for V1 internal beta, a transient input is enough.
+- Separate rate-limit bucket: 10/min description + 10/min social. Avoids social retries crowding out description generation during the same workflow.
+- RLS on listings = built-in ownership check. The lookup with anon-cookie client means other agents' listings simply return `null` — no need for a redundant `where agent_id = ?`.
+
+**Verification**: `pnpm exec tsc --noEmit` clean, `pnpm exec biome check` clean. Anthropic call is mocked at the seam — Phase 0 already pinned model + max_tokens.
+
+**Next steps**: 6.3b — social copy UI section in EditListingForm (highlights input + two textareas + copy-to-clipboard).
+
+---
+
 ## 2026-06-09 14:42 UTC — phase6.2: Generate-description button in edit form
 
 **Objective**: Wire `/api/generate-copy` into the listing edit page so Vivian can one-click a draft description.
