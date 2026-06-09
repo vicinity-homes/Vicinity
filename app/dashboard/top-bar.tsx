@@ -49,6 +49,9 @@ export function TopBar({ displayName, brokerage }: Props) {
           >
             Communities
           </a>
+          <a href="/dashboard/leads" className="hover:opacity-80" style={{ color: 'var(--muted)' }}>
+            Leads
+          </a>
         </nav>
 
         <div className="flex items-center gap-4">
