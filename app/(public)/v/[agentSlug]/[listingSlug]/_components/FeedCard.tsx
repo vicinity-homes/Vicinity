@@ -17,6 +17,7 @@
  */
 
 import { hlsUrl, thumbnailUrl } from '@/lib/cloudflare/stream';
+import { track } from '@/lib/events/track';
 import Hls from 'hls.js';
 import { useEffect, useRef, useState } from 'react';
 import type { FeedAgent, FeedCard as FeedCardData, FeedListing } from './types';
@@ -55,6 +56,7 @@ type Props = {
   card: FeedCardData;
   agent: FeedAgent;
   listing: FeedListing;
+  listingId: string;
   isFirst: boolean;
   isLast: boolean;
   liked: boolean;
@@ -74,7 +76,16 @@ function badgeLabel(card: FeedCardData): string {
   return card.kind.toUpperCase();
 }
 
-export function FeedCard({ card, agent, listing, isFirst, cardRef, shouldMount, isActive }: Props) {
+export function FeedCard({
+  card,
+  agent,
+  listing,
+  listingId,
+  isFirst,
+  cardRef,
+  shouldMount,
+  isActive,
+}: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [paused, setPaused] = useState(true);
@@ -200,6 +211,14 @@ export function FeedCard({ card, agent, listing, isFirst, cardRef, shouldMount, 
           poster={poster ?? undefined}
           onPlay={() => setPaused(false)}
           onPause={() => setPaused(true)}
+          onEnded={() => {
+            track({
+              event_type: 'video_complete',
+              listing_id: listingId,
+              card_id: card.id,
+              meta: { source: card.source, kind: card.kind, cf_video_id: card.cfVideoId },
+            });
+          }}
           onClick={onTap}
         />
       )}

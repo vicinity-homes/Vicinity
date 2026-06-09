@@ -10,6 +10,41 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 23:35 UTC — Phase 3.7: event tracking (page_view / card_view / video_complete)
+
+**Objective**: Wire behavioral analytics on the public listing page. Buffered batch POST so we don't fire one request per scroll. Reuse the existing `events` table from `0001_init.sql` — no new migration.
+
+**Actions**:
+- New `lib/events/track.ts` — in-memory queue + 5s flush interval + flush on `pagehide` / `visibilitychange:hidden`. Uses `navigator.sendBeacon` first (mobile-correct: iOS doesn't fire `beforeunload`), falls back to `fetch` with `keepalive: true`. Session id is a `sessionStorage`-backed UUID (per-tab, standard analytics scope) with an ephemeral fallback if storage is blocked.
+- New `app/api/events/route.ts` — POST endpoint, zod-validated batch (1–100 events per call), inserts via service-role client. Returns 204 on success, 400 on invalid payload, 500 on insert failure (DB error logged server-side, not leaked to client). `runtime = 'nodejs'`.
+- `_components/VideoFeed.tsx` — added `listingId` prop, fires `track({ event_type: 'page_view' })` once on mount, `track({ event_type: 'card_view', card_id, meta: { card_index, source, kind } })` on `activeIndex` change.
+- `_components/FeedCard.tsx` — added `listingId` prop, `<video onEnded>` fires `track({ event_type: 'video_complete', card_id, meta: { source, kind, cf_video_id } })`.
+- `page.tsx` — passes `listingId={listing.id}` into VideoFeed.
+
+**Decisions**:
+- Reused existing `events` table schema rather than create a new migration. Schema already has `event_type / listing_id / card_id / session_id / meta jsonb` plus an anon-INSERT RLS policy (line 325–326 of `0001_init.sql`) — exactly what we need. Saved a migration round-trip and kept Phase 3 contained.
+- `card_type` field on the table uses an enum `home/school/poi/neighborhood` (V1 schema), but our client emits `source: 'listing'|'community'` and `kind: 'HOME'|'SCHOOL'|...`. Resolution: stuffed both into `meta jsonb` rather than try to bend our types into the `card_type` column. Phase 6 dashboard queries can pull from `meta->>source` and `meta->>kind`.
+- Service-role client on the route (vs anon) — anon RLS allows insert, but service-role skips RLS overhead for the bulk path. Endpoint is anon-callable (no auth check) since the events table policy treats inserts as public.
+- Buffer cap = 100 events per POST (zod max). Prevents abuse + matches sendBeacon's typical 64KB body limit.
+- No rate limiting at the route level. Phase 6 backlog (CLAUDE.md §3.6 noted no PII in events; rate limit is the other half).
+- Single page_view per mount (not per re-render): `useEffect([listingId])` guards. Same listing => one page_view per tab session.
+
+**Issues**:
+- TS error from `database.types.ts` stub: `supabase.from('events').insert(rows)` errored with `parameter of type 'never[]'`. Cast through `any` with a `TODO(phase3-end): pnpm db:types regen` comment, matching the pattern used elsewhere in `page.tsx` for the same reason.
+- Initial biome ignore used `lint/nursery/noFloatingPromises` which doesn't exist in this biome version. Replaced with `void fetch(...)` — same effect, no rule annotation needed.
+
+**Resolution**: Phase 3.7 done. typecheck + biome clean on all 5 edited/new files. 15 pre-existing biome errors elsewhere still untouched.
+
+**Learnings**:
+- The Phase 0 schema already had everything Phase 3.7 needed. Always-`grep` the existing migrations before reaching for a new one — Vivian's original schema design was forward-thinking.
+- `void fetch(...)` is the cleanest way to silence the "floating promise" lint without a rule annotation that may not match the installed biome version.
+
+**Verification gap**: No real validation that events land in the DB until a deploy + a tap on the live page hits the route. Pre-merge plan: Phase 3 end → preview deploy → open `/v/.../<slug>` → check Supabase Studio `events` table for rows with our `session_id` pattern. If anything's broken, fix before merging to main.
+
+**Next steps**: 3.8 unit tests for `composeFeed()` (Phase 3 final task), then DEVLOG verification entry → ff-merge `phase3/public-listing-feed` → main.
+
+---
+
 ## 2026-06-09 23:10 UTC — Phase 3.6: LeadModal (UI-only)
 
 **Objective**: Replace the placeholder Contact alert with a real lead-capture modal. UI + client validation only — Phase 5 wires the actual POST + Resend email.

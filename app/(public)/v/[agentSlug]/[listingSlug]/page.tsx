@@ -226,6 +226,7 @@ export default async function PublicListingPage({
         baths: listing.baths,
         sqft: listing.sqft,
       }}
+      listingId={listing.id}
       cards={cards}
     />
   );

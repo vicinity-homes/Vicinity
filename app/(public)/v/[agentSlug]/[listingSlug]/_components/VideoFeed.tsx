@@ -12,6 +12,7 @@
  * <video> tags max — see CLAUDE.md memory budget.
  */
 
+import { track } from '@/lib/events/track';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActionRail } from './ActionRail';
 import { FeedCard } from './FeedCard';
@@ -21,10 +22,11 @@ import type { FeedAgent, FeedCard as FeedCardData, FeedListing } from './types';
 type Props = {
   agent: FeedAgent;
   listing: FeedListing;
+  listingId: string;
   cards: FeedCardData[];
 };
 
-export function VideoFeed({ agent, listing, cards }: Props) {
+export function VideoFeed({ agent, listing, listingId, cards }: Props) {
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [activeIndex, setActiveIndex] = useState(0);
   const [leadOpen, setLeadOpen] = useState(false);
@@ -56,6 +58,23 @@ export function VideoFeed({ agent, listing, cards }: Props) {
     return () => observer.disconnect();
   }, [cards.length]);
 
+  // Phase 3.7 tracking: page_view once on mount.
+  useEffect(() => {
+    track({ event_type: 'page_view', listing_id: listingId });
+  }, [listingId]);
+
+  // card_view fires when active card changes.
+  useEffect(() => {
+    const card = cards[activeIndex];
+    if (!card) return;
+    track({
+      event_type: 'card_view',
+      listing_id: listingId,
+      card_id: card.id,
+      meta: { card_index: activeIndex, source: card.source, kind: card.kind },
+    });
+  }, [activeIndex, cards, listingId]);
+
   if (cards.length === 0) {
     return (
       <main className="flex h-[100dvh] items-center justify-center bg-ink text-cream/60 text-sm">
@@ -86,6 +105,7 @@ export function VideoFeed({ agent, listing, cards }: Props) {
                   card={card}
                   agent={agent}
                   listing={listing}
+                  listingId={listingId}
                   isFirst={i === 0}
                   isLast={i === cards.length - 1}
                   liked={!!liked[card.id]}
