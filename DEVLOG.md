@@ -10,6 +10,25 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 15:02 UTC — phase6.4b: per-listing analytics SSR page
+
+**Objective**: Render the four numbers from `getListingStats` at `/dashboard/listings/[id]/analytics`.
+
+**Actions**:
+- New `app/dashboard/listings/[id]/analytics/page.tsx` — server component, RLS-scoped listing fetch (unowned id → "Listing not found" route, no special check needed), then `getListingStats(supabase, id)` → 4-card grid + a lead-conversion callout. Empty-state copy when `uniqueSessions === 0`.
+- `app/dashboard/listings/[id]/edit/page.tsx`: small "View analytics →" link in the header so the page is discoverable.
+- `lib/analytics/listing-stats.ts`: widened the param type from `SupabaseClient` to `AnyClient = SupabaseClient<any, any, any, any, any>`. The cookie client returned by `createClient()` and the service client both wear the typed-Database generics, but those generics are stub-empty in this repo (Database has Tables: Record<string, never>) — strict matching against the bare `SupabaseClient` default refused to assign. Loosening at the lib boundary is the right tradeoff: the lib treats events/leads as opaque rows anyway (the row shape is asserted via the `EventRow` interface inside).
+
+**Decisions**:
+- No charts. Phase 6 ships just the numbers; Phase 7 internal beta will tell us whether time-series, source breakdown, or geo split actually matters before we wire chart deps.
+- 404-style "Listing not found" inline rather than `notFound()` — keeps a clear "back to dashboard" affordance for the case where the agent followed a stale link.
+
+**Verification**: `pnpm exec tsc --noEmit` clean. `pnpm exec biome check` clean. `pnpm exec vitest run lib/analytics` 5/5 still green after the type widen.
+
+**Next steps**: 6.5 — dashboard rollup section.
+
+---
+
 ## 2026-06-09 14:58 UTC — phase6.4a: listing-stats analytics lib + vitest
 
 **Objective**: Pure aggregation lib for per-listing + dashboard-rollup analytics so the SSR pages in 6.4b/6.5 stay thin.

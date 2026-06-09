@@ -123,6 +123,14 @@ export default async function EditListingPage({
           {listing.neighborhood ? ` · ${listing.neighborhood}` : ''} · slug:{' '}
           <code className="text-cream">{listing.slug}</code>
         </p>
+        <div className="mt-2">
+          <a
+            href={`/dashboard/listings/${listing.id}/analytics`}
+            className="text-xs text-gold hover:underline"
+          >
+            View analytics →
+          </a>
+        </div>
       </header>
 
       <PublishPanel

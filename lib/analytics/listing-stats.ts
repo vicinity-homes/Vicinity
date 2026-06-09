@@ -29,6 +29,13 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+// Loose client type — the call sites use the typed cookie/service clients
+// (which have nominally different generic params per Database stub state),
+// and we don't need typed table access in here since we're treating both
+// `events` and `leads` as opaque rows.
+// biome-ignore lint/suspicious/noExplicitAny: see comment above
+type AnyClient = SupabaseClient<any, any, any, any, any>;
+
 export interface ListingStats {
   pageViews: number;
   uniqueSessions: number;
@@ -43,7 +50,7 @@ interface EventRow {
 }
 
 export async function getListingStats(
-  supabase: SupabaseClient,
+  supabase: AnyClient,
   listingId: string,
 ): Promise<ListingStats> {
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
@@ -86,7 +93,7 @@ export async function getListingStats(
  * Returns an empty zero-stats object if `listingIds` is empty.
  */
 export async function getRollupStats(
-  supabase: SupabaseClient,
+  supabase: AnyClient,
   listingIds: string[],
 ): Promise<ListingStats> {
   if (listingIds.length === 0) {
