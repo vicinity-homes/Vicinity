@@ -10,6 +10,26 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 14:58 UTC — phase6.4a: listing-stats analytics lib + vitest
+
+**Objective**: Pure aggregation lib for per-listing + dashboard-rollup analytics so the SSR pages in 6.4b/6.5 stay thin.
+
+**Actions**:
+- New `lib/analytics/listing-stats.ts` exporting `getListingStats(supabase, listingId)` and `getRollupStats(supabase, listingIds[])`. Each pulls events with one `select event_type, session_id`, sums in JS (page_view, video_complete, unique session_ids), then queries `leads` count separately. `leadConversionPct = leads / uniqueSessions × 100`, rounded to 1dp, 0 when sessions=0.
+- New `lib/analytics/__tests__/listing-stats.test.ts` (5 cases): typical mix incl. null session_id, zero events, conversion rounding, empty rollup short-circuit, multi-listing rollup. All green.
+
+**Decisions**:
+- JS-side aggregation, not SQL group-by, because: (1) one round-trip is fine at internal-beta scale, (2) RLS already scopes the row set to the agent's listings — no `agent_id` filter needed, (3) it keeps the lib unit-testable without spinning up a Postgres fixture. If/when scale exceeds ~10k events/listing, switch to a server-side function — the call site doesn't change.
+- `null` session_id rows count toward event totals but not toward unique-sessions. Mirrors what tracking actually emits today (some early ingest paths skip session minting).
+- `leads` is a separate count query — the leads table has its own RLS policy and adding it to the events join would couple two unrelated boundaries.
+- One bug caught by the tests: I initially wrote `pageViews=3` expecting null-session pageviews to be excluded, which would only be true if I'd put the increment inside the session block. The test forced me to be explicit: page_view counter is unconditional, session set is conditional on session_id presence.
+
+**Verification**: `pnpm exec vitest run lib/analytics/__tests__/listing-stats.test.ts` → 5/5. `pnpm exec tsc --noEmit` clean. `pnpm exec biome check` clean.
+
+**Next steps**: 6.4b — `app/dashboard/listings/[id]/analytics/page.tsx` SSR consumer.
+
+---
+
 ## 2026-06-09 14:54 UTC — phase6.3b: SocialCopyPanel UI
 
 **Objective**: Surface `/api/generate-social` on the listing edit page with a transient highlights input + Facebook/Instagram output blocks + copy-to-clipboard.
