@@ -66,8 +66,10 @@ from `processing` → `ready` automatically.
       auth-gated. Calls `createDirectUpload()` from `lib/cloudflare/stream.ts`.
       Pre-creates the `listing_videos` row. (Phase 2 scope: listings only;
       `scope='community'` is rejected for V2.) (2026-06-09)
-- [ ] **2.2** `components/dashboard/VideoUploader.tsx` — Client Component.
-      tus-js-client, progress bar, retry on disconnect.
+- [x] **2.2** `components/dashboard/VideoUploader.tsx` — Client Component.
+      tus-js-client, progress bar, retry on disconnect. Standalone test
+      harness at `/dashboard/upload-test` with idempotent fake-listing seed
+      (slug `__upload_test__`). (2026-06-09)
 - [ ] **2.3** `app/api/webhooks/cloudflare-stream/route.ts` — POST. Verifies
       HMAC signature using raw body. Updates `status='ready'` on the matching
       row by `cf_video_id`. **Must use service role client** (webhooks have

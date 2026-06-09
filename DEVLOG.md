@@ -10,6 +10,24 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 02:15 UTC — Phase 2.2 VideoUploader + upload-test Page
+
+**Objective**: Land task 2.2 (browser-side tus uploader) and stand up `/dashboard/upload-test` so the Phase 2 video pipeline is end-to-end testable before listings CRUD ships in Phase 4.
+
+**Actions**: (1) New `components/dashboard/VideoUploader.tsx` — Client Component using `tus-js-client` (already in package.json). Calls `POST /api/video/create-upload`, then streams bytes directly to Cloudflare's tus endpoint with progress bar, 2GB client-side guard, video MIME check, exponential retry delays `[0, 1s, 3s, 5s, 10s]`, 50MB chunks. (2) New `app/dashboard/upload-test/page.tsx` — Server Component. Idempotent fake-listing seed: looks up listing with `slug='__upload_test__'` for current agent, creates one if missing (status=draft, address='Phase 2 upload test (placeholder)', city=Test, state=GA). Renders the uploader plus a table of existing `listing_videos` rows for that listing with a status pill (gold/green/red).
+
+**Decisions**: (a) Standalone test page instead of mounting uploader on `/dashboard` empty state — keeps Phase 1 UI intact; Phase 4 will delete this page and the seeded rows. (b) One private placeholder listing per agent (keyed on owner_id + reserved slug `__upload_test__`) instead of a single shared global one — avoids cross-agent RLS confusion and makes Phase 4 cleanup a simple slug-prefixed delete. (c) Hardcoded `kind='walkthrough'` in the uploader for V1 — UI dropdown for kind is out of scope for the test harness; real listing-detail flow in Phase 4 will expose the choice. (d) Server-rendered video table refreshes on full-page reload only — Realtime live status flip is task 2.4. (e) Used the same `(supabase as any)` cast pattern as task 2.1 + `app/dashboard/layout.tsx` — `database.types.ts` is still a stub; one phase-end regen via `pnpm db:types` will clean all three call sites at once.
+
+**Issues**: `pnpm` not on PATH on the EC2 box (corepack-managed), used `node_modules/.bin/tsc` and `node_modules/.bin/biome` directly. Repo-wide `biome check` reports 15 pre-existing errors unrelated to this task — confirmed by stashing my changes and rerunning (same count). New files pass targeted `biome check` cleanly.
+
+**Resolution**: tsc clean. Biome clean on the two new files. Pushed to `phase2/video-upload`. Phase 2 endpoint can now be exercised by an authenticated agent via `/dashboard/upload-test` — uploads should succeed and rows should appear in `processing` state. Status will stay `processing` until task 2.3 webhook handler ships.
+
+**Learnings**: Pre-existing biome errors on main are tech debt that will eventually need a cleanup pass — not blocking V1 but worth flagging. Reserved slug pattern (`__upload_test__`) is a clean V1 trick for "I need a row that exists but isn't a real business object yet" — mark with double underscore prefix so Phase 4 cleanup is unambiguous.
+
+**Next steps**: Task 2.3 — `app/api/webhooks/cloudflare-stream/route.ts`. Service-role client (webhook has no auth.uid), verify HMAC signature against raw body using `verifyWebhookSignature()` already in `lib/cloudflare/stream.ts`, flip `listing_videos.status` from `processing` to `ready` keyed on `cf_video_id`. Cloudflare webhook URL is already registered (production endpoint will start receiving real events as soon as 2.3 deploys).
+
+---
+
 ## 2026-06-09 01:30 UTC — Phase 2.1 create-upload Route Handler
 
 **Objective**: Land task 2.1 — `POST /api/video/create-upload` that reserves a Cloudflare Stream direct-upload URL and pre-inserts a `listing_videos` row so the webhook handler (task 2.3) has something to flip to `ready`.
