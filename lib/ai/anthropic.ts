@@ -57,20 +57,45 @@ async function callMessages(opts: {
 }
 
 /**
- * Strip ```json ... ``` or ``` ... ``` fences the model sometimes wraps JSON
- * in despite "no markdown" instructions. Also trims leading/trailing whitespace.
+ * Extract the first complete JSON object from a model response.
+ *
+ * Robust to: ```json fences (with or without closing fence), pre/post chatter
+ * ("Here's the JSON: {...} hope this helps"), trailing whitespace, etc.
+ * Scans for the first '{' and walks to the matching '}', respecting strings
+ * and escapes. Returns null if no balanced object is found.
  */
-function stripCodeFence(s: string): string {
-  const t = s.trim();
-  const fence = /^```(?:json)?\s*\n?([\s\S]*?)\n?```$/i;
-  const m = t.match(fence);
-  return m?.[1] ? m[1].trim() : t;
+export function extractJsonObject(s: string): string | null {
+  const start = s.indexOf('{');
+  if (start === -1) return null;
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  for (let i = start; i < s.length; i++) {
+    const ch = s[i];
+    if (esc) {
+      esc = false;
+      continue;
+    }
+    if (inStr) {
+      if (ch === '\\') esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') inStr = true;
+    else if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) return s.slice(start, i + 1);
+    }
+  }
+  return null;
 }
 
 function safeJsonParse(raw: string, label: string): unknown {
-  const cleaned = stripCodeFence(raw);
+  const extracted = extractJsonObject(raw);
+  const candidate = extracted ?? raw.trim();
   try {
-    return JSON.parse(cleaned);
+    return JSON.parse(candidate);
   } catch (err) {
     // Surface the first ~500 chars of the raw response so we can see why
     // the model went off-format. Not PII — just listing copy.

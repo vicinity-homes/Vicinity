@@ -10,6 +10,31 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 15:26 UTC — phase6.3 hotfix #2: brace-walk JSON extraction
+
+**Objective**: Hotfix #1 (15:21) added `stripCodeFence` regex anchored with `^` and `$`. User redeployed, retried social copy, still got `generation_failed`. Vercel runtime log (now visible thanks to `safeJsonParse` raw logging from #1) showed `SyntaxError: Unexpected token '`', "```json\n{"...`. The regex didn't match because the raw response starts with a fence but doesn't end with one — Sonnet 4.5 emitted a fence-opened, fence-not-closed response (or with trailing text past the close). Anchored regex returned the original string, JSON.parse blew up.
+
+**Actions**:
+- Replaced `stripCodeFence` regex with `extractJsonObject(s)`: scans for first `{`, walks to matching `}` while respecting strings + escapes, returns the slice. Robust to: missing closing fence, pre/post chatter, nested objects, braces inside strings, escaped quotes inside strings.
+- Exported `extractJsonObject` from `lib/ai/anthropic.ts`.
+- Added `__tests__/extract-json.test.ts` with 8 cases covering every observed and plausible failure mode (including the exact prod failure: `\`\`\`json\n{...}` with no close).
+- Renamed local `escape` → `esc` to satisfy biome `noShadowRestrictedNames`.
+
+**Decisions**:
+- Did **not** switch to Anthropic `tool_use` / structured-output mode. That's a larger surface change (couples to SDK shape, more code paths). 8-line brace walker covers every failure mode we've actually observed. If we hit a non-JSON failure (model returns prose only, hits 401/quota), we'll see it cleanly in the existing raw-response log and revisit.
+- Kept `safeJsonParse` raw-response logging from hotfix #1 — it's how we found this failure mode in <2 minutes. Cheap to keep.
+- Made `extractJsonObject` exported (vs. private + integration test against `safeJsonParse`) because the parser logic is the bug-prone part. Direct unit tests catch regressions cleanly.
+
+**Issues**: None during hotfix work. The bug itself was a regex too tight for the variability of LLM output.
+
+**Resolution**: 8 unit tests pass. Pushed to `phase6/ai-copy-and-analytics`. User to re-test against Vercel preview.
+
+**Learnings**: Don't trust LLM-output cleaning regexes anchored at `^`/`$`. Models add chatter on either side unpredictably. Brace-walk is O(n), no regex backtracking risk, handles every shape we'd plausibly see. Also: ship the unit test alongside the parser the FIRST time, not after the second prod failure.
+
+**Next steps**: User re-tests social copy on preview. If green, proceed to ff-merge of `phase6/ai-copy-and-analytics` → main.
+
+---
+
 ## 2026-06-09 15:21 UTC — phase6.3 hotfix: social copy generation_failed
 
 **Objective**: User reported `Error: generation_failed` clicking the social-copy generate button (description button worked). Diagnose and fix without leaving Phase 6.
