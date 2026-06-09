@@ -24,6 +24,15 @@ export type FeedListing = {
   sqft: number | null;
 };
 
+/**
+ * Structured overlay for community cards (ARCH §5). Listing cards = null
+ * (address/price already render at the top of the card).
+ */
+export type FeedOverlay = {
+  line1: string;
+  line2?: string;
+};
+
 export type FeedCard = {
   id: string;
   cfVideoId: string;
@@ -32,4 +41,5 @@ export type FeedCard = {
   /** DB `kind` column verbatim (e.g. HOME, OUTDOOR, SCHOOL, POI, NEIGHBORHOOD). */
   kind: string;
   title: string | null;
+  overlay: FeedOverlay | null;
 };

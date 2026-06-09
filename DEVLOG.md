@@ -10,6 +10,39 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 22:30 UTC — Phase 3.5: feed composition (ARCH §5)
+
+**Objective**: Replace naive `[...listing, ...community]` concat with the ARCH §5 interleave + structured overlay shaping for SCHOOL/POI/NEIGHBORHOOD community videos.
+
+**Actions**:
+- New `lib/feed/compose.ts` — pure `composeFeed({ listingVideos, communityVideos, schools, pois, community })` returning `FeedCard[]`. Pattern: first 2 listing videos as hook (Vivian's `sort_order`), then 1:1 interleave (listing/community), append leftovers. Schools/pois indexed by id for O(1) overlay lookup. No DB, no React — phase 3.8 unit-tests this directly.
+- `_components/types.ts` — added `FeedOverlay = { line1; line2? }` + `FeedCard.overlay` field.
+- Overlay shaping per ARCH §5:
+  - SCHOOL: `{name} {grades}` / `{rating}/10`
+  - POI: `{name}` / `{distance_text}`
+  - NEIGHBORHOOD: `{community.name}` / `{description first 80 chars}` (ellipsis-truncated)
+  - Listing cards: overlay = null (address/price already at top of card)
+- `page.tsx` — drop inline concat, call `composeFeed(...)`, drop now-unused `FeedCard` type import.
+- `_components/FeedCard.tsx` — render overlay above the agent strip when present: gold-bordered chip block, `bg-black/55 backdrop-blur`, two-line content, fits the design language without competing with the address/price up top.
+
+**Decisions**:
+- Hook count = 2 (constant). ARCH §5 says "first listing videos as Vivian sets" — 2 strikes the balance: enough to establish the home before cutting to community, not so many that the feed feels static. Trivially configurable later.
+- Overlays as a typed shape (`{line1, line2}`) not freeform string — keeps FeedCard rendering deterministic and easy to restyle. Means the composer owns formatting (e.g. "{rating}/10"); UI stays dumb.
+- Truncate NEIGHBORHOOD description at 80 chars in the composer (display layer). Avoids overflow in the overlay chip; full description still lives in DB if a future detail view wants it.
+- Community card with missing FK (e.g. `kind='SCHOOL'` but `school_id` null or school not in result set) → overlay = null, card still renders with title/badge. Defensive: don't crash on dirty data.
+
+**Issues**: none.
+
+**Resolution**: Phase 3.5 done. typecheck + biome clean on edited files; pre-existing biome errors elsewhere untouched.
+
+**Learnings**:
+- Pure-function composition pays off immediately: 3.8's unit tests can call `composeFeed()` with hand-built fixtures, no Supabase or React. The Phase 0 schema FK shape (school_id / poi_id on community_videos) was already overlay-friendly — no migration needed.
+- Phase 3.5 has zero visible change for `__upload_test__` until community_videos exist (currently 0). Real verification waits until Vivian-style content seeded OR the optional `__phase3_demo__` community_videos seed (deferred from 3.1) is wired. Not blocking phase progression — 3.8 will exercise the function directly.
+
+**Next steps**: 3.6 LeadModal (UI only, Phase 5 wires submit).
+
+---
+
 ## 2026-06-09 21:45 UTC — Phase 3.4: hls.js playback + mount-window policy
 
 **Objective**: Make the feed actually play. Wire hls.js (with native HLS path on iOS Safari) into FeedCard and add an IntersectionObserver-driven mount window so at most three `<video>` tags exist in the DOM at once.

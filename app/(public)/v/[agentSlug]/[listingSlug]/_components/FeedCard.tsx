@@ -248,8 +248,20 @@ export function FeedCard({ card, agent, listing, isFirst, cardRef, shouldMount, 
         </div>
       )}
 
-      {/* Bottom-left: agent strip + caption. */}
+      {/* Bottom-left: overlay (community cards) + agent strip + caption. */}
       <div className="pointer-events-none absolute right-20 bottom-6 left-4 space-y-2">
+        {card.overlay && (
+          <div className="inline-block max-w-full rounded-md border border-gold/30 bg-black/55 px-3 py-2 backdrop-blur">
+            <div className="truncate font-serif text-cream text-sm leading-tight">
+              {card.overlay.line1}
+            </div>
+            {card.overlay.line2 && (
+              <div className="truncate text-[11px] text-gold/90 leading-tight">
+                {card.overlay.line2}
+              </div>
+            )}
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-gold bg-ink2 font-semibold text-cream text-xs">
             {agent.name

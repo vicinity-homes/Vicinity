@@ -1,9 +1,9 @@
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
+import { composeFeed } from '@/lib/feed/compose';
 import { createClient } from '@/lib/supabase/server';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { VideoFeed } from './_components/VideoFeed';
-import type { FeedCard } from './_components/types';
 
 /**
  * Public listing page — `/v/[agentSlug]/[listingSlug]`.
@@ -203,29 +203,15 @@ export default async function PublicListingPage({
   const data = await fetchPageData(agentSlug, listingSlug);
   if (!data) notFound();
 
-  const { agent, listing, listingVideos, communityVideos } = data;
+  const { agent, listing, listingVideos, communityVideos, schools, pois, community } = data;
 
-  // Naive concat — listing first, community after. ARCH §5 interleave is 3.5.
-  const cards: FeedCard[] = [
-    ...listingVideos.map(
-      (v): FeedCard => ({
-        id: v.id,
-        cfVideoId: v.cf_video_id,
-        source: 'listing',
-        kind: v.kind,
-        title: v.title,
-      }),
-    ),
-    ...communityVideos.map(
-      (v): FeedCard => ({
-        id: v.id,
-        cfVideoId: v.cf_video_id,
-        source: 'community',
-        kind: v.kind,
-        title: v.title,
-      }),
-    ),
-  ];
+  const cards = composeFeed({
+    listingVideos,
+    communityVideos,
+    schools,
+    pois,
+    community,
+  });
 
   return (
     <VideoFeed
