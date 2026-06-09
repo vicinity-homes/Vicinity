@@ -12,7 +12,7 @@
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { EditListingForm } from './EditListingForm';
+import { type CommunityOption, EditListingForm } from './EditListingForm';
 import { type ListingVideoRow, VideoPanel } from './VideoPanel';
 
 interface ListingRow {
@@ -34,6 +34,7 @@ interface ListingRow {
   style: string | null;
   description: string[] | null;
   cover_url: string | null;
+  community_id: string | null;
 }
 
 export default async function EditListingPage({
@@ -52,7 +53,7 @@ export default async function EditListingPage({
   const { data: listing } = (await (supabase as any)
     .from('listings')
     .select(
-      'id, address, city, state, zip, neighborhood, status, slug, price, beds, baths, sqft, year_built, lot_size, hoa, style, description, cover_url',
+      'id, address, city, state, zip, neighborhood, status, slug, price, beds, baths, sqft, year_built, lot_size, hoa, style, description, cover_url, community_id',
     )
     .eq('id', id)
     .maybeSingle()) as { data: ListingRow | null };
@@ -76,6 +77,13 @@ export default async function EditListingPage({
     .order('created_at', { ascending: true })) as { data: ListingVideoRow[] | null };
 
   const videos = videosRaw ?? [];
+
+  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+  const { data: communitiesRaw } = (await (supabase as any)
+    .from('communities')
+    .select('id, name, city, state')
+    .order('name', { ascending: true })) as { data: CommunityOption[] | null };
+  const communities = communitiesRaw ?? [];
 
   // Match the persisted cover_url back to a videoId by recomputing the
   // CF Stream thumbnail URL for each video. We don't store the videoId
@@ -122,7 +130,9 @@ export default async function EditListingPage({
             hoa: listing.hoa,
             style: listing.style,
             description: listing.description ?? [],
+            community_id: listing.community_id,
           }}
+          communities={communities}
         />
       </section>
 

@@ -21,16 +21,25 @@ interface InitialValues {
   hoa: string | null;
   style: string | null;
   description: string[];
+  community_id: string | null;
+}
+
+export interface CommunityOption {
+  id: string;
+  name: string;
+  city: string | null;
+  state: string;
 }
 
 interface Props {
   listingId: string;
   initial: InitialValues;
+  communities: CommunityOption[];
 }
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
-export function EditListingForm({ listingId, initial }: Props) {
+export function EditListingForm({ listingId, initial, communities }: Props) {
   const [price, setPrice] = useState(initial.price?.toString() ?? '');
   const [beds, setBeds] = useState(initial.beds?.toString() ?? '');
   const [baths, setBaths] = useState(initial.baths?.toString() ?? '');
@@ -40,6 +49,7 @@ export function EditListingForm({ listingId, initial }: Props) {
   const [hoa, setHoa] = useState(initial.hoa ?? '');
   const [style, setStyle] = useState(initial.style ?? '');
   const [description, setDescription] = useState(initial.description.join('\n\n'));
+  const [communityId, setCommunityId] = useState<string>(initial.community_id ?? '');
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -70,6 +80,7 @@ export function EditListingForm({ listingId, initial }: Props) {
       hoa: hoa.trim() === '' ? null : hoa.trim(),
       style: style.trim() === '' ? null : style.trim(),
       description,
+      community_id: communityId === '' ? null : communityId,
     };
 
     startTransition(async () => {
@@ -173,6 +184,25 @@ export function EditListingForm({ listingId, initial }: Props) {
           />
         </Field>
       </fieldset>
+
+      <Field
+        label="Community"
+        hint="Optional. Links this listing to a shared community for school + POI data. Manage communities at /dashboard/communities."
+      >
+        <select
+          value={communityId}
+          onChange={(e) => setCommunityId(e.target.value)}
+          className={INPUT_CLASS}
+        >
+          <option value="">— None —</option>
+          {communities.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+              {c.city ? ` (${c.city}, ${c.state})` : ` (${c.state})`}
+            </option>
+          ))}
+        </select>
+      </Field>
 
       <Field
         label="Description"

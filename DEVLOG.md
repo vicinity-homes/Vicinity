@@ -10,6 +10,46 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-11 05:30 UTC — phase4.4: community editor (list, create, schools, POIs) + listing community selector
+
+**Objective**: Phase 4.4 — communities CRUD so agents can self-serve community/school/POI data, plus retrofit the listing edit form with a community selector so listings can link into them.
+
+**Actions**:
+- `lib/zod/community.ts` — new file. `CreateCommunityInput` (with regex-validated slug), `UpdateCommunityInput`, `AddSchoolInput`, `AddPoiInput`. Shared `SourceUrl` schema with explicit fair-housing message. Rating bounded 0-10 to match DB check.
+- `app/dashboard/communities/page.tsx` — global list page (unscoped — communities are V1-shared per `agents manage communities` RLS). Empty state CTA → `/dashboard/communities/new`.
+- `app/dashboard/communities/new/page.tsx` + `NewCommunityForm.tsx` — auth-gated. Slug auto-derives from name on first input but stays editable (lets agent own the URL identifier).
+- `app/dashboard/communities/[id]/page.tsx` + `CommunityEditor.tsx` — three sections in one client component: metadata form, schools list+add, POIs list+add. `router.refresh()` after each mutation since server actions `revalidatePath`. POI types as a closed list (`restaurant/park/grocery/gym/shopping/transit/other`) for V1.
+- `app/dashboard/communities/actions.ts` — `createCommunity` (returns `slug_taken` on 23505), `updateCommunity`, `addSchool`/`deleteSchool`, `addPoi`/`deletePoi`. Helper `getAgentId()` looks up the agent row to fill `recorded_by` server-side. zod first-issue surfaced as the error message so the fair-housing UI hint shows up.
+- `app/dashboard/listings/[id]/edit/EditListingForm.tsx` — added `community_id` state + a `<select>` populated from communities passed by the page. Empty option clears the link.
+- `app/dashboard/listings/[id]/edit/actions.ts` — `UpdateListingInput` accepts `community_id: uuid | null`; insert payload writes it.
+- `app/dashboard/listings/[id]/edit/page.tsx` — extra parallel fetch of `communities` for the selector, threaded into `EditListingForm`. `community_id` added to listing select + initial values.
+
+**Decisions**:
+- **Communities list is unscoped, not per-agent.** RLS allows any authenticated user to read+write. V1 bet: agent count stays small enough that a global list won't get noisy. If it does, add a `created_by` column + filter — not now.
+- **Create flow redirects directly into the editor** (not back to the list). Agents almost always want to add schools/POIs immediately after creating a community, so dropping them in the editor saves a click.
+- **Slug auto-derives from name but is editable**. Communities are URL-referenced (eventually `/c/<slug>`) and we want hand-pickable, stable slugs. Auto-derive makes the common path one keystroke; edit lets pros override.
+- **Source URL is required at three layers**: DB `text not null`, zod `min(1).url()`, HTML `required` + `type="url"`. The triple-fence is intentional — fair-housing trail is the single most expensive thing to get wrong on this app, and we'd rather a redundant gate than a forgotten one. The visible hint copy is the same string in both school and POI sub-forms (`FAIRHOUSING_HINT` constant).
+- **Schools and POIs use `addX`/`deleteX` server actions, not edit-in-place**. V1 scope: agents who got it wrong delete and re-add. Edit-in-place doubles UI complexity for a low-frequency path. Phase 4.5/4.6 may revisit if edits become common.
+- **`recorded_by = auth user's agent.id`, set server-side**, never trusted from the client. The DB column is NOT NULL; the action looks up the agent row via the standard pattern (`agents.user_id = auth.uid()`).
+- **Community selector retrofit lives on the edit page, not the new-listing page.** New-listing keeps minimal scope (address + Place Details). Linking a community is a metadata decision the agent makes after creating the row — same screen as price/beds/baths.
+- **POI types as closed dropdown, not free-text**. Free text means inconsistent groupings later when we render POI categories on `/v/<agent>/<slug>` (hard to group "Park" vs "park" vs "Parks"). Closed list keeps grouping deterministic. "other" is the escape hatch.
+- **Schools and POIs delete uses `confirm()`**, not a custom modal. V1 friction-cheap; modal can wait.
+
+**Issues**: none — typecheck clean, biome clean on all 10 changed files.
+
+**Resolution**: ready to push. Verification on Vercel Preview after push.
+
+**Learnings**:
+- Schools/pois reference `community_id`, but `recorded_by` references `agents.id`. The action needs both: the form supplies `community_id`, the server supplies `recorded_by` from the auth user's agent row. Easy place to mix up which side owns which.
+- `useTransition` + `router.refresh()` is the right pattern for "list of things with add/delete sub-forms" — server actions revalidate the path, refresh re-runs the parent server component, the list updates without a hard reload. Cleaner than maintaining a parallel optimistic copy of the list.
+- DB `unique (slug)` on communities means slug collisions surface as Postgres 23505. We catch and convert to `slug_taken` so the form can show a clear message instead of "insert_failed".
+
+**Next steps**:
+- Push, verify SHA on origin.
+- Phase 4.5 — community video upload (kind: school/poi/neighborhood) with optional school/poi linkage. Will need a CommunityVideoPanel mirroring the listing VideoPanel, plus a per-video school/poi selector dropdown.
+
+---
+
 ## 2026-06-11 04:30 UTC — phase4.3c: cover photo selector
 
 **Objective**: Final slice of Phase 4.3 — agent can pick which video's CF Stream thumbnail becomes the listing's `cover_url` (the image shown on `/v/<agent>/<slug>` cards in the public feed). Also: clear-cover affordance.

@@ -32,6 +32,7 @@ const UpdateListingInput = z.object({
   hoa: z.string().max(80).nullable(),
   style: z.string().max(80).nullable(),
   description: z.string().max(20000),
+  community_id: z.string().uuid().nullable(),
 });
 
 export type UpdateListingInput = z.infer<typeof UpdateListingInput>;
@@ -74,6 +75,7 @@ export async function updateListing(
       hoa: emptyToNull(data.hoa),
       style: emptyToNull(data.style),
       description: descriptionToParagraphs(data.description),
+      community_id: data.community_id,
     })
     .eq('id', id)
     .select('id', { count: 'exact', head: true })) as {
