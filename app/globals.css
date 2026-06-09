@@ -3,27 +3,150 @@
 @tailwind utilities;
 
 :root {
-  /* Demo design tokens (Phase 3 will reuse these for VideoFeed migration). */
-  --brand: #c9a227;
+  color-scheme: dark;
+  /* Demo design tokens — kept as CSS vars for components that prefer var() over Tailwind utilities. */
+  --brand: #c9a961;
   --brand-dark: #a88a1e;
-  --bg: #0c0c0c;
+  --bg: #0a0a0a;
   --card: #141414;
   --border: rgba(255, 255, 255, 0.08);
-  --text: #f5f5f5;
+  --text: #f5f1ea;
   --muted: #9a9a9a;
 }
 
 html,
-body {
-  height: 100%;
+body,
+#root {
+  background: #0a0a0a;
+  color: #f5f1ea;
+  min-height: 100%;
 }
 
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family:
-    var(--font-inter),
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: var(--font-inter), Inter, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-serif {
+  font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+}
+
+/* Scroll-snap utilities */
+.snap-y-mandatory {
+  scroll-snap-type: y mandatory;
+}
+.snap-section {
+  scroll-snap-align: start;
+}
+
+/* TikTok-style feed (Listing route) */
+.feed-scroller {
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+.feed-card {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+@keyframes heart-pop {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.4);
+  }
+  60% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.heart-pop {
+  animation: heart-pop 0.45s ease;
+}
+
+@keyframes btn-press {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.85);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.btn-press {
+  animation: btn-press 0.25s ease;
+}
+.rail-btn {
+  transition: transform 0.15s ease;
+}
+.rail-btn:active {
+  transform: scale(0.85);
+}
+
+/* Brand utilities */
+.gold-line {
+  background: linear-gradient(90deg, transparent, #c9a961, transparent);
+  height: 1px;
+}
+.btn-gold {
+  background: #c9a961;
+  color: #0a0a0a;
+  font-weight: 600;
+}
+.btn-gold:hover {
+  background: #d8ba73;
+}
+.btn-ghost {
+  border: 1px solid rgba(245, 241, 234, 0.25);
+  color: #f5f1ea;
+}
+.btn-ghost:hover {
+  border-color: #c9a961;
+  color: #c9a961;
+}
+
+/* Hide scrollbars (used in horizontal carousels) */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+
+/* Tooltip — used by SourceTip and similar */
+.tip {
+  position: relative;
+}
+.tip:hover .tip-body,
+.tip:focus-within .tip-body {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.tip-body {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translate(-50%, 4px);
+  background: #1a1a1a;
+  border: 1px solid #c9a961;
+  color: #f5f1ea;
+  padding: 8px 10px;
+  font-size: 11px;
+  border-radius: 8px;
+  white-space: normal;
+  width: max-content;
+  min-width: 220px;
+  max-width: 280px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.15s ease;
+  z-index: 50;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 }

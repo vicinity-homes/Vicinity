@@ -10,6 +10,43 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 23:30 UTC — phase8 kickoff: design parity with demo SPA — 8.1 tokens + Header/Footer
+
+**Objective**: After reviewing the demo SPA (`vicinity-app.tar.gz`, surge-hosted at `vicinity-app-prd.surge.sh`), owner decided to **pause Phase 7 internal-beta rollout** and run a Phase 8 design-parity pass before letting Vivian use the app. Driver is "first impression matters; AI agents shipped Phases 1–7 in three days so the time cost is acceptable." Demo positioning (bilingual EN/中文 + Xiaohongshu/WeChat share + `_zh` description fields) is **rejected** — V1 stays English-only for all US homebuyers, per CLAUDE.md §1. Demo is the source for visual language, typography, and the TikTok-style Listing swipe feed only.
+
+**Actions**:
+- Branched `phase8/design-parity` off main `21980ac`.
+- Added `lucide-react@^0.460.0` (the `1.17.0` that pnpm picked first on a bare `add` is a stale unrelated package — pinned modern lucide-react explicitly).
+- `app/layout.tsx`: wired `next/font/google` for Inter + Playfair Display (`--font-inter` / `--font-playfair` CSS vars). Body now `bg-ink text-cream antialiased` instead of `bg-black text-white`.
+- `app/globals.css`: replaced placeholder tokens with the demo's full set — color vars, `font-serif`, `feed-scroller` / `feed-card` snap utilities, `heart-pop` / `btn-press` / `rail-btn` keyframes, `gold-line`, `btn-gold`, `btn-ghost`, `scrollbar-hide`, `tip` tooltip. Lifted near-verbatim from `vicinity-app/src/index.css`. CSS-only, no positioning/i18n drift.
+- `components/site/SiteHeader.tsx` (new): English-only port of demo `Header.jsx`. Logo + Browse / For agents / Log in (or Dashboard / Log out when `loggedIn` prop is true). **Removed the language toggle** — V1 is EN-only. Server-rendered, takes `loggedIn` / `transparent` / `showGoldLine` props.
+- `components/site/SiteFooter.tsx` (new): copyright + tagline. **Stripped the dead-link social icons** from the demo — biome `useValidAnchor` correctly flagged `href="#"`, and Vicinity has no real social accounts yet. Comment in source documents the omission for reinstatement when real URLs exist.
+- Components are **defined but not yet mounted** anywhere — wiring lands in 8.2 (Landing) and 8.4 (Editor/Dashboard chrome). The public Listing route stays full-bleed, no header.
+- Verified: `pnpm tsc --noEmit` clean, `pnpm biome check` clean on changed files, `pnpm build` succeeds with all 14 routes building.
+
+**Decisions**:
+- **Tagline "TikTok for Homebuying"** — owner approved verbatim copy. Logged here as the V1 tagline; future commits will use it as a single string constant so it can be flipped if ByteDance objects.
+- **Landing video asset** — owner approved using the demo's Pexels stock URL (`videos.pexels.com/video-files/7578548/...`) as the Phase 8.2 hero. Free hotlink, no licensing risk.
+- **Dead social links** — removing in V1 rather than carrying biome-suppressed dead `href="#"`s. Cleaner than disabling the rule.
+- **Footer year** — switched from i18n-translated string to `new Date().getFullYear()` so it stays current without a deploy. Server component, so the year is rendered at request time.
+- **No Header mount in 8.1** — keeping commit surgical. Mounting per route comes naturally with each page-rewrite task in 8.2/8.4.
+
+**Issues**: pnpm initially resolved `lucide-react` to `1.17.0` (an unrelated abandoned package). Caught on first `tsc` (`Module 'lucide-react' has no exported member 'Instagram'`). Fixed by pinning `^0.460.0`.
+
+**Resolution**: 8.1 ships as a single design-system foundation commit. No runtime behaviour change; nothing visible to the user yet — the page that renders is still the simple `app/page.tsx` from before, but it now renders against the new tokens/fonts. Visible UI changes start in 8.2.
+
+**Phase 8 plan (locked)**:
+- 8.1 ✅ Design tokens + fonts + Header/Footer components (this commit)
+- 8.2 Landing page rewrite — full-bleed video hero, scroll-snap how-it-works, mount SiteHeader/SiteFooter
+- 8.3 Listing TikTok feed parity — current V1 has VideoFeed/FeedCard/ActionRail/LeadModal scaffolding (~1058 lines); polish to match demo's visual language and rail interactions
+- 8.4 Editor parity — section anchor nav, photo drag-sort, AI copy generator (Facebook + Instagram + Generic email; **no Xiaohongshu, no `_zh` field**), pre-flight checklist
+- 8.5 Analytics dashboard with recharts — only fields V1 actually instruments today; placeholders + 7.4-style tickets for unmeasured fields
+- 8.6 UI primitives (Toast / Modal / ShareModal English-only / LeadForm) — inline as needed by the above
+
+**Next steps**: Wait for owner review of the 8.1 commit on `phase8/design-parity`. On "go" continue to 8.2 (Landing rewrite with Pexels video hero + `SiteHeader transparent` + scroll-snap sections).
+
+---
+
 ## 2026-06-09 22:00 UTC — phase7 kickoff: beta-readiness branch + smoke-test + scaffolding audit
 
 **Objective**: Open Phase 7 (internal beta with Vivian). Phase 7 is owner+external-driven (7.1 domain alias, 7.2 Vivian onboarding walkthrough, 7.3 Vivian uploads 3 real listings, 7.4 Hermes triages bugs from beta feedback). Hermes contribution is a small "beta readiness" set landed on `phase7/beta-readiness` off main `7eb9d39`: (a) production smoke-test script for post-merge health checks, (b) verify no `__upload_test__` scaffolding residue is left in active code, (c) DEVLOG kickoff + tick the 7.1 box that was already de-facto done.

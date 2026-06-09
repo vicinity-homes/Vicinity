@@ -1,6 +1,19 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { Inter, Playfair_Display } from 'next/font/google';
 import type { ReactNode } from 'react';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-playfair',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: { default: 'Vicinity', template: '%s | Vicinity' },
@@ -10,8 +23,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <body className="bg-black text-white antialiased">{children}</body>
+    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
+      <body className="bg-ink text-cream antialiased">{children}</body>
     </html>
   );
 }
