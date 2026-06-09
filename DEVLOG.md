@@ -10,6 +10,22 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-10 09:06 UTC — Phase 3.8: composeFeed unit tests
+
+**Objective**: Lock the ARCH §5 feed composition rules under tests before phase merge. Pure function, easy to fixture, high regression value (this rule will keep evolving in Phase 6+).
+
+**Actions**:
+- New `lib/feed/compose.test.ts` — 12 tests covering: empty input, listing-only, hook (first 2 listing) ordering, 1:1 interleave, listing-leftover append, community-leftover append, SCHOOL overlay shape (with + without grades/rating), POI overlay, NEIGHBORHOOD overlay + 80-char truncation with ellipsis, missing school ref → null overlay, missing community → null overlay, source field correctness.
+- Verified: full suite 32/32 pass, biome clean, tsc clean.
+
+**Decisions**: kept fixtures inline (factory helpers `lv()` / `cv()`) rather than a separate fixtures file — single test file, no reuse yet, simplicity-first per CLAUDE.md §0.2.
+
+**Issues**: none.
+
+**Next steps**: Phase 3 task list complete (3.1–3.8). Ready for phase merge to main once preview verifies live + events endpoint round-trips. After merge: regen `database.types.ts` (Phase 0 tech debt), keep remote `phase3/public-listing-feed` branch per project rule.
+
+---
+
 ## 2026-06-09 23:35 UTC — Phase 3.7: event tracking (page_view / card_view / video_complete)
 
 **Objective**: Wire behavioral analytics on the public listing page. Buffered batch POST so we don't fire one request per scroll. Reuse the existing `events` table from `0001_init.sql` — no new migration.
