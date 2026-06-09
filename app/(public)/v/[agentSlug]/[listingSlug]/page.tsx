@@ -1,0 +1,200 @@
+import { createClient } from '@/lib/supabase/server';
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+
+/**
+ * Public listing page — `/v/[agentSlug]/[listingSlug]`.
+ *
+ * Phase 3.1: Server Component, ISR, 404 if not published. Renders a minimal
+ * skeleton (title, price, agent name, content counts). The actual swipeable
+ * video feed UI lands in Phase 3.3+.
+ *
+ * Data fetch order:
+ *   agent (by slug)
+ *   → listing (by agent_id + slug + status='published')
+ *   → community (left, may be null)
+ *   → listing_videos (status='ready', sorted)
+ *   → community_videos (status='ready')
+ *   → schools, pois (for community)
+ *
+ * Uses anon supabase client + RLS (Phase 0 schema grants public SELECT on
+ * published listings + ready videos + communities/schools/pois).
+ */
+
+export const revalidate = 3600;
+
+type PageParams = { agentSlug: string; listingSlug: string };
+
+type Agent = { id: string; slug: string; name: string };
+type Listing = {
+  id: string;
+  slug: string;
+  agent_id: string;
+  community_id: string | null;
+  address: string;
+  city: string;
+  state: string;
+  price: number | null;
+  beds: number | null;
+  baths: number | null;
+  sqft: number | null;
+  cover_url: string | null;
+  status: string;
+};
+type Community = { id: string; name: string; description: string | null };
+type ListingVideo = { id: string; cf_video_id: string; kind: string; title: string | null };
+type CommunityVideo = {
+  id: string;
+  cf_video_id: string;
+  kind: string;
+  title: string | null;
+  school_id: string | null;
+  poi_id: string | null;
+};
+type School = { id: string; name: string; grades: string | null; rating: number | null };
+type Poi = { id: string; name: string; poi_type: string; distance_text: string | null };
+
+async function fetchPageData(agentSlug: string, listingSlug: string) {
+  const supabase = await createClient();
+
+  // biome-ignore lint/suspicious/noExplicitAny: stub generated types — TODO(phase3-end): pnpm db:types regen
+  const { data: agent } = (await (supabase as any)
+    .from('agents')
+    .select('id, slug, name')
+    .eq('slug', agentSlug)
+    .maybeSingle()) as { data: Agent | null };
+  if (!agent) return null;
+
+  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+  const { data: listing } = (await (supabase as any)
+    .from('listings')
+    .select(
+      'id, slug, agent_id, community_id, address, city, state, price, beds, baths, sqft, cover_url, status',
+    )
+    .eq('agent_id', agent.id)
+    .eq('slug', listingSlug)
+    .eq('status', 'published')
+    .maybeSingle()) as { data: Listing | null };
+  if (!listing) return null;
+
+  let community: Community | null = null;
+  if (listing.community_id) {
+    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+    const res = (await (supabase as any)
+      .from('communities')
+      .select('id, name, description')
+      .eq('id', listing.community_id)
+      .maybeSingle()) as { data: Community | null };
+    community = res.data;
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+  const { data: listingVideos } = (await (supabase as any)
+    .from('listing_videos')
+    .select('id, cf_video_id, kind, title')
+    .eq('listing_id', listing.id)
+    .eq('status', 'ready')
+    .order('sort_order', { ascending: true })) as { data: ListingVideo[] | null };
+
+  let communityVideos: CommunityVideo[] = [];
+  let schools: School[] = [];
+  let pois: Poi[] = [];
+  if (listing.community_id) {
+    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+    const cv = (await (supabase as any)
+      .from('community_videos')
+      .select('id, cf_video_id, kind, title, school_id, poi_id')
+      .eq('community_id', listing.community_id)
+      .eq('status', 'ready')) as { data: CommunityVideo[] | null };
+    communityVideos = cv.data ?? [];
+
+    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+    const sc = (await (supabase as any)
+      .from('schools')
+      .select('id, name, grades, rating')
+      .eq('community_id', listing.community_id)) as { data: School[] | null };
+    schools = sc.data ?? [];
+
+    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+    const po = (await (supabase as any)
+      .from('pois')
+      .select('id, name, poi_type, distance_text')
+      .eq('community_id', listing.community_id)) as { data: Poi[] | null };
+    pois = po.data ?? [];
+  }
+
+  return {
+    agent,
+    listing,
+    community,
+    listingVideos: listingVideos ?? [],
+    communityVideos,
+    schools,
+    pois,
+  };
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<PageParams>;
+}): Promise<Metadata> {
+  const { agentSlug, listingSlug } = await params;
+  const data = await fetchPageData(agentSlug, listingSlug);
+  if (!data) return { title: 'Listing not found' };
+  const { listing, agent } = data;
+  return {
+    title: `${listing.address} · ${agent.name}`,
+    description: `${listing.address}, ${listing.city}, ${listing.state}`,
+  };
+}
+
+export default async function PublicListingPage({
+  params,
+}: {
+  params: Promise<PageParams>;
+}) {
+  const { agentSlug, listingSlug } = await params;
+  const data = await fetchPageData(agentSlug, listingSlug);
+  if (!data) notFound();
+
+  const { agent, listing, community, listingVideos, communityVideos, schools, pois } = data;
+
+  return (
+    <main className="mx-auto max-w-3xl space-y-6 px-6 py-12 text-white">
+      <header className="space-y-1">
+        <p className="text-xs uppercase tracking-widest text-amber-300/70">
+          Phase 3.1 · feed UI ships in 3.3
+        </p>
+        <h1 className="text-3xl font-semibold tracking-tight">{listing.address}</h1>
+        <p className="text-sm text-white/60">
+          {listing.city}, {listing.state}
+          {listing.price ? ` · $${listing.price.toLocaleString()}` : ''}
+        </p>
+      </header>
+
+      <section className="space-y-1 text-sm text-white/80">
+        {listing.beds != null && <div>Beds: {listing.beds}</div>}
+        {listing.baths != null && <div>Baths: {listing.baths}</div>}
+        {listing.sqft != null && <div>Sqft: {listing.sqft.toLocaleString()}</div>}
+      </section>
+
+      <section className="space-y-1 text-sm text-white/70">
+        <div>
+          Listed by <span className="text-amber-300">{agent.name}</span>
+        </div>
+        {community && <div>Community: {community.name}</div>}
+      </section>
+
+      <section className="rounded border border-white/10 bg-white/5 p-4 text-sm">
+        <div className="mb-2 text-xs uppercase tracking-widest text-white/50">Feed payload</div>
+        <ul className="space-y-1 text-white/80">
+          <li>{listingVideos.length} listing video(s)</li>
+          <li>{communityVideos.length} community video(s)</li>
+          <li>{schools.length} school(s)</li>
+          <li>{pois.length} POI(s)</li>
+        </ul>
+      </section>
+    </main>
+  );
+}
