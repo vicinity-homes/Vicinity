@@ -10,6 +10,57 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-11 14:00 UTC — phase5.1-5.4: lead capture + Resend notification (chain)
+
+**Objective**: Phase 5 kickoff — wire the buyer lead form to Resend so an agent gets an email within 5s of submission, dashboard freshness landing in 5.5+. Chain mode: 5.1 → 5.4 in one branch (phase5/lead-capture), four independent commits, no stops.
+
+**Actions**:
+- `phase5.1` (d79ee01) — `app/(public)/v/[agentSlug]/[listingSlug]/_components/LeadModal.tsx`: replaced the Phase 3.6 fake `setTimeout` submit with a real `fetch('/api/leads', POST)`. Client-side splits the single contact field into email-or-phone via `EMAIL_RE`/`PHONE_RE`, server schema accepts either. Added `submitting` state + disabled button while in flight, `Sending…` label, server-error inline surface. New `listingId: string` prop (FeedListing has no id; passing it explicitly is more surgical than widening the type). VideoFeed.tsx threads `listingId` through to the modal.
+- `phase5.2` (29a8a4c) — `lib/zod/leads.ts` new file with `LeadCreate` schema mirroring the table's email-or-phone check via `.refine()`; phone regex matches the client validator. `app/api/leads/route.ts` new file: anon-callable POST, zod parse, looks up `agent_id` + `status` from listing_id server-side (client never trusts agent_id), 404s if listing isn't `published`, inserts via service-role client, returns 201 with `{ id }`. Service role used for parity with /api/events; the route handler is the trust boundary.
+- `phase5.3` (acae0de) — `supabase/migrations/0006_notify_lead_trigger.sql`: enables `pg_net`, adds `AFTER INSERT` trigger on `public.leads` that calls the Edge Function via async `extensions.http_post`. Function URL + service-role JWT read via `current_setting('app.settings.*', true)` so a missing setting yields a warning instead of failing the INSERT — better to land the lead and lose the email than to lose the lead.
+- `phase5.4` (169fc73) — `supabase/functions/notify-lead/index.ts`: Deno Edge Function. Reads lead by id, bails if `notified_at IS NOT NULL` (idempotency gate), fetches listing + agent, builds English plain-text + minimal HTML email (subject `New inquiry · {address}`, CTA → `/dashboard/leads/{id}`), POSTs to Resend, stamps `notified_at` ONLY after Resend returns 2xx so a failed send can be retried without double-emailing. `reply_to` set to lead's email when present.
+
+**Decisions**:
+- Chain mode + 4 separate commits on the same `phase5/lead-capture` branch (per user's "one branch per phase, not per task"). 5.1/5.2/5.3/5.4 are semantically independent review units; squashing them into one commit would muddy diff review.
+- Trigger + Edge Function (per ARCHITECTURE.md §3) over inline-Resend-in-route. Trade-off discussed in kickoff: inline is one fewer hop but couples request latency to Resend, and there's no native idempotency story for retries. Trigger keeps the public POST returning <100ms regardless of Resend health.
+- Service-role client in the route handler (not anon). Anon would work — RLS policy is `with check (true)` for INSERT — but the route already has service-role available and skipping the RLS round-trip makes the public POST snappier under load.
+- agent_id derived from listing, never accepted from client. Forecloses cross-listing pollution even if the schema later opens up.
+- Status gate: only `status='published'` listings accept leads. Draft/archived listings 404. RLS doesn't enforce this (anon can insert any listing_id under the current policy); server-side gate is the real barrier.
+- `notified_at` stamped AFTER Resend 2xx, not optimistically. A failed send leaves it NULL so a retry layer (manual re-fire from dashboard, future cron sweep) can call the function safely. Idempotency check is on read.
+- `RESEND_FROM` defaults to `onboarding@resend.dev` so e2e works pre-domain-verify; production switches to `noreply@vicinities.cc` once Cloudflare DNS records propagate.
+- `tsconfig.json` already excludes `supabase/functions` — Edge Function uses Deno globals + esm.sh imports that would break Next's tsc otherwise. No change needed.
+
+**Issues**: none. typecheck + biome clean on every commit.
+
+**Verification**:
+- `tsc --noEmit` clean after each of the 4 commits.
+- `biome check --write` clean on changed files only.
+- Cannot e2e-verify on EC2: Hermes can't `supabase db push`, can't `supabase functions deploy`, can't reach Resend dashboard. Owner-side deploy required (see Next steps).
+
+**Owner-side deploy checklist (Mac, post-review)**:
+1. `git fetch && git checkout phase5/lead-capture && git log --oneline -5` to confirm SHAs match (d79ee01, 29a8a4c, acae0de, 169fc73).
+2. `supabase db push --project-ref <ref>` to land migration 0006.
+3. One-time per env (Supabase SQL editor):
+   ```
+   alter database postgres set app.settings.supabase_url     = 'https://<ref>.supabase.co';
+   alter database postgres set app.settings.service_role_key = '<service role JWT>';
+   ```
+4. `supabase secrets set RESEND_API_KEY=re_… RESEND_FROM='Vicinity <onboarding@resend.dev>' PUBLIC_APP_URL=https://vicinities.cc --project-ref <ref>` (RESEND_API_KEY already in Vercel; this is for the Edge Function's separate secret store).
+5. `supabase functions deploy notify-lead --project-ref <ref>`.
+6. Push branch to Vercel preview, e2e: open a published listing on the preview URL, submit a lead with a real email, confirm (a) 201 response in the browser network tab, (b) row in `leads` table with `notified_at` populated within 5s, (c) email in inbox within 5s, (d) lead row visible in dashboard once 5.5 lands.
+
+**Learnings**:
+- Supabase typed client returns `never` for tables not in the generated types file (leads still pre-`pnpm db:types`). The pattern from /api/events — cast to `any` with a `phaseN-end: pnpm db:types regen` TODO — applies. Listings has the same issue when accessing `agent_id`/`status` post-`maybeSingle`; resolved by typing the lookup result manually.
+- pg_net's HTTP function lives in `extensions` schema by default. The trigger function needs `set search_path = public, extensions` (security-definer) to call `extensions.http_post` reliably from a trigger context.
+- Resend's REST `from` field accepts both `email@domain` and `Name <email@domain>`; the latter renders better in inbox previews. Defaulting to `Vicinity <onboarding@resend.dev>` until domain verify.
+
+**Next steps**:
+1. Owner runs the 6-step deploy checklist above, then e2e tests on Vercel preview. Reports back the lead `id` + `notified_at` timestamp + inbox screenshot for verification.
+2. If e2e green: 5.5 (`/dashboard/leads` list with Realtime subscription) + 5.6 (`/dashboard/leads/[id]` detail) on the same branch, then 5.7 idempotency tests + 5.8 manual-test doc, then ff-merge phase5/lead-capture → main.
+3. If e2e red: triage in DEVLOG before pushing more code. Most likely failure modes: (a) `app.settings.*` not set → warning logged, no email; (b) RESEND_FROM domain not verified → Resend 403 with `domain not verified`; (c) `pg_net` not enabled in target project → migration 0006 fails on `create extension`.
+
+---
+
 ## 2026-06-11 12:30 UTC — hotfix(4.3a): updateListing false-negative on save
 
 **Objective**: User hit `Error: not_found_or_forbidden` when saving the listing edit form despite owning the listing (RLS allowed the read on entry).
