@@ -1,3 +1,4 @@
+import { type ListingVideoRow, ListingVideosLive } from '@/components/dashboard/ListingVideosLive';
 import { VideoUploader } from '@/components/dashboard/VideoUploader';
 import { createClient } from '@/lib/supabase/server';
 /**
@@ -6,24 +7,16 @@ import { createClient } from '@/lib/supabase/server';
  *
  * Each agent gets a private fake listing (slug `__upload_test__`) auto-seeded
  * on first visit. The VideoUploader component POSTs to /api/video/create-upload
- * and streams bytes directly to Cloudflare via tus. Existing videos for this
- * listing are listed below the uploader so you can see new rows appear and
- * (after the webhook lands in task 2.3) flip from `processing` to `ready`.
+ * and streams bytes directly to Cloudflare via tus. The video table is rendered
+ * by ListingVideosLive (Client Component) which subscribes to Realtime so
+ * status flips processing → ready (driven by the Cloudflare webhook in 2.3)
+ * appear without a refresh.
  *
  * Phase 4 will delete this page and the seeded rows.
  */
 import { redirect } from 'next/navigation';
 
 const TEST_LISTING_SLUG = '__upload_test__';
-
-interface ListingVideo {
-  id: string;
-  cf_video_id: string;
-  kind: string;
-  title: string | null;
-  status: string;
-  created_at: string;
-}
 
 export default async function UploadTestPage() {
   const supabase = await createClient();
@@ -85,15 +78,17 @@ export default async function UploadTestPage() {
     listing = created;
   }
 
-  // Fetch existing videos for this test listing.
+  // Initial server-rendered snapshot. ListingVideosLive subscribes to changes
+  // on top of this so the user sees rows appear and flip status without
+  // refreshing.
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
   const { data: videosRaw } = (await (supabase as any)
     .from('listing_videos')
     .select('id, cf_video_id, kind, title, status, created_at')
     .eq('listing_id', listing.id)
-    .order('created_at', { ascending: false })) as { data: ListingVideo[] | null };
+    .order('created_at', { ascending: false })) as { data: ListingVideoRow[] | null };
 
-  const videos = videosRaw ?? [];
+  const initialVideos = videosRaw ?? [];
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 py-4">
@@ -107,67 +102,7 @@ export default async function UploadTestPage() {
 
       <VideoUploader listingId={listing.id} />
 
-      <section className="space-y-3">
-        <h2
-          className="text-sm font-medium uppercase tracking-wide"
-          style={{ color: 'var(--muted)' }}
-        >
-          Videos on this test listing ({videos.length})
-        </h2>
-
-        {videos.length === 0 ? (
-          <p className="text-sm" style={{ color: 'var(--muted)' }}>
-            No uploads yet.
-          </p>
-        ) : (
-          <div
-            className="overflow-hidden rounded-xl border"
-            style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
-          >
-            <table className="w-full text-sm">
-              <thead style={{ color: 'var(--muted)' }}>
-                <tr className="text-left">
-                  <th className="px-4 py-3 font-medium">Title</th>
-                  <th className="px-4 py-3 font-medium">Kind</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">CF ID</th>
-                </tr>
-              </thead>
-              <tbody>
-                {videos.map((v) => (
-                  <tr key={v.id} style={{ borderTop: '1px solid var(--border)' }}>
-                    <td className="px-4 py-3 truncate max-w-[16rem]">{v.title ?? '—'}</td>
-                    <td className="px-4 py-3">{v.kind}</td>
-                    <td className="px-4 py-3">
-                      <StatusPill status={v.status} />
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--muted)' }}>
-                      {v.cf_video_id.slice(0, 12)}…
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      <ListingVideosLive listingId={listing.id} initialVideos={initialVideos} />
     </div>
-  );
-}
-
-function StatusPill({ status }: { status: string }) {
-  const colors: Record<string, { bg: string; fg: string }> = {
-    processing: { bg: 'rgba(201, 162, 39, 0.15)', fg: 'var(--brand)' },
-    ready: { bg: 'rgba(34, 197, 94, 0.15)', fg: '#22c55e' },
-    error: { bg: 'rgba(248, 113, 113, 0.15)', fg: '#f87171' },
-  };
-  const c = colors[status] ?? { bg: 'var(--border)', fg: 'var(--muted)' };
-  return (
-    <span
-      className="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium"
-      style={{ background: c.bg, color: c.fg }}
-    >
-      {status}
-    </span>
   );
 }

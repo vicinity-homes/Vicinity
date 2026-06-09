@@ -70,11 +70,11 @@ from `processing` → `ready` automatically.
       tus-js-client, progress bar, retry on disconnect. Standalone test
       harness at `/dashboard/upload-test` with idempotent fake-listing seed
       (slug `__upload_test__`). (2026-06-09)
-- [ ] **2.3** `app/api/webhooks/cloudflare-stream/route.ts` — POST. Verifies
+- [x] **2.3** `app/api/webhooks/cloudflare-stream/route.ts` — POST. Verifies
       HMAC signature using raw body. Updates `status='ready'` on the matching
       row by `cf_video_id`. **Must use service role client** (webhooks have
       no auth.uid()).
-- [ ] **2.4** Realtime subscription on `listing_videos` in dashboard so
+- [x] **2.4** Realtime subscription on `listing_videos` in dashboard so
       the UI reflects status flips without refresh.
 - [ ] **2.5** Hard guard: reject uploads >2 GB and >5 min duration server-side
       *before* hitting Stream API.
