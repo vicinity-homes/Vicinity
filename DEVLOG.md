@@ -10,6 +10,24 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 06:20 UTC — Phase 2.5 + 2.6 Cost Guard & Tests
+
+**Objective**: Close out Phase 2. Task 2.5 — server-side belt-and-suspenders against oversized/overlong videos slipping past the upload-time guard. Task 2.6 — unit tests covering webhook signature verification and the `/api/video/create-upload` route.
+
+**Actions**: (1) `app/api/webhooks/cloudflare-stream/route.ts` — added duration check after status mapping: if `status='ready'` and `duration_sec > 305` (5min + 5s slack for rounding), force `status='error'` and `console.warn` the override. Cost cap was already enforced at upload-creation time via `maxDurationSeconds=300` to the Stream API, but a stray ready event for a too-long video would otherwise persist as a usable asset. (2) New `__tests__/webhook-signature.test.ts` — 8 cases covering `verifyWebhookSignature()`: valid sig, bad sig hex, wrong secret, stale timestamp (10min skew), missing header, malformed header, body tampering, missing env var (throws). Uses `node:crypto` to compute reference HMACs at test time. (3) New `__tests__/create-upload.test.ts` — 8 cases covering `POST /api/video/create-upload`: 401 unauth, 400 invalid JSON, 400 zod failure, 400 oversized `upload_length` (3GB), 400 `scope='community'` rejection, 404 missing/unowned listing, happy path returns `{uploadUrl, videoId, rowId}` with correct `maxDurationSeconds=300`, 502 on Cloudflare API failure. Mocks `@/lib/cloudflare/stream` and `@/lib/supabase/server` via `vi.mock`. Builds a fake supabase client with chainable `from('listings').select().eq().maybeSingle()` and `from('listing_videos').insert().select().single()` builders. (4) `vitest.config.ts` — added `resolve.alias` mapping `@` → repo root so test files can resolve the same `@/...` import paths the app uses (was missing, blocked all `@/` imports in tests).
+
+**Decisions**: (a) 305s slack instead of strict 300 — Cloudflare reports duration as floats; rounding can shift a 300.4s video to 300s ready. The Stream API enforces the hard cap; this guard is just for the rare case where CF lets through a slightly overlong asset. (b) Override status to `error` rather than dropping the row — the row was inserted at upload-creation time and dropping it would leave dangling Stream assets. Marking error is cheaper to reason about and the row stays as an audit trail. (c) Mocked supabase client uses `vi.fn().mockReturnThis()` for chainable calls — simpler than building a full proxy. The route exercises 4 chain methods (`from`/`select`/`eq`/`maybeSingle` and `from`/`insert`/`select`/`single`) so this fake covers it. Tradeoff: a real schema change would not be caught by these tests; integration tests against a real Supabase instance would, but that's Phase-end / pre-merge work, not unit. (d) Used `delete process.env.X` (with biome-ignore) instead of `= undefined` because `process.env` is a `Record<string, string>` proxy where `= undefined` leaves the key set to the literal string `"undefined"`, breaking the missing-secret test.
+
+**Issues / Resolution**: First test run failed with `Failed to load url @/...` — fixed by adding the alias config to `vitest.config.ts`. Then `delete` lint warning + my initial `= undefined` masquerade for the unset case both broke the same test (string `"undefined"` truthy) — applied `biome-ignore` on the `delete` line. All 20 tests pass on the third try.
+
+**Verification**: `npx tsc --noEmit` clean, `npx biome check` clean on changed files, `npx vitest run` → `3 passed (3) | Tests 20 passed (20)`.
+
+**Phase 2 status**: 2.1–2.6 all ✅ (file updated). Phase 2 ready to merge to main pending end-to-end smoke (user-side: needs a real test video upload through `/dashboard/upload-test`). The previously-noted `database.types.ts` stub and the supabase Realtime/insert `(as any)` casts are still tech-debt punted to phase-end `pnpm db:types` regen.
+
+**Next steps**: User runs E2E on a Vercel preview (upload short mp4 → see status auto-flip processing→ready via Realtime). On success, merge `phase2/video-upload` → `main` via fast-forward; open `phase3/<slug>` for the listing CRUD work (or whatever Phase 3 IMPLEMENTATION.md specifies).
+
+---
+
 ## 2026-06-09 04:30 UTC — Phase 2.3 + 2.4 Webhook Handler & Realtime Subscription
 
 **Objective**: Close the Phase 2 video pipeline end-to-end. Task 2.3 — Cloudflare Stream webhook handler that flips `listing_videos.status` from `processing` → `ready` (or `error`). Task 2.4 — Realtime subscription on `/dashboard/upload-test` so the UI reflects that flip without a refresh. Chained because neither is testable alone.

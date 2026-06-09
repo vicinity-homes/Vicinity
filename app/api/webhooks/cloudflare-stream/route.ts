@@ -78,6 +78,19 @@ export async function POST(req: Request) {
       ? Math.round(payload.duration)
       : null;
 
+  // Cost guard (task 2.5): server-side belt-and-suspenders. We already pass
+  // maxDurationSeconds=300 to the Stream API at upload-creation time, so CF
+  // should reject overlong videos. Enforce it again here in case CF ever
+  // delivers a 'ready' event for a video longer than our cap (5min + 5s slack
+  // for rounding). Force status='error' so the row never serves an oversized
+  // asset.
+  if (status === 'ready' && duration_sec !== null && duration_sec > 305) {
+    status = 'error';
+    console.warn(
+      `webhook: forcing status=error for cf_video_id=${videoId} duration=${duration_sec}s exceeds 5min cap`,
+    );
+  }
+
   const update: Record<string, unknown> = { status };
   if (duration_sec !== null) update.duration_sec = duration_sec;
 

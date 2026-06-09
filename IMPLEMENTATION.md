@@ -76,9 +76,9 @@ from `processing` → `ready` automatically.
       no auth.uid()).
 - [x] **2.4** Realtime subscription on `listing_videos` in dashboard so
       the UI reflects status flips without refresh.
-- [ ] **2.5** Hard guard: reject uploads >2 GB and >5 min duration server-side
+- [x] **2.5** Hard guard: reject uploads >2 GB and >5 min duration server-side
       *before* hitting Stream API.
-- [ ] **2.6** Tests: signature verification (good + bad signature, time skew),
+- [x] **2.6** Tests: signature verification (good + bad signature, time skew),
       `createDirectUpload` happy path with mocked fetch.
 
 **Definition of done**: uploading a 30-second 1080p mp4 from the dashboard
