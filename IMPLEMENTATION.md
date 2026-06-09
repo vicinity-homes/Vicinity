@@ -195,7 +195,9 @@ delivers to the agent's primary inbox in <5 seconds.
 
 ## Phase 7 — Internal beta with Vivian
 
-- [ ] **7.1** Owner: add `vicinities.cc` as Vercel domain alias, verify HTTPS.
+- [x] **7.1** Owner: add `vicinities.cc` as Vercel domain alias, verify HTTPS.
+      (done earlier — prod serves `https://www.vicinities.cc` with apex 308→www;
+      verified by `scripts/admin/production-smoke.sh` 2026-06-09)
 - [ ] **7.2** Owner: walk Vivian through the dashboard live, take notes on
       every friction point.
 - [ ] **7.3** Vivian uploads 3 real listings end-to-end.

@@ -65,6 +65,20 @@ docs/                         Architecture docs
 - One in-progress PR at a time. Each PR maps to one task in IMPLEMENTATION.md.
 - All API boundaries validate input with zod. TypeScript types are not runtime checks.
 
+## Production health check
+
+After every phase merges to `main`, run the smoke test against production:
+
+```bash
+bash scripts/admin/production-smoke.sh
+# or against a custom host:
+BASE_URL=https://staging.example.com bash scripts/admin/production-smoke.sh
+```
+
+Curls 5 unauthenticated routes (landing, login, dashboard gate, auth-callback no-code,
+public-listing 404 shape). Exits non-zero on any failure. Cookie-bound flows
+(magic-link, dashboard SSR, upload, lead form) need a real browser — out of scope here.
+
 ## Positioning (do not drift)
 
 Vicinity is for **all US homebuyers**. NOT a Chinese-community platform. No `_zh` fields,

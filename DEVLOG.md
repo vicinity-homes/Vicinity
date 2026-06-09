@@ -10,6 +10,38 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 22:00 UTC — phase7 kickoff: beta-readiness branch + smoke-test + scaffolding audit
+
+**Objective**: Open Phase 7 (internal beta with Vivian). Phase 7 is owner+external-driven (7.1 domain alias, 7.2 Vivian onboarding walkthrough, 7.3 Vivian uploads 3 real listings, 7.4 Hermes triages bugs from beta feedback). Hermes contribution is a small "beta readiness" set landed on `phase7/beta-readiness` off main `7eb9d39`: (a) production smoke-test script for post-merge health checks, (b) verify no `__upload_test__` scaffolding residue is left in active code, (c) DEVLOG kickoff + tick the 7.1 box that was already de-facto done.
+
+**Actions**:
+- Branched `phase7/beta-readiness` off main `7eb9d39` (Phase 6 close + 2 hotfixes).
+- 7.0a (commit `ab3d378`): `scripts/admin/production-smoke.sh` — bash, curls 5 unauthenticated routes against `BASE_URL` (default `https://www.vicinities.cc`): `/` 200+'Vicinity', `/login` 200+'Agent sign in', `/dashboard` 307→/login (middleware gate), `/auth/callback` no-code 307→/login?error=auth_failed, `/v/__nope__/__nope__` 404 (public route shape). Exit non-zero on any fail. Ran clean against production.
+- 7.0b: grepped repo for `__upload_test__` / `publishPhase3Demo` / `PublishPhase3Button` — only hits are DEVLOG history entries + the `0005_drop_upload_test_listings.sql` migration itself. No active TS/TSX/SQL residue. Phase 4.6 cleanup was thorough; nothing to delete.
+- 7.0c: this DEVLOG entry; tick IMPLEMENTATION.md 7.1 (vicinities.cc Vercel domain alias) since prod is already serving on www.vicinities.cc with apex 308→www; README onboarding section gets a one-liner for running the smoke script post-merge.
+
+**Decisions**:
+- Default `BASE_URL` = `https://www.vicinities.cc` (not bare apex). Apex 308-redirects to www on Vercel — `curl` without `-L` reads the redirect status, masking the real route status. `-L` is added on body-grep checks so single redirects don't mask 200s; redirect-shape checks (`/dashboard`, `/auth/callback`) explicitly assert the 307.
+- Smoke-test scope = unauthenticated routes only. Cookie-bound flows (real magic link, dashboard SSR with session, video upload, lead form submit) need a real browser and stay out of scope; those belong to Phase 7.2/7.3 with Vivian on a Mac.
+- 7.1 marked done without a separate config commit. Domain alias was completed earlier (Phase 2 timeframe per SKILL.md "Vercel domain + Cloudflare Registrar DNS 接通"); the IMPLEMENTATION.md checkbox just lagged. No action other than the tick.
+- 7.0b residue check confirmed as a no-op deliverable (the verification itself, not a code change). Recorded in DEVLOG so the audit is traceable, not as a separate commit.
+
+**Issues**: None. First smoke-test run against bare apex returned 308 on every route — looked alarming for ~3 seconds until I realized it's the canonical-host redirect. Fixed by defaulting to www host; SKILL.md gained a pitfall entry for this in an earlier session.
+
+**Resolution**: `phase7/beta-readiness` has commit `ab3d378` for the smoke script. 7.0c (this entry + IMPLEMENTATION.md tick + README note) lands as a follow-up commit on the same branch. Phase 7 is now in waiting state — next move is owner-driven (Vivian invite + onboarding walkthrough), Hermes returns when 7.4 bug list comes back.
+
+**Learnings**:
+- Phase-end smoke-test script is cheap insurance: 5-second curl pass on production catches gross route regressions (404 on a known route, redirect loop, 500 from missing env var) without needing browser. Add a route to the script every time a new public unauthenticated route ships.
+- "Cleanup verification" tasks are real work even when they produce no diff. Recording the negative result (grep returned only history) in DEVLOG is the deliverable — without it, a future session re-asks "did 4.6 actually clean up upload-test?" and re-greps.
+- IMPLEMENTATION.md checkboxes lag reality. When opening a phase, scan the current phase's prereq tasks against actual prod state before assuming any are blockers; some may already be done.
+
+**Next steps**:
+- Owner: invite Vivian to dashboard (7.2), walk her through upload of 3 real listings (7.3), capture friction points.
+- Hermes: idle until Vivian feedback comes back. Then open `phase7/beta-fixes` for 7.4 bug fixes (one commit per bug).
+- Pre-existing `create-upload.test.ts` `scope='community'` flake on main: deferred (no impact on internal beta functionality). Will revisit only if Vivian's actual bugs make it relevant.
+
+---
+
 ## 2026-06-09 15:26 UTC — phase6.3 hotfix #2: brace-walk JSON extraction
 
 **Objective**: Hotfix #1 (15:21) added `stripCodeFence` regex anchored with `^` and `$`. User redeployed, retried social copy, still got `generation_failed`. Vercel runtime log (now visible thanks to `safeJsonParse` raw logging from #1) showed `SyntaxError: Unexpected token '`', "```json\n{"...`. The regex didn't match because the raw response starts with a fence but doesn't end with one — Sonnet 4.5 emitted a fence-opened, fence-not-closed response (or with trailing text past the close). Anchored regex returned the original string, JSON.parse blew up.
