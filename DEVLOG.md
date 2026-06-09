@@ -10,6 +10,24 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-10 10:15 UTC — main hotfix: login-form ink-ified
+
+**Objective**: After previous hotfix flipped layout to `bg-ink`, login-form card itself stayed `bg-white` with `text-neutral-700` — on iOS Safari email input rendered white-text-on-white-bg (input inherited body's global `#f5f5f5` text color, Safari doesn't force black input text like Chrome).
+
+**Actions**: `app/(auth)/login/login-form.tsx` — card `bg-white border-neutral-200` → `bg-ink2 border-bronze/30`, label `text-neutral-700` → `text-cream`, input got explicit `text-cream` + `bg-ink` + `placeholder:text-cream/40` + `focus:border-gold` (so input text is now visibly cream on dark, not browser-default), button `bg-neutral-900 text-white` → `bg-gold text-ink` (brand button), success state span highlighted in gold, error text shifted to `red-400` for dark-bg contrast.
+
+**Decisions**: Full ink/gold treatment (not just one-line text-color override) because the card sits on ink layout and needs to match Phase 3 public-page palette. Keeps brand consistent across auth + public surfaces.
+
+**Issues**: None. typecheck clean, biome auto-formatted (one import order + one wrap fix).
+
+**Resolution**: Direct-to-main hotfix per Phase 2 pattern. Phase 3 branch untouched (already merged).
+
+**Learnings**: When base globals.css sets a global text color (`#f5f5f5`), every child that uses `bg-white` MUST explicitly set its own text color, or it'll render invisible on Safari. Chrome forces black input text as a UA default — Safari respects inherited cascade. Audit other pages for this pattern.
+
+**Next steps**: Production deploy on main → iOS verify `/login` → start Phase 4 dashboard CRUD.
+
+---
+
 ## 2026-06-10 09:30 UTC — main hotfix: auth pages ink background
 
 **Objective**: iOS Safari shows white-on-white login (white bg + body's global `#f5f5f5` text color from globals.css). Real bug, blocks anyone trying to log in on mobile. Phase 1 leftover, surfaced after Phase 3 merge.
