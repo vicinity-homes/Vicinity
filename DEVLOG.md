@@ -10,6 +10,39 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 23:30 UTC — phase8/password-auth: email+password login alongside magic link
+
+**Objective**: Owner reprioritized between Phase 8.1 (design tokens, shipped on `phase8/design-parity`) and Phase 8.2 (Landing rewrite). Insert a new mini-phase `phase8/password-auth` that adds email+password sign-in+sign-up alongside the existing Supabase magic-link flow. Both methods coexist; users pick on /login. Open signup (anyone can register as an agent during internal beta).
+
+**Actions**:
+- Branched `phase8/password-auth` off main `21980ac`.
+- New `lib/zod/auth.ts`: `Email`, `Password` (min 8 / max 128 — stricter than Supabase's default 6), `LoginWithPassword`, `SignupWithPassword` (with `confirm` cross-field check).
+- Rewrote `app/(auth)/login/login-form.tsx`: tab toggle between `magic` and `password`. Magic-link flow unchanged from before; password flow calls `supabase.auth.signInWithPassword` and on success does `window.location.assign(redirect)` to force a full reload so server components observe the new auth cookies. Errors surface verbatim from Supabase (the generic "Invalid login credentials" is intentional anti-enumeration messaging).
+- New `app/(auth)/signup/page.tsx` + `signup-form.tsx`: email + password + confirm. Calls `supabase.auth.signUp` with `emailRedirectTo` set so the link works post-GA when confirmations are re-enabled. Branches on response: if `data.session` exists (confirmations OFF, internal beta), redirect immediately; otherwise show "check your inbox".
+- `/login` page gets a "Don't have an account? Sign up" link below the form (carries `redirect` param through). `/signup` page mirrors with "Already have an account? Sign in".
+
+**Decisions**:
+- **Both methods coexist** rather than replacing magic link. Lower friction for users who prefer either. Magic link stays the default tab (it was the prior behavior).
+- **Password min 8** instead of Supabase's default 6. Standard hardening; easy to relax later if onboarding feedback says otherwise.
+- **Open signup** during internal beta. Owner accepted the tradeoff: any internet user can register as an agent. Mitigation deferred until GA (will need invite code or admin allowlist before we open marketing).
+- **Email confirmation OFF** in the Supabase project for internal beta. This is a Supabase dashboard setting (Authentication → Providers → Email → "Confirm email" off), not code. Owner's responsibility on his Mac. Without it, signup grants a session immediately and the user lands on /dashboard. With it on, signup returns no session and the form shows "check your inbox". Code handles both branches so flipping the switch later doesn't require a deploy.
+- **Force a full reload after password sign-in**, not `router.push`. Supabase writes auth cookies via the client; Next.js server components don't see them until the next full request. `router.push` would render /dashboard with stale "no user" state and bounce back to /login. `window.location.assign` forces a full document load. Same pattern used for signup auto-login.
+- **Open-redirect guard** on `/signup?redirect=...` mirrors the existing /login guard: must start with `/`, must not start with `//`. Falls back to `/dashboard`.
+
+**Issues**: None. Build clean, typecheck clean, biome clean (after auto-fix nudged the existing `searchParams.redirect && searchParams.redirect.startsWith(...)` pattern to optional-chain in both /login and /signup pages — a pre-existing code-style preference Biome surfaces only when the file is touched).
+
+**Resolution**: Phase8/password-auth shipped as a single commit. Branch retained on remote per phase rules. Will ff-merge to main on owner OK.
+
+**GA prereqs added (track for later)**:
+- Re-enable email confirmation in Supabase before opening signup to the public.
+- Add invite code or admin allowlist before marketing — current open signup is internal-beta only.
+- Add password reset flow (`/auth/reset-password` + magic-link to a reset form). Not needed for internal beta but blocks GA.
+
+**Next steps**: Owner reviews, says "merge", I ff-merge `phase8/password-auth` → main, then resume `phase8/design-parity` at 8.2 (Landing rewrite per demo).
+
+---
+
+
 ## 2026-06-09 22:00 UTC — phase7 kickoff: beta-readiness branch + smoke-test + scaffolding audit
 
 **Objective**: Open Phase 7 (internal beta with Vivian). Phase 7 is owner+external-driven (7.1 domain alias, 7.2 Vivian onboarding walkthrough, 7.3 Vivian uploads 3 real listings, 7.4 Hermes triages bugs from beta feedback). Hermes contribution is a small "beta readiness" set landed on `phase7/beta-readiness` off main `7eb9d39`: (a) production smoke-test script for post-merge health checks, (b) verify no `__upload_test__` scaffolding residue is left in active code, (c) DEVLOG kickoff + tick the 7.1 box that was already de-facto done.

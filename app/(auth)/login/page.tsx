@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 import { LoginForm } from './login-form';
 
 type SearchParams = { redirect?: string; error?: string };
@@ -15,7 +15,7 @@ export default async function LoginPage({
   } = await supabase.auth.getUser();
 
   const safeRedirect =
-    searchParams.redirect && searchParams.redirect.startsWith('/') && !searchParams.redirect.startsWith('//')
+    searchParams.redirect?.startsWith('/') && !searchParams.redirect.startsWith('//')
       ? searchParams.redirect
       : '/dashboard';
 
@@ -43,6 +43,15 @@ export default async function LoginPage({
         </p>
       ) : null}
       <LoginForm redirect={safeRedirect} />
+      <p className="text-center text-sm text-cream/60">
+        Don&apos;t have an account?{' '}
+        <a
+          href={`/signup${safeRedirect === '/dashboard' ? '' : `?redirect=${encodeURIComponent(safeRedirect)}`}`}
+          className="text-gold underline hover:text-gold/80"
+        >
+          Sign up
+        </a>
+      </p>
     </div>
   );
 }
