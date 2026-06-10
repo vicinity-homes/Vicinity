@@ -3,24 +3,30 @@
 /**
  * BrowseFeed — vertical scroll-snap discovery feed across listings.
  *
- * Like VideoFeed, but each card is a *different* listing's hero video, and
- * the right rail nudges the user toward the full listing page (View home →)
- * or contacting that listing's agent (mailto / tel).
- *
- * Mount window = ±1 around the active card to keep memory bounded for long
- * sessions. Heart-pop animation propagated from parent via likeAnimKey.
+ * v3 (demo parity): each card carries hero + schools/nearby/community
+ * b-roll videos. The right rail's Schools / Nearby / Community buttons
+ * switch the *active* card's playing video to the matching source. Tapping
+ * the same source again cycles to the next b-roll in that pool. Cards
+ * default to hero. The button glows gold while a non-hero source is active.
  */
 
 import { hlsUrl, thumbnailUrl } from '@/lib/cloudflare/stream';
 import Hls from 'hls.js';
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+export type BrowseSourceVideo = {
+  cfVideoId: string;
+  line1: string;
+  line2?: string;
+};
 
 export type BrowseCard = {
   id: string;
-  cfVideoId: string;
-  kind: string;
-  title: string | null;
+  hero: { cfVideoId: string };
+  schoolVideos: BrowseSourceVideo[];
+  nearbyVideos: BrowseSourceVideo[];
+  communityVideos: BrowseSourceVideo[];
   listing: {
     id: string;
     slug: string;
@@ -40,13 +46,15 @@ export type BrowseCard = {
   };
 };
 
-function HeartIcon({ filled, size = 26 }: { filled?: boolean; size?: number }) {
+type Source = 'hero' | 'schools' | 'nearby' | 'community';
+
+function HeartIcon({ filled }: { filled?: boolean }) {
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      width={size}
-      height={size}
+      width={26}
+      height={26}
       fill={filled ? 'currentColor' : 'none'}
       stroke="currentColor"
       strokeWidth={filled ? 0 : 2}
@@ -56,33 +64,57 @@ function HeartIcon({ filled, size = 26 }: { filled?: boolean; size?: number }) {
   );
 }
 
-function HomeIcon({ size = 22 }: { size?: number }) {
+function SchoolIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} fill="currentColor">
+    <svg aria-hidden="true" viewBox="0 0 24 24" width={22} height={22} fill="currentColor">
+      <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z" />
+    </svg>
+  );
+}
+
+function NearbyIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width={22} height={22} fill="currentColor">
+      <path d="M11 17a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM12 2a8 8 0 0 0-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 0 0-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z" />
+    </svg>
+  );
+}
+
+function CommunityIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width={22} height={22} fill="currentColor">
       <path d="M12 3l9 8h-3v9h-4v-6h-4v6H6v-9H3l9-8z" />
     </svg>
   );
 }
 
-function ShareIcon({ size = 22 }: { size?: number }) {
+function HomeIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} fill="currentColor">
+    <svg aria-hidden="true" viewBox="0 0 24 24" width={22} height={22} fill="currentColor">
+      <path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z" />
+    </svg>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width={22} height={22} fill="currentColor">
       <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" />
     </svg>
   );
 }
 
-function MessageIcon({ size = 22 }: { size?: number }) {
+function MessageIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} fill="currentColor">
+    <svg aria-hidden="true" viewBox="0 0 24 24" width={22} height={22} fill="currentColor">
       <path d="M21 6h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1zm-4 6V3c0-.55-.45-1-1-1H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1z" />
     </svg>
   );
 }
 
-function PlayIcon({ size = 32 }: { size?: number }) {
+function PlayIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} fill="currentColor">
+    <svg aria-hidden="true" viewBox="0 0 24 24" width={36} height={36} fill="currentColor">
       <path d="M8 5v14l11-7z" />
     </svg>
   );
@@ -100,6 +132,7 @@ function ActionButton({
   href,
   label,
   active,
+  disabled,
   badge,
   children,
 }: {
@@ -107,13 +140,16 @@ function ActionButton({
   href?: string;
   label: string;
   active?: boolean;
+  disabled?: boolean;
   badge?: string | number;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const cls = `flex h-12 w-12 items-center justify-center rounded-full border backdrop-blur transition ${
     active
       ? 'border-gold/70 bg-gold/20 text-gold'
-      : 'border-cream/20 bg-ink/40 text-cream hover:border-cream/50'
+      : disabled
+        ? 'border-cream/10 bg-ink/30 text-cream/30'
+        : 'border-cream/20 bg-ink/40 text-cream hover:border-cream/50'
   }`;
   const inner = (
     <div className="flex flex-col items-center gap-1">
@@ -128,7 +164,7 @@ function ActionButton({
       <span className="font-medium text-[10px] text-cream/80">{label}</span>
     </div>
   );
-  if (href) {
+  if (href && !disabled) {
     return (
       <Link href={href} className="block" aria-label={label}>
         {inner}
@@ -136,7 +172,13 @@ function ActionButton({
     );
   }
   return (
-    <button type="button" onClick={onClick} className="block" aria-label={label}>
+    <button
+      type="button"
+      onClick={disabled ? undefined : onClick}
+      className="block"
+      aria-label={label}
+      disabled={disabled}
+    >
       {inner}
     </button>
   );
@@ -144,23 +186,56 @@ function ActionButton({
 
 interface CardProps {
   card: BrowseCard;
+  source: Source;
+  cycleIdx: number;
   shouldMount: boolean;
   isActive: boolean;
   cardRef: (el: HTMLElement | null) => void;
+  paused: boolean;
+  setPaused: (b: boolean) => void;
 }
 
-function Card({ card, shouldMount, isActive, cardRef }: CardProps) {
+function pickVideo(card: BrowseCard, source: Source, cycleIdx: number): BrowseSourceVideo {
+  if (source === 'schools' && card.schoolVideos.length > 0) {
+    return card.schoolVideos[cycleIdx % card.schoolVideos.length] as BrowseSourceVideo;
+  }
+  if (source === 'nearby' && card.nearbyVideos.length > 0) {
+    return card.nearbyVideos[cycleIdx % card.nearbyVideos.length] as BrowseSourceVideo;
+  }
+  if (source === 'community' && card.communityVideos.length > 0) {
+    return card.communityVideos[cycleIdx % card.communityVideos.length] as BrowseSourceVideo;
+  }
+  // hero fallback
+  return {
+    cfVideoId: card.hero.cfVideoId,
+    line1: card.listing.address,
+    line2: `${card.listing.city}, ${card.listing.state}`,
+  };
+}
+
+function Card({
+  card,
+  source,
+  cycleIdx,
+  shouldMount,
+  isActive,
+  cardRef,
+  paused,
+  setPaused,
+}: CardProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
-  const [paused, setPaused] = useState(true);
+
+  const sel = useMemo(() => pickVideo(card, source, cycleIdx), [card, source, cycleIdx]);
 
   let poster: string | null = null;
   try {
-    poster = thumbnailUrl(card.cfVideoId);
+    poster = thumbnailUrl(sel.cfVideoId);
   } catch {
     poster = null;
   }
 
+  // (Re)attach HLS when mount or selected video changes.
   useEffect(() => {
     if (!shouldMount) return;
     const video = videoRef.current;
@@ -168,10 +243,18 @@ function Card({ card, shouldMount, isActive, cardRef }: CardProps) {
 
     let src: string;
     try {
-      src = hlsUrl(card.cfVideoId);
+      src = hlsUrl(sel.cfVideoId);
     } catch {
       return;
     }
+
+    // Tear down previous attachment first.
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+    video.removeAttribute('src');
+    video.load();
 
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src;
@@ -189,11 +272,11 @@ function Card({ card, shouldMount, isActive, cardRef }: CardProps) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
-      video.removeAttribute('src');
-      video.load();
     };
-  }, [shouldMount, card.cfVideoId]);
+  }, [shouldMount, sel.cfVideoId]);
 
+  // Play/pause on active changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: sel.cfVideoId triggers replay after source switch
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -206,7 +289,7 @@ function Card({ card, shouldMount, isActive, cardRef }: CardProps) {
       v.pause();
       setPaused(true);
     }
-  }, [isActive, shouldMount]);
+  }, [isActive, shouldMount, setPaused, sel.cfVideoId]);
 
   const onTap = () => {
     const v = videoRef.current;
@@ -220,6 +303,9 @@ function Card({ card, shouldMount, isActive, cardRef }: CardProps) {
       setPaused(true);
     }
   };
+
+  const overlayLine1 = source === 'hero' ? null : sel.line1;
+  const overlayLine2 = source === 'hero' ? null : sel.line2;
 
   return (
     <section
@@ -236,7 +322,6 @@ function Card({ card, shouldMount, isActive, cardRef }: CardProps) {
             playsInline
             muted
             loop
-            autoPlay={isActive}
             preload="metadata"
           />
         ) : poster ? (
@@ -244,11 +329,10 @@ function Card({ card, shouldMount, isActive, cardRef }: CardProps) {
         ) : null}
       </div>
 
-      {/* Top + bottom gradients for legibility */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/70 via-black/30 to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-      {/* Top-left price + address (Playfair) */}
+      {/* Top-left price + address */}
       <div className="absolute top-6 left-5 max-w-[70%]">
         <div className="font-serif text-3xl text-cream tracking-tight drop-shadow">
           {formatPrice(card.listing.price)}
@@ -261,16 +345,22 @@ function Card({ card, shouldMount, isActive, cardRef }: CardProps) {
         </div>
       </div>
 
-      {/* Play overlay when paused */}
+      {/* Source overlay (schools/nearby/community) */}
+      {overlayLine1 && (
+        <div className="absolute top-28 left-5 max-w-[70%] rounded-lg border border-cream/20 bg-ink/60 px-3 py-2 backdrop-blur">
+          <div className="text-cream text-sm">{overlayLine1}</div>
+          {overlayLine2 && <div className="text-cream/70 text-xs">{overlayLine2}</div>}
+        </div>
+      )}
+
       {paused && shouldMount && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-black/40 text-cream backdrop-blur">
-            <PlayIcon size={36} />
+            <PlayIcon />
           </div>
         </div>
       )}
 
-      {/* Bottom-left: agent + specs */}
       <div className="absolute bottom-6 left-5 right-24 text-cream">
         <div className="flex items-center gap-2 text-cream/70 text-xs">
           {card.listing.beds != null && <span>{card.listing.beds} bd</span>}
@@ -292,6 +382,10 @@ export function BrowseFeed({ cards }: { cards: BrowseCard[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [likeAnimKey, setLikeAnimKey] = useState(0);
+  // per-card source + cycle index. key = listing.id
+  const [sourceByCard, setSourceByCard] = useState<Record<string, Source>>({});
+  const [cycleByCard, setCycleByCard] = useState<Record<string, number>>({});
+  const [pausedActive, setPausedActive] = useState(true);
   const cardRefs = useRef<Map<number, HTMLElement>>(new Map());
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
@@ -324,9 +418,30 @@ export function BrowseFeed({ cards }: { cards: BrowseCard[] }) {
   }, []);
 
   const active = cards[activeIndex];
-  const activeListing = active?.listing;
-  const activeAgent = active?.agent;
-  const isLiked = active ? !!liked[active.listing.id] : false;
+  const activeId = active?.listing.id;
+  const activeSource: Source = activeId ? (sourceByCard[activeId] ?? 'hero') : 'hero';
+  const activeCycle = activeId ? (cycleByCard[activeId] ?? 0) : 0;
+  const isLiked = activeId ? !!liked[activeId] : false;
+  void activeCycle; // kept for symmetry; per-card cycle read inside Card via cycleByCard
+
+  const switchSource = useCallback(
+    (s: Source) => {
+      if (!active) return;
+      const id = active.listing.id;
+      setSourceByCard((prev) => {
+        const cur = prev[id] ?? 'hero';
+        // Same source tapped again → cycle next b-roll
+        if (cur === s) {
+          setCycleByCard((c) => ({ ...c, [id]: (c[id] ?? 0) + 1 }));
+          return prev;
+        }
+        // New source → reset cycle
+        setCycleByCard((c) => ({ ...c, [id]: 0 }));
+        return { ...prev, [id]: s };
+      });
+    },
+    [active],
+  );
 
   const toggleLike = useCallback(() => {
     if (!active) return;
@@ -344,7 +459,7 @@ export function BrowseFeed({ cards }: { cards: BrowseCard[] }) {
         await navigator.share({ title: active.listing.address, url });
         return;
       } catch {
-        /* fall through to clipboard */
+        /* fall through */
       }
     }
     try {
@@ -355,6 +470,10 @@ export function BrowseFeed({ cards }: { cards: BrowseCard[] }) {
     }
   }, [active]);
 
+  const hasSchools = (active?.schoolVideos.length ?? 0) > 0;
+  const hasNearby = (active?.nearbyVideos.length ?? 0) > 0;
+  const hasCommunity = (active?.communityVideos.length ?? 0) > 0;
+
   return (
     <div className="relative h-screen w-full overflow-hidden bg-black">
       <div
@@ -362,41 +481,78 @@ export function BrowseFeed({ cards }: { cards: BrowseCard[] }) {
         className="h-full w-full snap-y snap-mandatory overflow-y-scroll overscroll-contain"
         style={{ scrollSnapType: 'y mandatory' }}
       >
-        {cards.map((card, idx) => (
-          <Card
-            key={card.id}
-            card={card}
-            shouldMount={Math.abs(idx - activeIndex) <= 1}
-            isActive={idx === activeIndex}
-            cardRef={(el) => setCardRef(idx, el)}
-          />
-        ))}
+        {cards.map((card, idx) => {
+          const id = card.listing.id;
+          const cardSource = sourceByCard[id] ?? 'hero';
+          const cardCycle = cycleByCard[id] ?? 0;
+          const isThisActive = idx === activeIndex;
+          return (
+            <Card
+              key={card.id}
+              card={card}
+              source={cardSource}
+              cycleIdx={cardCycle}
+              shouldMount={Math.abs(idx - activeIndex) <= 1}
+              isActive={isThisActive}
+              cardRef={(el) => setCardRef(idx, el)}
+              paused={isThisActive ? pausedActive : true}
+              setPaused={isThisActive ? setPausedActive : () => {}}
+            />
+          );
+        })}
       </div>
 
       {/* Right rail */}
-      <div className="absolute right-3 bottom-24 z-20 flex flex-col items-center gap-3">
+      <div className="absolute right-3 bottom-20 z-20 flex flex-col items-center gap-3">
         <div key={likeAnimKey} className={likeAnimKey > 0 ? 'heart-pop' : ''}>
           <ActionButton label="Like" onClick={toggleLike} active={isLiked}>
             <HeartIcon filled={isLiked} />
           </ActionButton>
         </div>
-        {activeAgent && activeListing && (
-          <ActionButton label="View home" href={`/v/${activeAgent.slug}/${activeListing.slug}`}>
+        <ActionButton
+          label="Schools"
+          onClick={() => switchSource('schools')}
+          active={activeSource === 'schools'}
+          disabled={!hasSchools}
+          badge={hasSchools && active ? active.schoolVideos.length : undefined}
+        >
+          <SchoolIcon />
+        </ActionButton>
+        <ActionButton
+          label="Nearby"
+          onClick={() => switchSource('nearby')}
+          active={activeSource === 'nearby'}
+          disabled={!hasNearby}
+          badge={hasNearby && active ? active.nearbyVideos.length : undefined}
+        >
+          <NearbyIcon />
+        </ActionButton>
+        <ActionButton
+          label="Area"
+          onClick={() => switchSource('community')}
+          active={activeSource === 'community'}
+          disabled={!hasCommunity}
+        >
+          <CommunityIcon />
+        </ActionButton>
+        {/* Hero reset — only show when on a non-hero source */}
+        {activeSource !== 'hero' && (
+          <ActionButton label="Home" onClick={() => switchSource('hero')}>
             <HomeIcon />
           </ActionButton>
         )}
         <ActionButton label="Share" onClick={onShare}>
           <ShareIcon />
         </ActionButton>
-        {activeAgent && (activeAgent.email || activeAgent.phone) && (
+        {active && (active.agent.email || active.agent.phone) && (
           <ActionButton
             label="Contact"
             href={
-              activeAgent.email
-                ? `mailto:${activeAgent.email}?subject=${encodeURIComponent(
-                    `Interested in ${activeListing?.address ?? 'your listing'}`,
+              active.agent.email
+                ? `mailto:${active.agent.email}?subject=${encodeURIComponent(
+                    `Interested in ${active.listing.address}`,
                   )}`
-                : `tel:${activeAgent.phone ?? ''}`
+                : `tel:${active.agent.phone ?? ''}`
             }
           >
             <MessageIcon />
@@ -404,22 +560,34 @@ export function BrowseFeed({ cards }: { cards: BrowseCard[] }) {
         )}
       </div>
 
-      {/* Card progress dots (cap to ~10 visible to avoid clutter) */}
-      {cards.length > 1 && cards.length <= 12 && (
-        <div className="absolute top-3 left-1/2 z-10 flex -translate-x-1/2 gap-1">
-          {cards.map((c, i) => (
-            <span
-              key={c.id}
-              className={`h-1 rounded-full transition-all ${
-                i === activeIndex ? 'w-6 bg-cream' : 'w-3 bg-cream/30'
-              }`}
-            />
-          ))}
+      {/* Active source pill — top center */}
+      {activeSource !== 'hero' && (
+        <div className="-translate-x-1/2 absolute top-3 left-1/2 z-10 flex items-center gap-2 rounded-full border border-cream/20 bg-ink/60 px-3 py-1 backdrop-blur">
+          <span className="text-cream/80 text-xs uppercase tracking-wider">
+            {activeSource === 'schools' ? 'Schools' : activeSource === 'nearby' ? 'Nearby' : 'Area'}
+          </span>
+          <button
+            type="button"
+            onClick={() => switchSource('hero')}
+            className="text-cream/60 text-xs hover:text-cream"
+            aria-label="Back to listing video"
+          >
+            ← back to home
+          </button>
         </div>
       )}
 
-      {/* First-card scroll cue */}
-      {activeIndex === 0 && (
+      {/* "View full listing" deep-link, bottom right above contact rail */}
+      {active && activeSource === 'hero' && (
+        <Link
+          href={`/v/${active.agent.slug}/${active.listing.slug}`}
+          className="absolute right-4 top-4 z-10 rounded-full border border-cream/30 bg-ink/60 px-3 py-1 text-cream text-xs backdrop-blur hover:border-gold hover:text-gold"
+        >
+          View full listing →
+        </Link>
+      )}
+
+      {activeIndex === 0 && activeSource === 'hero' && (
         <div className="pointer-events-none absolute inset-x-0 bottom-2 z-10 text-center">
           <span className="text-[10px] text-cream/50 uppercase tracking-widest">
             Swipe up for more

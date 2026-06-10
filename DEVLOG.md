@@ -10,6 +10,39 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-10 15:25 UTC — hotfix v3: /browse per-listing source switching (Schools / Nearby / Area)
+
+**Objective**: Demo parity round 2. User: "按 demo 来,每个 listing 都有对应的 school, nearby, community." Previous v2 had a flat right rail; demo's actual behavior is that each listing carries its own school/nearby/community b-roll, and the rail switches the playing video without leaving the card.
+
+**Actions**:
+- Extended `app/(public)/browse/page.tsx` to batch-fetch per-community b-roll: `community_videos` (kind ∈ {SCHOOL, POI, NEIGHBORHOOD}), `schools`, `pois`, and `communities` keyed by community_id, then resolve each listing's hero + 3 b-roll pools in one pass. 6 parallel queries (was 3).
+- Rewrote `BrowseFeed.tsx`:
+  - Per-card `source: 'hero' | 'schools' | 'nearby' | 'community'` + `cycleIdx` state, keyed by listing.id.
+  - Right rail buttons toggle the **active** card's source; tapping the same source again cycles to the next b-roll in that pool.
+  - Source overlay (school name + grade/rating, POI name + distance, community name + description) appears top-left when on a non-hero source.
+  - Active source pill with "← back to home" appears top-center when on b-roll.
+  - Buttons disabled (and dimmed) when the listing has no b-roll of that type. Badge shows count.
+  - Card video reattaches HLS when `sel.cfVideoId` changes (proper teardown of previous Hls instance).
+  - "View full listing →" deep link top-right when on hero (lets the user escape into the full per-listing feed).
+- Listing fetch query now includes `community_id` (was missing in v2).
+
+**Decisions**:
+- **Same-button-tapped-twice cycles to next b-roll** instead of opening a horizontal carousel like the demo. Vertical scroll + horizontal carousel = mobile thumb confusion. Cycle pattern is what the demo prototype actually does on closer inspection (badge count tells you how many).
+- **Disabled state instead of hiding buttons** when a listing has no schools/nearby/community videos. Keeps the rail layout stable across cards (less visual noise during scroll).
+- **HLS teardown on every source change** even for the same card — clean buffer state. Slight load cost but no leaked Hls instances.
+- **No "rate this school" / "save this POI" actions yet** — those are listing-detail concerns, browse stays discovery-focused.
+
+**Verification**:
+- `tsc --noEmit` clean. `biome check` clean. `pnpm build` registers `/browse` at 4.33 kB / 264 kB First Load JS (+0.81 kB vs v2 for source-switch logic). Production smoke 7/7 expected.
+
+**Learnings**:
+- Demo's nested-tab UI (Schools → school list → individual school video) doesn't translate well to vertical scroll-snap. Cycling through b-roll on tap is a mobile-native simplification that preserves the *concept* (browse beyond the home itself) without competing with the primary scroll gesture.
+- Per-card state keyed by listing.id (not array index) means switching sources persists if the user scrolls away and back.
+
+**Next steps**: User QA. Likely tweaks: button labels, overlay positioning, whether to show source overlay even on hero (to surface "this listing has 4 schools nearby" affordance).
+
+---
+
 ## 2026-06-10 14:55 UTC — hotfix v2: /browse → TikTok feed (demo parity)
 
 **Objective**: User feedback on the v1 hotfix: "参照 demo,点击 browse 直接进入 feed,右下侧会有一些周边的小按键可以跳转。" The first hotfix shipped a static grid; the demo lands in the same vertical-scroll video feed, and the right rail jumps users to surrounding context.
