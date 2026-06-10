@@ -10,6 +10,32 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 23:55 UTC — phase8/password-auth: drop magic link, add forgot/reset password
+
+**Objective**: Owner decided magic link goes away — password is the only sign-in method. Then add `/forgot-password` + `/reset-password` so users have a self-serve recovery path (otherwise the owner has to admin-reset every forgotten password). Continues on the same `phase8/password-auth` branch.
+
+**Actions**:
+- `app/(auth)/login/login-form.tsx`: removed the `magic` mode entirely. Single password form, no tab toggle. Lost ~80 lines of state/branching.
+- New `app/(auth)/forgot-password/page.tsx` + `forgot-password-form.tsx`: email input → `supabase.auth.resetPasswordForEmail(email, { redirectTo: /auth/callback?redirect=/reset-password })`. Always shows the same "if this email has an account, a link is on its way" message — anti-enumeration.
+- New `app/(auth)/reset-password/page.tsx` + `reset-password-form.tsx`: server-component checks `supabase.auth.getUser()` and bounces to `/forgot-password` if no session (recovery code wasn't exchanged). When session is present, the form takes new password + confirm, calls `supabase.auth.updateUser({ password })`, then full-reloads to /dashboard.
+- `/login` page gets a "Forgot password?" link between the form and the "Sign up" prompt.
+- `lib/zod/auth.ts` comment header updated — magic link is no longer a supported method.
+
+**Decisions**:
+- **Recovery flow reuses `/auth/callback`**, no new code-exchange route. The callback already exchanges `?code=` for a session and 302s to `redirect`. Setting `redirect=/reset-password` lands the user there with a session, where they can call `updateUser`. One less moving part than a dedicated `/auth/recover` handler.
+- **No "current password" field** on /reset-password. Supabase's recovery session is short-lived and proves email control; requiring the old password would prevent the very case this exists for (forgot it). Standard pattern.
+- **Same anti-enumeration messaging** as login: `/forgot-password` always confirms a link was sent, never reveals whether the email exists. Supabase's `resetPasswordForEmail` itself returns success regardless.
+- **Existing magic-link users**: owner accepted that any user who registered via magic link (no password set) will have to use `/forgot-password` to set one, or owner resets via Supabase admin. No data migration needed — Supabase keeps the same `auth.users` row, just adds a password.
+
+**Issues**:
+- Owner reported signup confirmation email never arrived during testing. Confirmed in Supabase dashboard that "Confirm email" is still ON. Most likely cause: Supabase free-tier shared SMTP — strict 3/hour rate limit, low sender reputation, often dropped or spammed by Gmail/iCloud. Owner deferred — said it's probably his network, move on. **GA blocker**: must configure custom SMTP (Resend / SES) before opening signup or before recovery emails matter in production. Right now `/forgot-password` UI ships but the email it triggers may silently drop on free-tier SMTP — same root cause as the signup email issue.
+
+**Resolution**: All three routes ship and build. Email deliverability remains a non-code blocker the owner will address (turn off Confirm email for internal beta + configure custom SMTP before GA).
+
+**Next steps**: Continue Phase 8 design parity. Owner to merge `phase8/password-auth` and resume `phase8/design-parity` for 8.2 (Landing per demo).
+
+---
+
 ## 2026-06-09 23:30 UTC — phase8/password-auth: email+password login alongside magic link
 
 **Objective**: Owner reprioritized between Phase 8.1 (design tokens, shipped on `phase8/design-parity`) and Phase 8.2 (Landing rewrite). Insert a new mini-phase `phase8/password-auth` that adds email+password sign-in+sign-up alongside the existing Supabase magic-link flow. Both methods coexist; users pick on /login. Open signup (anyone can register as an agent during internal beta).

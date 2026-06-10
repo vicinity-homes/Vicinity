@@ -1,9 +1,8 @@
 /**
  * Zod schemas for the auth surface (login / signup).
  *
- * V1 supports two methods, both via Supabase Auth:
- *  - Magic link (signInWithOtp) — passwordless email
- *  - Email + password (signInWithPassword / signUp)
+ * V1 uses email + password via Supabase Auth (signInWithPassword / signUp).
+ * Password recovery is via resetPasswordForEmail → /reset-password.
  *
  * Password min length 8 is stricter than Supabase's default 6. Confirmation
  * email is disabled in the Supabase project for internal beta — flip back on

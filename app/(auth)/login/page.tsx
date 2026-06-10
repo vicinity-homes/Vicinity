@@ -43,6 +43,11 @@ export default async function LoginPage({
         </p>
       ) : null}
       <LoginForm redirect={safeRedirect} />
+      <p className="text-center text-sm">
+        <a href="/forgot-password" className="text-cream/60 underline hover:text-cream">
+          Forgot password?
+        </a>
+      </p>
       <p className="text-center text-sm text-cream/60">
         Don&apos;t have an account?{' '}
         <a
