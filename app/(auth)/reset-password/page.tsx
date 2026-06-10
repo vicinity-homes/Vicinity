@@ -1,21 +1,14 @@
-import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
 import { ResetPasswordForm } from './reset-password-form';
 
+type Search = Promise<{ email?: string }>;
+
 /**
- * Post-recovery destination. /auth/callback exchanges the recovery code for
- * a session, then redirects here. If the user has no session (e.g. they hit
- * this URL directly), bounce them to /forgot-password.
+ * OTP-based password reset:
+ * 1. /forgot-password POSTs the email to Supabase, which sends a 6-digit code.
+ * 2. The user lands here (no session yet) and enters: email + OTP + new password.
+ * 3. Form calls verifyOtp({ type: 'recovery' }) → session, then updateUser({ password }).
  */
-export default async function ResetPasswordPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/forgot-password');
-  }
-
-  return <ResetPasswordForm />;
+export default async function ResetPasswordPage({ searchParams }: { searchParams: Search }) {
+  const { email } = await searchParams;
+  return <ResetPasswordForm initialEmail={email ?? ''} />;
 }

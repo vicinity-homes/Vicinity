@@ -10,6 +10,39 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-10 06:15 UTC — phase8/password-auth: switch reset flow to OTP
+
+**Objective**: Replace the link-based password reset flow (which proved unusable in practice — Gmail's link-prefetch consumes the one-time PKCE code before the user clicks it, leaving the recipient with a permanently invalid `?code=…` callback URL) with a 6-digit OTP entered into a form on `/reset-password`. OTPs aren't dereferenced by inbox scanners, so prefetch consumption goes away.
+
+**Actions**:
+- `app/(auth)/forgot-password/forgot-password-form.tsx`: removed the post-submit "check your inbox" success card. Submission now always advances to `/reset-password?email=<encoded>` regardless of Supabase response. Anti-enumeration preserved: failures from `resetPasswordForEmail` are logged to console for our own debugging but never surfaced — an unregistered email and a registered one look identical.
+- `app/(auth)/reset-password/page.tsx`: dropped the auth gate. Previously the page bounced anonymous users back to /forgot-password because the link flow established a session before the form rendered. The OTP flow has no session at render time — the user only gets one *after* `verifyOtp` succeeds inside the form. Now the page just reads `?email=` from query and passes it to the form.
+- `app/(auth)/reset-password/reset-password-form.tsx`: full rewrite. Form fields: email (prefilled from query, editable), 6-digit OTP (`inputMode="numeric"` + `autoComplete="one-time-code"` for native iOS / Android paste-from-SMS-style UX, even though this is email), new password, confirm. On submit: `verifyOtp({ email, token, type: 'recovery' })` → on session, `updateUser({ password })` → `window.location.assign('/dashboard')` to force a full reload so server components see the new session cookie. Schema is a single zod object enforcing OTP `^\d{6}$` regex + password match.
+- Auth callback (`app/auth/callback/route.ts`) untouched — still handles link-based recovery if any user lands on a legacy / template-fallback link. OTP is the primary path; link flow stays as a passive fallback.
+
+**Decisions**:
+- **OTP over implicit-flow PKCE disable**: Supabase has a `flowType: 'implicit'` option that would skip the PKCE code-verifier requirement and let any browser session redeem the link. That works around Gmail prefetch but downgrades security across the board (every auth flow loses PKCE, not just recovery). OTP is surgical — only recovery changes — and it's also what every mature SaaS does for password reset (GitHub, AWS, Stripe). Industry standard, cheaper to maintain, no security regression.
+- **Single combined form**, not two-step (enter OTP → then enter password): fewer round-trips, easier user mental model. Supabase verifies OTP → establishes session → updateUser flips the password, all inside one submit handler. If `verifyOtp` fails the form stays mounted with the OTP field still populated so the user can correct it.
+- **Email field editable, prefilled from query**: a malicious actor crafting `/reset-password?email=victim@x.com` can't do anything without the OTP that was emailed to victim@x.com. Letting users correct typos in their own email (forgot-password page autocomplete misfires) is worth more than the non-existent attack. The OTP is the actual auth factor.
+- **Don't trust query params for security decisions**: the `email` from `?email=` is just a UX prefill; the actual auth identity comes from `verifyOtp`'s server-side check.
+
+**Issues**:
+- **Supabase email template still defaults to link-only**. The Supabase project's email template for password reset must be edited to surface `{{ .Token }}` (the 6-digit OTP) instead of (or alongside) `{{ .ConfirmationURL }}`. Without that template change, users will receive a link in their inbox and the OTP form on /reset-password has no code to enter. **This is a Supabase Dashboard task for the owner**: Authentication → Email Templates → Reset Password → include `{{ .Token }}`. Cannot be done from code.
+- The previously observed "Invalid login credentials" issue (`royxue812@gmail.com`) was diagnosed in the same session via Supabase logs: PKCE recovery code was consumed by Gmail's URL scanner before the user clicked, resulting in callback POST `/recover` re-triggering with no `?code=` param. OTP eliminates that whole class of failure.
+
+**Resolution**: Code shipped. Functional verification requires the Supabase template edit (owner Mac task) — the OTP path is dead until the template surfaces `{{ .Token }}`.
+
+**Learnings**:
+- Email link prefetch by Gmail / Microsoft Defender / corp security tooling is a real, common issue with one-time PKCE codes. Anyone shipping a password-reset email flow in 2026 should default to OTP and only use links as a fallback.
+- Supabase free-tier SMTP (where the original "no email" report originated) was actually working — the email arrived, just landed in spam initially. The real bug was always the PKCE prefetch, not deliverability. Keeping both paths (link via callback, OTP via form) is cheap insurance.
+
+**Next steps**:
+- Owner: edit Supabase email template for "Reset Password" to include `{{ .Token }}` so OTP shows up in inbox.
+- Owner: re-test full reset flow end-to-end on phase8/design-parity preview URL.
+- Once verified, merge phase8/design-parity → main.
+
+---
+
 ## 2026-06-10 00:50 UTC — phase8.2.B: Landing page rewritten to demo parity
 
 **Objective**: Replace the placeholder home page (centered serif "Vicinity" + one CTA, ~17 lines) with the demo SPA's Landing hero verbatim — full-bleed Pexels luxury-home video, "TikTok for Homebuying" headline, dual CTA (Browse Listings → /browse with arrow icon, Agent Login → /login as ghost button), then a "How it works" section with three icon cards. Owner shipped the demo screenshot as the reference target. This is the visual that loads when a logged-out visitor hits vicinities.cc — first-impression weight is high.

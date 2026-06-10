@@ -2,14 +2,16 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { Email } from '@/lib/zod/auth';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-type Status = 'idle' | 'sending' | 'sent' | 'error';
+type Status = 'idle' | 'sending' | 'error';
 
 const inputCls =
   'mt-1 w-full rounded-lg border border-white/10 bg-ink px-3 py-2 text-sm text-cream placeholder:text-cream/30 focus:border-gold focus:outline-none disabled:opacity-50';
 
 export function ForgotPasswordForm() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -22,54 +24,34 @@ export function ForgotPasswordForm() {
     const parsed = Email.safeParse(email);
     if (!parsed.success) {
       setStatus('error');
-      setError('Enter a valid email');
+      setError('Enter a valid email.');
       return;
     }
 
     const supabase = createClient();
-    // Supabase recovery flow: user clicks the link, lands on /auth/callback
-    // which exchanges the code for a session, then redirects to
-    // /reset-password where they set a new password via updateUser.
-    const callback = new URL('/auth/callback', window.location.origin);
-    callback.searchParams.set('redirect', '/reset-password');
+    // Note: we do NOT pass redirectTo here. The Supabase email template should
+    // surface {{ .Token }} (a 6-digit OTP) instead of a magic link, and the
+    // user enters that OTP on /reset-password. Link-based fallback still works
+    // via /auth/callback if the template includes {{ .ConfirmationURL }}.
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(parsed.data);
 
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(parsed.data, {
-      redirectTo: callback.toString(),
-    });
-
+    // Anti-enumeration: never disclose whether an email exists. Always advance
+    // to the OTP entry step. If the email is unregistered, the OTP they enter
+    // will fail at verifyOtp time with a generic "invalid token" error.
     if (resetError) {
-      setStatus('error');
-      setError(resetError.message);
-      return;
+      // Still log the error for ourselves — but don't leak to the UI.
+      console.error('resetPasswordForEmail error:', resetError.message);
     }
-    setStatus('sent');
-  }
 
-  if (status === 'sent') {
-    return (
-      <div className="rounded-2xl border border-white/5 bg-ink2/60 p-8 text-center">
-        <h1 className="font-serif text-2xl text-cream">Check your inbox</h1>
-        <p className="mt-3 text-sm text-cream/70">
-          If <span className="text-gold">{email}</span> has an account, a reset link is on its way.
-        </p>
-        <button
-          type="button"
-          onClick={() => {
-            setStatus('idle');
-            setEmail('');
-          }}
-          className="mt-4 text-sm text-cream/60 underline hover:text-cream"
-        >
-          Use a different email
-        </button>
-      </div>
-    );
+    router.push(`/reset-password?email=${encodeURIComponent(parsed.data)}`);
   }
 
   return (
     <form onSubmit={handleSubmit} className="rounded-2xl border border-white/5 bg-ink2/60 p-8">
-      <h1 className="font-serif text-3xl text-cream">Reset password</h1>
-      <p className="mt-1 text-sm text-cream/50">We&apos;ll email you a reset link.</p>
+      <h1 className="font-serif text-3xl text-cream">Forgot password</h1>
+      <p className="mt-1 text-sm text-cream/50">
+        Enter your email. We&apos;ll send a 6-digit code to reset your password.
+      </p>
       <label className="mt-6 block">
         <span className="text-xs text-cream/60">Email</span>
         <input
@@ -88,7 +70,7 @@ export function ForgotPasswordForm() {
         disabled={status === 'sending' || email.length === 0}
         className="btn-gold mt-6 w-full rounded-lg py-3 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {status === 'sending' ? 'Sending…' : 'Send reset link'}
+        {status === 'sending' ? 'Sending…' : 'Send code'}
       </button>
       {error ? (
         <p role="alert" className="mt-4 text-sm text-red-400">
