@@ -10,6 +10,32 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-10 18:25 UTC — UX: unify "go home" via global Logo, kill duplicate Home buttons
+
+**Objective**: User feedback (in-flight): inside `/browse`, the top-right "Home" pill (→ landing) and the in-feed "← back to home" pill (→ hero video) had the same word "home" but did different things. Confusing. Proposal: keep only ONE in-feed back button labeled "Back" (returns to hero), and turn the LOGO into the universal "go to landing" affordance, applied across all pages.
+
+**Actions**:
+- New `app/_components/Logo.tsx` — single source of truth for the brand mark. Two variants: `default` (full mark + wordmark, used in dashboard top-bar / agent storefront) and `overlay` (compact, ink/cream on dark video, used over `/browse` feed). Both wrap a `<Link href="/">`.
+- `BrowseFeed.tsx`:
+  - Removed top-right `← Home` pill.
+  - Removed rail `Home` button (and its `HomeIcon` helper) — duplicated the in-feed top-center back button.
+  - Added overlay Logo top-left (`top-3 left-3 z-30`).
+  - Renamed in-feed pill from `← back to home` to `← Back` for clarity (it returns to the listing's hero video, not the landing page).
+- `VideoFeed.tsx` (`/v/[agent]/[listing]`): added a small "V" mark at top-right (the full Logo wordmark would collide with the listing's address/price block top-left). Wraps `<Link href="/">`.
+- `FeedCard.tsx`: nudged the source-kind chip from `top-4 right-4` to `top-14 right-4` to make room for the new "V" mark.
+- `dashboard/top-bar.tsx`: replaced inline `V` + "Vicinity" markup with `<Logo />`.
+- `a/[agentSlug]/page.tsx`: added a thin top bar containing `<Logo />` above the hero.
+
+**Decisions**:
+- **One mark, one destination**: every Vicinity logo across the product now points to `/`. No more "home" pill that doesn't go home.
+- **`/v/` gets a compact "V" mark instead of the full Logo wordmark** — full wordmark at top-left would collide with the listing's address/price (Playfair serif treatment, premium identity); top-right was free after we already moved the source-kind chip.
+- **In-feed back pill is now "Back" (not "Home")** — disambiguates from the brand logo's home destination.
+- **Did NOT add Logo to landing `/`** — already self-referencing; adding a "go home" link to home is silly.
+
+**Verification**: tsc clean, biome clean, `pnpm build` `/browse 4.99 kB`, `/v/[agent]/[listing] 6.31 kB`. Smoke 7/7 expected.
+
+---
+
 ## 2026-06-10 17:55 UTC — hotfix: drop "View full listing" pill on /browse
 
 **Objective**: User feedback (in-flight): the top-right "View full listing →" pill on `/browse` is redundant — same surface as the right-rail buttons below. Remove it.

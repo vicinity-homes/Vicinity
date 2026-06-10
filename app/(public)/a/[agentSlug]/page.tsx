@@ -26,6 +26,7 @@
  * minute. Agent edits a listing, worst case CDN serves a 5-min-stale card.
  */
 
+import { Logo } from '@/app/_components/Logo';
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
 import { createClient } from '@/lib/supabase/server';
 import type { Metadata } from 'next';
@@ -149,6 +150,10 @@ export default async function AgentProfilePage({
 
   return (
     <div className="min-h-screen bg-ink text-cream">
+      {/* Top bar with global brand mark */}
+      <div className="mx-auto flex max-w-5xl items-center px-6 py-4">
+        <Logo />
+      </div>
       {/* Hero */}
       <section className="border-bronze/20 border-b">
         <div className="mx-auto max-w-5xl px-6 py-12 md:py-16">

@@ -9,6 +9,8 @@
  * we have an actual multi-page dashboard).
  */
 
+import { Logo } from '@/app/_components/Logo';
+
 type Props = {
   displayName: string;
   brokerage: string | null;
@@ -31,16 +33,7 @@ export function TopBar({ displayName, brokerage }: Props) {
       }}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 md:px-6">
-        <div className="flex items-center gap-2">
-          <span
-            className="grid h-8 w-8 place-items-center rounded-md text-sm font-bold"
-            style={{ background: 'var(--brand)', color: '#1a1300' }}
-            aria-hidden="true"
-          >
-            V
-          </span>
-          <span className="text-base font-semibold tracking-tight">Vicinity</span>
-        </div>
+        <Logo />
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-5 text-sm md:flex" aria-label="Dashboard">

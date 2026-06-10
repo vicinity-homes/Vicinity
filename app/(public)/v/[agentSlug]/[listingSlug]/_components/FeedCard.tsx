@@ -247,7 +247,9 @@ export function FeedCard({
       </div>
 
       {/* Top-right: source kind chip — gold ribbon. */}
-      <div className="absolute top-4 right-4 z-10">
+      {/* Card-type chip — moved from top-4 right-4 to top-14 right-4 to make
+       * room for the global Vicinity "V" mark in the corner. */}
+      <div className="absolute top-14 right-4 z-10">
         <span className="inline-flex items-center rounded-full border border-gold/50 bg-ink/70 px-2.5 py-1 font-medium text-[10px] text-gold tracking-[0.12em] backdrop-blur-md">
           {badgeLabel(card)}
         </span>

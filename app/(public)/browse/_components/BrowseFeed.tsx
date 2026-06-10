@@ -10,6 +10,7 @@
  * default to hero. The button glows gold while a non-hero source is active.
  */
 
+import { Logo } from '@/app/_components/Logo';
 import { hlsUrl, thumbnailUrl } from '@/lib/cloudflare/stream';
 import Hls from 'hls.js';
 import Link from 'next/link';
@@ -88,13 +89,7 @@ function CommunityIcon() {
   );
 }
 
-function HomeIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" width={22} height={22} fill="currentColor">
-      <path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z" />
-    </svg>
-  );
-}
+// HomeIcon removed (2026-06-10) — rail "Home" button retired.
 
 function ShareIcon() {
   return (
@@ -558,17 +553,12 @@ export function BrowseFeed({ cards }: { cards: BrowseCard[] }) {
 
   return (
     <div className="relative h-screen w-full overflow-hidden bg-black">
-      {/* Top-right: home/exit nav (always visible — escape /browse to landing) */}
-      <Link
-        href="/"
-        aria-label="Back to home"
-        className="absolute top-3 right-3 z-30 flex h-9 items-center gap-1 rounded-full border border-cream/20 bg-ink/60 px-3 text-cream backdrop-blur hover:border-gold hover:text-gold"
-      >
-        <svg viewBox="0 0 24 24" width={14} height={14} fill="currentColor" aria-hidden="true">
-          <path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-        </svg>
-        <span className="text-xs">Home</span>
-      </Link>
+      {/* Brand mark, top-left — links to landing. Replaces the previous
+       * top-right "Home" pill, which conflicted with the in-feed source
+       * "back to home" pill (one went to landing, one went back to hero
+       * video). User feedback: "logo做成home page redirect, apply 到所有页面".
+       * The /browse-internal back-to-hero is now labeled "← Back" below. */}
+      <Logo variant="overlay" className="absolute top-3 left-3 z-30" />
       <div
         ref={scrollerRef}
         className="h-full w-full snap-y snap-mandatory overflow-y-scroll overscroll-contain"
@@ -639,12 +629,10 @@ export function BrowseFeed({ cards }: { cards: BrowseCard[] }) {
         >
           <CommunityIcon />
         </ActionButton>
-        {/* Hero reset — only show when on a non-hero source */}
-        {activeSource !== 'hero' && (
-          <ActionButton label="Home" onClick={() => switchSource('hero')}>
-            <HomeIcon />
-          </ActionButton>
-        )}
+        {/* Hero reset removed (2026-06-10) — duplicated the in-feed
+         * top-center "← Back" pill. The pill now reads "Back" and is the
+         * sole way to dismiss the source switcher. The brand Logo top-left
+         * handles "go to landing". */}
         <ActionButton label="Share" onClick={onShare}>
           <ShareIcon />
         </ActionButton>
@@ -676,7 +664,7 @@ export function BrowseFeed({ cards }: { cards: BrowseCard[] }) {
             className="text-cream/60 text-xs hover:text-cream"
             aria-label="Back to listing video"
           >
-            ← back to home
+            ← Back
           </button>
         </div>
       )}

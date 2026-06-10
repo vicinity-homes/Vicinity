@@ -18,6 +18,7 @@
  */
 
 import { track } from '@/lib/events/track';
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActionRail } from './ActionRail';
 import { FeedCard } from './FeedCard';
@@ -138,6 +139,20 @@ export function VideoFeed({ agent, listing, listingId, cards }: Props) {
   return (
     <main className="relative h-[100dvh] w-full bg-ink">
       <div className="relative mx-auto h-full w-full max-w-[480px] md:shadow-2xl md:shadow-black">
+        {/* Brand mark — top-right small mark only (full Logo wordmark would
+         * collide with the listing's address/price block top-left). */}
+        <Link
+          href="/"
+          aria-label="Vicinity — back to home"
+          className="absolute top-3 right-3 z-30 grid h-8 w-8 place-items-center rounded-md font-bold text-sm transition-opacity hover:opacity-80"
+          style={{
+            background: 'var(--brand)',
+            color: '#1a1300',
+            touchAction: 'manipulation',
+          }}
+        >
+          V
+        </Link>
         <div
           ref={scrollerRef}
           className="h-full w-full snap-y snap-mandatory overflow-y-scroll scroll-smooth scrollbar-hide"
