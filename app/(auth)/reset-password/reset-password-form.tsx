@@ -1,23 +1,31 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { LoginWithPassword } from '@/lib/zod/auth';
+import { Password } from '@/lib/zod/auth';
 import { useState } from 'react';
+import { z } from 'zod';
 
-type Status = 'idle' | 'sending' | 'error';
+type Status = 'idle' | 'saving' | 'error';
 
-export function LoginForm({ redirect }: { redirect: string }) {
-  const [email, setEmail] = useState('');
+const ResetSchema = z
+  .object({ password: Password, confirm: Password })
+  .refine((v) => v.password === v.confirm, {
+    message: "Passwords don't match",
+    path: ['confirm'],
+  });
+
+export function ResetPasswordForm() {
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setStatus('sending');
+    setStatus('saving');
     setError(null);
 
-    const parsed = LoginWithPassword.safeParse({ email, password });
+    const parsed = ResetSchema.safeParse({ password, confirm });
     if (!parsed.success) {
       setStatus('error');
       setError(parsed.error.issues[0]?.message ?? 'Invalid input');
@@ -25,18 +33,18 @@ export function LoginForm({ redirect }: { redirect: string }) {
     }
 
     const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword(parsed.data);
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: parsed.data.password,
+    });
 
-    if (signInError) {
+    if (updateError) {
       setStatus('error');
-      // Supabase returns a generic "Invalid login credentials" — keep that
-      // verbatim; it's intentionally non-specific to avoid email enumeration.
-      setError(signInError.message);
+      setError(updateError.message);
       return;
     }
 
-    // Force a full reload so server components observe the new auth cookies.
-    window.location.assign(redirect);
+    // Force a full reload so server components see the refreshed session.
+    window.location.assign('/dashboard');
   }
 
   return (
@@ -45,37 +53,37 @@ export function LoginForm({ redirect }: { redirect: string }) {
       className="space-y-4 rounded-lg border border-bronze/30 bg-ink2 p-6"
     >
       <label className="block space-y-1">
-        <span className="text-sm font-medium text-cream">Email</span>
-        <input
-          type="email"
-          required
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          disabled={status === 'sending'}
-          className="w-full rounded-md border border-bronze/40 bg-ink px-3 py-2 text-sm text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none disabled:opacity-50"
-          placeholder="you@example.com"
-        />
-      </label>
-      <label className="block space-y-1">
-        <span className="text-sm font-medium text-cream">Password</span>
+        <span className="text-sm font-medium text-cream">New password</span>
         <input
           type="password"
           required
-          autoComplete="current-password"
+          autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          disabled={status === 'sending'}
+          disabled={status === 'saving'}
+          className="w-full rounded-md border border-bronze/40 bg-ink px-3 py-2 text-sm text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none disabled:opacity-50"
+          placeholder="At least 8 characters"
+        />
+      </label>
+      <label className="block space-y-1">
+        <span className="text-sm font-medium text-cream">Confirm password</span>
+        <input
+          type="password"
+          required
+          autoComplete="new-password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          disabled={status === 'saving'}
           className="w-full rounded-md border border-bronze/40 bg-ink px-3 py-2 text-sm text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none disabled:opacity-50"
           placeholder="••••••••"
         />
       </label>
       <button
         type="submit"
-        disabled={status === 'sending' || email.length === 0 || password.length === 0}
+        disabled={status === 'saving' || password.length === 0 || confirm.length === 0}
         className="w-full rounded-md bg-gold px-4 py-2 text-sm font-medium text-ink hover:bg-gold/90 disabled:cursor-not-allowed disabled:bg-bronze/40 disabled:text-cream/40"
       >
-        {status === 'sending' ? 'Signing in…' : 'Sign in'}
+        {status === 'saving' ? 'Saving…' : 'Save new password'}
       </button>
       {error ? (
         <p role="alert" className="text-sm text-red-400">

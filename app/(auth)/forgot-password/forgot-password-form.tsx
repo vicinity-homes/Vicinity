@@ -1,14 +1,13 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { LoginWithPassword } from '@/lib/zod/auth';
+import { Email } from '@/lib/zod/auth';
 import { useState } from 'react';
 
-type Status = 'idle' | 'sending' | 'error';
+type Status = 'idle' | 'sending' | 'sent' | 'error';
 
-export function LoginForm({ redirect }: { redirect: string }) {
+export function ForgotPasswordForm() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
 
@@ -17,26 +16,51 @@ export function LoginForm({ redirect }: { redirect: string }) {
     setStatus('sending');
     setError(null);
 
-    const parsed = LoginWithPassword.safeParse({ email, password });
+    const parsed = Email.safeParse(email);
     if (!parsed.success) {
       setStatus('error');
-      setError(parsed.error.issues[0]?.message ?? 'Invalid input');
+      setError('Enter a valid email');
       return;
     }
 
     const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword(parsed.data);
+    // Supabase recovery flow: user clicks the link, lands on /auth/callback
+    // which exchanges the code for a session, then redirects to
+    // /reset-password where they set a new password via updateUser.
+    const callback = new URL('/auth/callback', window.location.origin);
+    callback.searchParams.set('redirect', '/reset-password');
 
-    if (signInError) {
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(parsed.data, {
+      redirectTo: callback.toString(),
+    });
+
+    if (resetError) {
       setStatus('error');
-      // Supabase returns a generic "Invalid login credentials" — keep that
-      // verbatim; it's intentionally non-specific to avoid email enumeration.
-      setError(signInError.message);
+      setError(resetError.message);
       return;
     }
+    setStatus('sent');
+  }
 
-    // Force a full reload so server components observe the new auth cookies.
-    window.location.assign(redirect);
+  if (status === 'sent') {
+    return (
+      <div className="space-y-4 rounded-lg border border-bronze/30 bg-ink2 p-6 text-center">
+        <p className="text-sm text-cream">
+          If <span className="font-medium text-gold">{email}</span> has an account, a reset link is
+          on its way. Check your inbox.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setStatus('idle');
+            setEmail('');
+          }}
+          className="text-sm text-cream/60 underline hover:text-cream"
+        >
+          Use a different email
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -57,25 +81,12 @@ export function LoginForm({ redirect }: { redirect: string }) {
           placeholder="you@example.com"
         />
       </label>
-      <label className="block space-y-1">
-        <span className="text-sm font-medium text-cream">Password</span>
-        <input
-          type="password"
-          required
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={status === 'sending'}
-          className="w-full rounded-md border border-bronze/40 bg-ink px-3 py-2 text-sm text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none disabled:opacity-50"
-          placeholder="••••••••"
-        />
-      </label>
       <button
         type="submit"
-        disabled={status === 'sending' || email.length === 0 || password.length === 0}
+        disabled={status === 'sending' || email.length === 0}
         className="w-full rounded-md bg-gold px-4 py-2 text-sm font-medium text-ink hover:bg-gold/90 disabled:cursor-not-allowed disabled:bg-bronze/40 disabled:text-cream/40"
       >
-        {status === 'sending' ? 'Signing in…' : 'Sign in'}
+        {status === 'sending' ? 'Sending…' : 'Send reset link'}
       </button>
       {error ? (
         <p role="alert" className="text-sm text-red-400">

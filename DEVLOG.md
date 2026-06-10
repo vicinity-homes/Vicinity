@@ -10,6 +10,65 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-09 23:55 UTC — phase8/password-auth: drop magic link, add forgot/reset password
+
+**Objective**: Owner decided magic link goes away — password is the only sign-in method. Then add `/forgot-password` + `/reset-password` so users have a self-serve recovery path (otherwise the owner has to admin-reset every forgotten password). Continues on the same `phase8/password-auth` branch.
+
+**Actions**:
+- `app/(auth)/login/login-form.tsx`: removed the `magic` mode entirely. Single password form, no tab toggle. Lost ~80 lines of state/branching.
+- New `app/(auth)/forgot-password/page.tsx` + `forgot-password-form.tsx`: email input → `supabase.auth.resetPasswordForEmail(email, { redirectTo: /auth/callback?redirect=/reset-password })`. Always shows the same "if this email has an account, a link is on its way" message — anti-enumeration.
+- New `app/(auth)/reset-password/page.tsx` + `reset-password-form.tsx`: server-component checks `supabase.auth.getUser()` and bounces to `/forgot-password` if no session (recovery code wasn't exchanged). When session is present, the form takes new password + confirm, calls `supabase.auth.updateUser({ password })`, then full-reloads to /dashboard.
+- `/login` page gets a "Forgot password?" link between the form and the "Sign up" prompt.
+- `lib/zod/auth.ts` comment header updated — magic link is no longer a supported method.
+
+**Decisions**:
+- **Recovery flow reuses `/auth/callback`**, no new code-exchange route. The callback already exchanges `?code=` for a session and 302s to `redirect`. Setting `redirect=/reset-password` lands the user there with a session, where they can call `updateUser`. One less moving part than a dedicated `/auth/recover` handler.
+- **No "current password" field** on /reset-password. Supabase's recovery session is short-lived and proves email control; requiring the old password would prevent the very case this exists for (forgot it). Standard pattern.
+- **Same anti-enumeration messaging** as login: `/forgot-password` always confirms a link was sent, never reveals whether the email exists. Supabase's `resetPasswordForEmail` itself returns success regardless.
+- **Existing magic-link users**: owner accepted that any user who registered via magic link (no password set) will have to use `/forgot-password` to set one, or owner resets via Supabase admin. No data migration needed — Supabase keeps the same `auth.users` row, just adds a password.
+
+**Issues**:
+- Owner reported signup confirmation email never arrived during testing. Confirmed in Supabase dashboard that "Confirm email" is still ON. Most likely cause: Supabase free-tier shared SMTP — strict 3/hour rate limit, low sender reputation, often dropped or spammed by Gmail/iCloud. Owner deferred — said it's probably his network, move on. **GA blocker**: must configure custom SMTP (Resend / SES) before opening signup or before recovery emails matter in production. Right now `/forgot-password` UI ships but the email it triggers may silently drop on free-tier SMTP — same root cause as the signup email issue.
+
+**Resolution**: All three routes ship and build. Email deliverability remains a non-code blocker the owner will address (turn off Confirm email for internal beta + configure custom SMTP before GA).
+
+**Next steps**: Continue Phase 8 design parity. Owner to merge `phase8/password-auth` and resume `phase8/design-parity` for 8.2 (Landing per demo).
+
+---
+
+## 2026-06-09 23:30 UTC — phase8/password-auth: email+password login alongside magic link
+
+**Objective**: Owner reprioritized between Phase 8.1 (design tokens, shipped on `phase8/design-parity`) and Phase 8.2 (Landing rewrite). Insert a new mini-phase `phase8/password-auth` that adds email+password sign-in+sign-up alongside the existing Supabase magic-link flow. Both methods coexist; users pick on /login. Open signup (anyone can register as an agent during internal beta).
+
+**Actions**:
+- Branched `phase8/password-auth` off main `21980ac`.
+- New `lib/zod/auth.ts`: `Email`, `Password` (min 8 / max 128 — stricter than Supabase's default 6), `LoginWithPassword`, `SignupWithPassword` (with `confirm` cross-field check).
+- Rewrote `app/(auth)/login/login-form.tsx`: tab toggle between `magic` and `password`. Magic-link flow unchanged from before; password flow calls `supabase.auth.signInWithPassword` and on success does `window.location.assign(redirect)` to force a full reload so server components observe the new auth cookies. Errors surface verbatim from Supabase (the generic "Invalid login credentials" is intentional anti-enumeration messaging).
+- New `app/(auth)/signup/page.tsx` + `signup-form.tsx`: email + password + confirm. Calls `supabase.auth.signUp` with `emailRedirectTo` set so the link works post-GA when confirmations are re-enabled. Branches on response: if `data.session` exists (confirmations OFF, internal beta), redirect immediately; otherwise show "check your inbox".
+- `/login` page gets a "Don't have an account? Sign up" link below the form (carries `redirect` param through). `/signup` page mirrors with "Already have an account? Sign in".
+
+**Decisions**:
+- **Both methods coexist** rather than replacing magic link. Lower friction for users who prefer either. Magic link stays the default tab (it was the prior behavior).
+- **Password min 8** instead of Supabase's default 6. Standard hardening; easy to relax later if onboarding feedback says otherwise.
+- **Open signup** during internal beta. Owner accepted the tradeoff: any internet user can register as an agent. Mitigation deferred until GA (will need invite code or admin allowlist before we open marketing).
+- **Email confirmation OFF** in the Supabase project for internal beta. This is a Supabase dashboard setting (Authentication → Providers → Email → "Confirm email" off), not code. Owner's responsibility on his Mac. Without it, signup grants a session immediately and the user lands on /dashboard. With it on, signup returns no session and the form shows "check your inbox". Code handles both branches so flipping the switch later doesn't require a deploy.
+- **Force a full reload after password sign-in**, not `router.push`. Supabase writes auth cookies via the client; Next.js server components don't see them until the next full request. `router.push` would render /dashboard with stale "no user" state and bounce back to /login. `window.location.assign` forces a full document load. Same pattern used for signup auto-login.
+- **Open-redirect guard** on `/signup?redirect=...` mirrors the existing /login guard: must start with `/`, must not start with `//`. Falls back to `/dashboard`.
+
+**Issues**: None. Build clean, typecheck clean, biome clean (after auto-fix nudged the existing `searchParams.redirect && searchParams.redirect.startsWith(...)` pattern to optional-chain in both /login and /signup pages — a pre-existing code-style preference Biome surfaces only when the file is touched).
+
+**Resolution**: Phase8/password-auth shipped as a single commit. Branch retained on remote per phase rules. Will ff-merge to main on owner OK.
+
+**GA prereqs added (track for later)**:
+- Re-enable email confirmation in Supabase before opening signup to the public.
+- Add invite code or admin allowlist before marketing — current open signup is internal-beta only.
+- Add password reset flow (`/auth/reset-password` + magic-link to a reset form). Not needed for internal beta but blocks GA.
+
+**Next steps**: Owner reviews, says "merge", I ff-merge `phase8/password-auth` → main, then resume `phase8/design-parity` at 8.2 (Landing rewrite per demo).
+
+---
+
+
 ## 2026-06-09 23:30 UTC — phase8 kickoff: design parity with demo SPA — 8.1 tokens + Header/Footer
 
 **Objective**: After reviewing the demo SPA (`vicinity-app.tar.gz`, surge-hosted at `vicinity-app-prd.surge.sh`), owner decided to **pause Phase 7 internal-beta rollout** and run a Phase 8 design-parity pass before letting Vivian use the app. Driver is "first impression matters; AI agents shipped Phases 1–7 in three days so the time cost is acceptable." Demo positioning (bilingual EN/中文 + Xiaohongshu/WeChat share + `_zh` description fields) is **rejected** — V1 stays English-only for all US homebuyers, per CLAUDE.md §1. Demo is the source for visual language, typography, and the TikTok-style Listing swipe feed only.
