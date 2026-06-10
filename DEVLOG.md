@@ -10,6 +10,39 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-10 13:10 UTC — phase8.5: Analytics dashboard — funnel + top cards
+
+**Objective**: Turn the per-listing analytics page from a 5-stat-card placeholder into something Vivian can screenshot and DM her broker. Add a funnel (page_view → card_view → video_complete → lead) and a top-cards leaderboard so she can see *which* video in the feed is doing the work.
+
+**Actions**:
+- `lib/analytics/listing-stats.ts`:
+  - Refactored to extract `aggregate(rows, leads)` — single code path used by both `getListingStats` and `getRollupStats` (was duplicated).
+  - Added `cardViews` count (from `event_type='card_view'`).
+  - Added `topCards: TopCardEntry[]` — Map<card_id, count> sorted desc, top 10.
+  - Now selects `card_id` alongside `event_type, session_id` (still one round-trip per query).
+- `app/dashboard/listings/[id]/analytics/page.tsx`: full rewrite.
+  - 6-card headline grid (added Card views + Lead conv. % broken out from inline text).
+  - **Engagement funnel** section: stacked horizontal bars normalized to top-of-funnel (page views), with per-step retention % in a right-side gutter so the agent can spot the biggest drop-off.
+  - **Top cards** section: ordered list with bar viz + label resolved from `listing_videos` (cross-ref by uuid), falling back to first-8-chars of the id when the video row isn't found.
+  - Everything wrapped in `bg-ink2/60` cards with `border-bronze/30` to match the design tokens shipped in 8.1.
+
+**Decisions**:
+- **No time-series yet.** Phase 7 internal beta will surface which dimensions actually matter (per the original 6.4b note). Adding charts before we know whether agents care about hour-of-day vs day-of-week vs week-over-week is speculative work. Funnel + top-cards is enough signal to act on.
+- **Top cards uses listing_videos label, not card index.** card_id in events is the video uuid (see `FeedCard.tsx` and `VideoFeed.tsx`), so a join to `listing_videos` gives us a meaningful label (kind + title). Using the uuid directly would force the agent to mentally map "card 14a3b…" back to the video — not actionable.
+- **Funnel labeled "% relative to page views" and step-over-step.** Two perspectives in one viz: bar width = relative to top, gutter % = retention to the previous step. Vivian can answer "where do I lose people?" in one glance.
+- **Did NOT add a leads list here.** Leads have their own page (`/dashboard/leads`); duplicating it on analytics would diverge. Cross-link instead in a follow-up if friction shows up.
+
+**Issues**: One Biome warning ("biome-ignore on a non-warning") — fixed by removing the stale ignore on a `Map<>` initializer.
+
+**Verification**:
+- `tsc --noEmit` clean.
+- `biome check` clean.
+- `pnpm build` green; `/dashboard/listings/[id]/analytics` route still under 130 kB First Load JS.
+
+**Next steps**: Stretch — Agent profile page `/a/[agentSlug]` so Vivian can share ONE URL with all her listings. This is the killer Path-3 feature: she has 12 listings, doesn't want to send 12 links, wants to send vicinities.cc/a/vivian-zhang. Worth shipping in Phase 8 because it costs nothing extra (we already have agents.slug + listings.agent_id).
+
+---
+
 ## 2026-06-10 12:30 UTC — phase8.4: Social copy generator — Email tab + tabbed UX
 
 **Objective**: Bring the listing-edit page social-copy panel to demo-parity: tabbed UI with Sparkles + Loader2 affordances, per-platform regenerate, and add a 3rd platform. Demo's 3rd tab is 小红书 (Xiaohongshu) — replaced with **Email** because V1 is English-only US market and email blasts are the actual conversion tool for US agents (open-house invites, buyer-database drips). Vivian's Path-3 use case never said "I want to post to Xiaohongshu"; she did say "I have 2,000 buyers in my CRM I email weekly".
