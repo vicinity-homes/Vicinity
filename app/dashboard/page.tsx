@@ -63,6 +63,14 @@ export default async function DashboardHomePage({ searchParams }: PageProps) {
   if (!user) redirect('/login');
 
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+  const { data: agentRow } = (await (supabase as any)
+    .from('agents')
+    .select('slug')
+    .eq('user_id', user.id)
+    .maybeSingle()) as { data: { slug: string } | null };
+  const agentSlug = agentRow?.slug ?? null;
+
+  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
   let query = (supabase as any)
     .from('listings')
     .select('id, slug, address, city, state, status, price, updated_at')
@@ -85,12 +93,25 @@ export default async function DashboardHomePage({ searchParams }: PageProps) {
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Listings</h1>
-        <Link
-          href="/dashboard/listings/new"
-          className="rounded bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold/90"
-        >
-          + New listing
-        </Link>
+        <div className="flex items-center gap-2">
+          {agentSlug && (
+            <Link
+              href={`/a/${agentSlug}`}
+              target="_blank"
+              rel="noopener"
+              className="rounded border border-bronze/40 px-3 py-2 text-cream/80 text-xs hover:bg-bronze/20"
+              title="Public profile — share one URL with all your listings"
+            >
+              View public profile ↗
+            </Link>
+          )}
+          <Link
+            href="/dashboard/listings/new"
+            className="rounded bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold/90"
+          >
+            + New listing
+          </Link>
+        </div>
       </div>
 
       <div className="mb-4 flex items-center gap-3 text-xs">

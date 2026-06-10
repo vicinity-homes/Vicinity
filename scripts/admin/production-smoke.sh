@@ -109,6 +109,14 @@ else
   check "GET /v/__nope__/__nope__" no  "got status=$status (expected 404)"
 fi
 
+# 6. Bogus public agent profile → 404 (phase8 stretch)
+status=$(fetch '/a/__nope__')
+if [[ "$status" == "404" ]]; then
+  check "GET /a/__nope__" yes "404 (correct route shape)"
+else
+  check "GET /a/__nope__" no  "got status=$status (expected 404)"
+fi
+
 rm -f /tmp/smoke-body.$$ /tmp/smoke-headers.$$
 
 echo

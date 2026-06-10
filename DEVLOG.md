@@ -10,6 +10,38 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-10 13:50 UTC — phase8-stretch: Agent profile page `/a/[agentSlug]`
+
+**Objective**: Vivian has 12 listings. She does NOT want to send 12 different URLs in WhatsApp / Email / Facebook DMs. She wants ONE link — `vicinities.cc/a/vivian-zhang` — that shows her brand and every published listing she has. Highest-ROI feature in this batch because it costs us almost nothing (the data + RLS already exist) and it directly removes friction from how agents *actually share* in 2026.
+
+**Actions**:
+- `app/(public)/a/[agentSlug]/page.tsx`: new public Server Component route. Hero (headshot + name + brokerage + license + bio + email/phone CTAs) on top, listings grid below.
+- Listings grid: pulls all `status='published'` rows for the agent, sorted by `created_at DESC` (newest = "just listed", which is what realtors lead with). Cover resolution: `listing.cover_url` falls back to first `listing_videos.ready` thumbnail via `thumbnailUrl(cf_video_id)` — same pattern the public listing page uses.
+- One-shot data fetch: agent → listings → listing_videos `in()` for fallback covers. No N+1.
+- `generateMetadata` returns proper OG tags so Facebook/iMessage previews show the agent's headshot + bio when they paste the URL.
+- ISR: `revalidate = 300` (5 min). Listings rarely change minute-to-minute; CDN caching is fine.
+- `app/dashboard/page.tsx`: added "View public profile ↗" link in dashboard header so agents discover the share URL. Looks up `agents.slug` for the calling user once at the top of the page.
+- `scripts/admin/production-smoke.sh`: added check #6 — `GET /a/__nope__` → 404. Total smoke now 6/6.
+
+**Decisions**:
+- **Newest-first ordering, not curated.** Realtors live by "just listed" — a chronological feed feels alive and signals momentum to a buyer. A "featured" sort would require new schema (`agents.featured_listing_ids`) and that's speculative until any agent asks for it.
+- **No client-side share button.** Adding `'use client'` for a copy-to-clipboard handler would balloon the bundle and the URL bar already does the job. Surgical changes principle.
+- **Phone format helper**: `(404) 555-1234` for 10-digit US numbers, raw otherwise. Internationalization is post-V1.
+- **No reviews / star ratings.** Out-of-scope for V1, and reviews are a moderation/legal tarpit (fair-housing compliance). If we ship this we ship it carefully, not as a stretch goal.
+- **No NEXT_PUBLIC_SITE_URL canonical.** Next will infer canonical from the rendered URL; we set OG image only.
+
+**Issues**:
+- Initial Biome warnings: tried to suppress `noImgElement` rule, but our biome config doesn't have that rule registered, so the suppression failed to parse. Same trap as the leads page (per DEVLOG entry from leads work). Removed the comments — `<img>` is fine for Cloudflare-hosted thumbnails until we wire next/image with a proper remote-pattern allowlist.
+
+**Verification**:
+- `tsc --noEmit` clean.
+- `biome check` clean across `app/(public)/a` and `app/dashboard/page.tsx`.
+- `pnpm build` green; new route is `/a/[agentSlug]` at 189 B / 96.2 kB First Load JS.
+
+**Next steps**: Phase 8 closeout — push, ff-merge to main, run production smoke. Then iterate on whatever Path-3 lever is next: my candidate list is (a) agent's "share kit" download (ZIP of social-copy txt + listing QR codes), (b) listing-level QR code ("I made you a sign rider in 30 seconds"), (c) lead auto-reply confirmation email so the buyer immediately sees the agent's name. (b) is probably highest-leverage for cold open-house conversions.
+
+---
+
 ## 2026-06-10 13:10 UTC — phase8.5: Analytics dashboard — funnel + top cards
 
 **Objective**: Turn the per-listing analytics page from a 5-stat-card placeholder into something Vivian can screenshot and DM her broker. Add a funnel (page_view → card_view → video_complete → lead) and a top-cards leaderboard so she can see *which* video in the feed is doing the work.
