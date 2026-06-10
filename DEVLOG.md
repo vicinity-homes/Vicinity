@@ -10,6 +10,33 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-10 14:25 UTC — hotfix: /browse route was missing (Landing CTA 404)
+
+**Objective**: User reported homepage "Browse Listings" CTA → 404 on production. Phase 8.2.B Landing rewrite + SiteHeader both link to `/browse`, but the route file was never created.
+
+**Actions**:
+- `app/(public)/browse/page.tsx`: new public Server Component. Lists every `status='published'` listing across all agents, newest first, capped at 60. Same card design as `/a/[agentSlug]` (cover_url with listing_videos thumbnail fallback, formatPrice helper, agent attribution under each card).
+- ISR `revalidate=300`. Direct push to main (hotfix on user-visible 404, not a feature branch).
+
+**Decisions**:
+- **One query per table, batched.** listings → in() listing_videos → in() agents. No N+1.
+- **Agent name shown per card** ("Listed by Vivian Zhang"). Builds trust + creates a discovery path to agent profiles later.
+- **No filters / search yet.** A 404 doesn't get fixed by a filtered search — it gets fixed by a working list. Filters are a future enhancement.
+- **60-listing cap** for V1. When we cross that we'll add pagination; for now Vivian's 12 listings + a few others fit comfortably.
+
+**Verification**:
+- `tsc --noEmit` clean.
+- `biome check` clean.
+- `pnpm build` registers `/browse` at 192 B / 96.2 kB First Load JS.
+
+**Learnings**:
+- Phase 8.2.B Landing rewrite added `/browse` link without a corresponding route — should have grepped for the href before merging. Adding `GET /browse → 200` to the production smoke script as well.
+- Same pattern as Phase 7 `/v/__nope__/__nope__` smoke — anything reachable from the homepage should have a smoke check so a future regression catches it.
+
+**Next steps**: Add `/browse` to production-smoke.sh. Then back to user-visible Phase 8 testing.
+
+---
+
 ## 2026-06-10 13:50 UTC — phase8-stretch: Agent profile page `/a/[agentSlug]`
 
 **Objective**: Vivian has 12 listings. She does NOT want to send 12 different URLs in WhatsApp / Email / Facebook DMs. She wants ONE link — `vicinities.cc/a/vivian-zhang` — that shows her brand and every published listing she has. Highest-ROI feature in this batch because it costs us almost nothing (the data + RLS already exist) and it directly removes friction from how agents *actually share* in 2026.

@@ -117,6 +117,14 @@ else
   check "GET /a/__nope__" no  "got status=$status (expected 404)"
 fi
 
+# 7. Browse listings → 200 (Landing CTA target — see hotfix 2026-06-10)
+status=$(fetch '/browse')
+if [[ "$status" == "200" ]]; then
+  check "GET /browse" yes "200 (browse all listings)"
+else
+  check "GET /browse" no  "got status=$status (expected 200)"
+fi
+
 rm -f /tmp/smoke-body.$$ /tmp/smoke-headers.$$
 
 echo
