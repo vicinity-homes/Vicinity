@@ -10,6 +10,24 @@ When resuming work: read the most recent entries first, then check IMPLEMENTATIO
 
 ---
 
+## 2026-06-10 18:55 UTC — UX: top-right [Back+Logo] cluster + audio unmute
+
+**Objective**: User feedback round 2: (1) put Back and Logo side-by-side top-right (not split); (2) videos had no sound.
+
+**Actions**:
+- `/browse`: top-right cluster `[← Back] [Logo]`. Back only renders when `activeSource !== 'hero'`. Source label moves to top-center as an informational pill (no nav). Old top-left Logo removed.
+- `/v/[agent]/[listing]` FeedCard `onTap`: re-ordered. Tapping a *playing* muted card now unmutes immediately. Previously tap on playing = pause, and unmute only fired on the *next* tap (tap-resume of paused). User would tap once expecting sound, get a paused video instead.
+- `/browse` audio: lifted muted state to `BrowseFeed` (parent), propagated to `Card` via prop. New `Sound`/`Mute` rail button toggles. `useEffect` keeps `<video>.muted` in sync when user flips while card mounted. First swipe still autoplays muted (browser policy); user clicks Sound once and every subsequent card plays with audio.
+
+**Decisions**:
+- **Global mute state, not per-card**: TikTok / IG Reels behavior. Once user opts in to sound, sound stays on across the whole feed.
+- **Sound button in rail (not floating bottom-right)**: rail already has Like/Schools/Nearby/Area/Share/Contact; Sound fits the same vocabulary. Bottom-right floating would compete with caption block.
+- **iOS still requires user gesture for unmute**: button click counts as gesture, satisfies policy. Pre-cached muted autoplay continues to work.
+
+**Verification**: tsc clean, biome clean, `/browse` 5.21 kB, `/v/[agent]/[listing]` 6.46 kB, smoke 7/7.
+
+---
+
 ## 2026-06-10 18:25 UTC — UX: unify "go home" via global Logo, kill duplicate Home buttons
 
 **Objective**: User feedback (in-flight): inside `/browse`, the top-right "Home" pill (→ landing) and the in-feed "← back to home" pill (→ hero video) had the same word "home" but did different things. Confusing. Proposal: keep only ONE in-feed back button labeled "Back" (returns to hero), and turn the LOGO into the universal "go to landing" affordance, applied across all pages.
