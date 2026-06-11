@@ -6,6 +6,34 @@ Institutional memory for the project. Updated incrementally, not at session end.
 
 **Format per entry**: timestamp, objective, actions, decisions, issues, resolution, learnings, next steps. Keep concise.
 
+---
+
+## 2026-06-11 — Mobile listing-edit hotfix: overlap + clean video titles
+
+**Objective**: Fix mobile-screenshot issues on `/dashboard/listings/[id]/edit` — UI elements overlapping and the video upload showing a raw camera filename like `80286515262__A36D0705-4E7F-466B-8EE7-9AD52895DF45.MOV`.
+
+**Actions**:
+- `components/dashboard/VideoUploader.tsx` — added a `picked` state between file-pick and upload. When a file is selected, we now run `cleanTitle()` (strips UUIDs, `IMG_/VID_/MVI_` prefixes, long digit runs; falls back to `Walkthrough`) and show an editable title input (max 80 chars) with a `Start upload` / `Pick another file` action row. Done state shows the cleaned title, with the raw filename only echoed as a muted breakable preview.
+- `app/dashboard/listings/[id]/edit/VideoPanel.tsx` — `SortableVideoItem` row went `flex-wrap`, mid column got `basis-[8rem]` so it wraps cleanly on narrow screens, status line gets `truncate`, the action button column spans full width below `sm` with `whitespace-nowrap` on the buttons themselves. Eliminates the "walkthrouSet as cover" collision.
+- `app/dashboard/listings/[id]/edit/page.tsx` — Videos and Social-copy section headers changed from `flex items-baseline justify-between` to `flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between` so the helper text drops below the H2 instead of squeezing it.
+- `app/dashboard/listings/[id]/edit/SocialCopyPanel.tsx` — Selling-points placeholder shortened from "renovated kitchen, walk to schools, finished basement" (truncated to "finished ba…" on mobile) to "e.g. renovated kitchen, walk to schools".
+
+**Decisions**:
+- Title-cleaning lives client-side in `VideoUploader.cleanTitle()`. Keeps the agent in control (they can edit before upload), avoids a round-trip, no server changes needed.
+- Per-video **description** field was on the original ask but is deferred. `listing_videos` / `community_videos` have no `description` column (see `0001_init.sql`), so it would require a schema migration that has to come from the Mac via `supabase db push`. Filed as a follow-up — mention it next time we batch a migration.
+- Hotfix shipped direct-to-main, no feature branch (consistent with prior 4.x post-phase fixes).
+
+**Verification**:
+- `tsc --noEmit` clean.
+- `biome check` clean on all 4 touched files.
+- Pushed to `origin/main` as `32fde7d` (HEAD: `913837d` → `32fde7d`).
+
+**Next steps**:
+- Owner refreshes the production edit page on mobile, confirms the row no longer overlaps and the upload card title is editable / clean.
+- When we next ship a Supabase migration, add `description text` to `listing_videos` and `community_videos`, then wire it through `create-upload` + UploaderTitle field.
+
+---
+
 When resuming work: read the most recent entries first, then check IMPLEMENTATION.md for the current phase/task.
 
 ---
