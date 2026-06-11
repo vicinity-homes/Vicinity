@@ -13,6 +13,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { archiveListing, unarchiveListing } from './archive-actions';
+import { flushPending } from './flush-registry';
 import { publishListing, unpublishListing } from './publish-actions';
 
 interface Props {
@@ -70,6 +71,14 @@ export function PublishPanel({ listingId, status, agentSlug, listingSlug }: Prop
     setMissing(null);
     setErr(null);
     startTransition(async () => {
+      // Flush any pending auto-save in EditListingForm before publishing,
+      // otherwise the publish gate sees stale DB values.
+      try {
+        await flushPending();
+      } catch {
+        // If the flush itself errored, the form's SaveBadge already shows it.
+        // Don't block publish — let the gate report the real missing fields.
+      }
       const res = await publishListing(listingId);
       if (res.ok) {
         router.refresh();

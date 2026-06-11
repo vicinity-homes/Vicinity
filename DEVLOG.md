@@ -8,6 +8,38 @@ Institutional memory for the project. Updated incrementally, not at session end.
 
 ---
 
+## 2026-06-11 — Listing form auto-save (phase8/listing-form-autosave)
+
+**Objective**: Follow-up to listing-form-ux. User reported that even with required-field labels, Publish still failed with all required fields visibly filled. Root cause: form had a separate "Save changes" button — agents filled the dropdowns and clicked Publish without saving, so the publish gate read stale (null) DB values. Goal: kill the explicit Save button, auto-save on edit, flush before Publish.
+
+**Actions**:
+- New `flush-registry.ts` — module-level mutable ref + `registerFlush(fn)` / `flushPending()`. Both EditListingForm and PublishPanel are 'use client' on the same page; this is the simplest cross-component handle without lifting state into a server component or wiring a context provider.
+- `EditListingForm.tsx`:
+  - Removed `<form>` wrapper, `onSubmit`, and the gold "Save changes" button.
+  - Added 600ms debounced auto-save effect keyed off all editable fields. On each edit: state → `pending`, debounce ticks → `saving` → `saved` (1.5s flash) → `idle`. Errors land in `error` state with the message in a `title` tooltip on the badge.
+  - `runSave` always resolves; `inflightRef` serializes saves so back-to-back edits don't race.
+  - `flushNow` cancels any pending debounce, awaits in-flight, then forces a save if dirty. Registered with `flush-registry` on mount.
+  - `beforeunload` listener warns on unsaved/in-flight to keep agents from losing work via a back-button slip.
+  - New `<SaveBadge>` component (top-right of legend) shows the live save state.
+- `PublishPanel.tsx` — `handlePublish` now `await flushPending()` before calling `publishListing`, so the gate sees fresh DB values. If the flush itself errors, we don't block — the form's SaveBadge surfaces it and the gate will report whatever is actually missing.
+
+**Decisions**:
+- 600ms debounce — long enough to coalesce typing into one save, short enough that "fill, click Publish" feels instant (typical click is 1-2s after the last keystroke).
+- Module-level registry instead of React context — both components live on the same page, only one EditListingForm instance ever exists, and a context provider would require restructuring `page.tsx`. Cleanup-on-unmount keeps it tidy.
+- Did NOT use `navigator.sendBeacon` for tab-close save — Next server actions don't support it cleanly. The `beforeunload` warning is the safety net.
+- Did NOT debounce per-field — single global debounce keeps saves serialized. A field-grained scheme would multiply round trips with no real UX benefit.
+
+**Validation**:
+- `npx tsc --noEmit` clean.
+- `npx biome check` clean (3 useExhaustiveDependencies suppressions added with rationale; runSave/inflightRef are intentionally stable closures).
+- `npx next build` succeeds, `/edit` route 24.6 kB (was 23.1 kB; +1.5 kB for the auto-save plumbing).
+
+**Branch**: `phase8/listing-form-autosave` (mini-phase; merged to main directly after smoke build).
+
+**Next steps**: Verify on Vercel preview — load an existing draft, change a field, watch SaveBadge cycle pending → saving → saved within ~1s. Quick-edit + immediate Publish should also succeed.
+
+---
+
 ## 2026-06-11 — Listing form UX overhaul (phase8/listing-form-ux)
 
 **Objective**: User reported that publishing a draft failed with a misleading message — the panel only listed `beds`/`baths` as missing while *every* field (price, beds, baths, ready video) was actually required. Placeholders like `950000` and `4` looked like default values, so the agent thought the form was filled. Goal: distinguish required vs optional, replace error keys with human-readable hints, and use dropdowns where the long tail is small.

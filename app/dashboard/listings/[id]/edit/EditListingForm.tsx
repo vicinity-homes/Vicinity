@@ -2,19 +2,25 @@
 
 /**
  * EditListingForm — Phase 4.3a metadata editor.
- * Phase 8/listing-form-ux (2026-06-11) overhaul:
- *  - Each field labelled "Required" (publish gate) or "Optional".
- *  - Beds, baths, style use dropdowns with an "Other"/"More" escape to a text
- *    input, so the common case is one click and the long tail still works.
- *  - Lot size is split into a number + unit dropdown (acres / sqft), composed
- *    back into the existing text column on save.
- *  - Misleading placeholders that looked like real default values
- *    (`950000`, `4`, `3.5`) replaced with explicit `e.g. ...` hints.
- *  - Address fields stay read-only (see actions.ts header for the rationale).
+ *
+ * Phase 8/listing-form-autosave (2026-06-11): switched from explicit
+ * "Save changes" button to debounced auto-save. Every edit kicks a 600ms
+ * debounce; on tick we POST the whole payload via `updateListing`. The
+ * form also registers a `flushPending` hook the PublishPanel calls before
+ * publishing, so an agent who edits and immediately clicks Publish doesn't
+ * race the debounce.
+ *
+ * Save status is shown as a small pill ("Saving…" / "✓ Saved" / "Error")
+ * so the agent has continuous feedback that work isn't lost.
+ *
+ * UI conventions otherwise unchanged from phase 8/listing-form-ux:
+ * Required/Optional badges, dropdowns for beds/baths/style with escape
+ * inputs, lot size split into number+unit composed back into the text col.
  */
 
 import { type UpdateListingInput, updateListing } from '@/app/dashboard/listings/[id]/edit/actions';
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { registerFlush } from './flush-registry';
 
 interface InitialValues {
   price: number | null;
@@ -50,7 +56,7 @@ interface Props {
   listingContext: ListingContext;
 }
 
-type SaveState = 'idle' | 'saving' | 'saved' | 'error';
+type SaveState = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 type GenState = 'idle' | 'loading' | 'error';
 
 const STYLE_OPTIONS = [
@@ -71,10 +77,8 @@ const BATH_OPTIONS = ['1', '1.5', '2', '2.5', '3', '3.5', '4', '4.5', '5'] as co
 
 type LotUnit = 'acres' | 'sqft';
 
-/**
- * Parse `"0.35 acres"` / `"15000 sqft"` / `"15,000"` into (numeric string, unit).
- * Falls back to ('', 'acres') if value is null/empty/unparseable.
- */
+const AUTOSAVE_DEBOUNCE_MS = 600;
+
 function parseLotSize(value: string | null): { num: string; unit: LotUnit } {
   if (!value) return { num: '', unit: 'acres' };
   const lower = value.toLowerCase();
@@ -93,8 +97,6 @@ function composeLotSize(num: string, unit: LotUnit): string | null {
 export function EditListingForm({ listingId, initial, communities, listingContext }: Props) {
   const [price, setPrice] = useState(initial.price?.toString() ?? '');
 
-  // Beds: dropdown picks 0-6 or "more" → free-text input. If initial > 6 or
-  // a fractional value, start in "more" mode prefilled.
   const initialBeds = initial.beds?.toString() ?? '';
   const initialBedsInList = (BED_OPTIONS as readonly string[]).includes(initialBeds);
   const [bedsMode, setBedsMode] = useState<'list' | 'more'>(
@@ -128,9 +130,10 @@ export function EditListingForm({ listingId, initial, communities, listingContex
 
   const [description, setDescription] = useState(initial.description.join('\n\n'));
   const [communityId, setCommunityId] = useState<string>(initial.community_id ?? '');
+
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+
   const [genState, setGenState] = useState<GenState>('idle');
   const [genError, setGenError] = useState<string | null>(null);
 
@@ -144,6 +147,133 @@ export function EditListingForm({ listingId, initial, communities, listingContex
     const n = Number.parseFloat(s);
     return Number.isFinite(n) && n >= 0 ? n : null;
   }
+
+  /**
+   * Build the payload from the latest state. Centralised so both the debounce
+   * tick and the imperative flush use the same shape.
+   */
+  function buildPayload(): UpdateListingInput {
+    return {
+      price: parseIntOrNull(price),
+      beds: parseFloatOrNull(beds),
+      baths: parseFloatOrNull(baths),
+      sqft: parseIntOrNull(sqft),
+      year_built: parseIntOrNull(yearBuilt),
+      lot_size: composeLotSize(lotNum, lotUnit),
+      hoa: hoa.trim() === '' ? null : hoa.trim(),
+      style: style.trim() === '' ? null : style.trim(),
+      description,
+      community_id: communityId === '' ? null : communityId,
+    };
+  }
+
+  // Refs that survive renders. We don't put the payload in a ref because
+  // useEffect already closes over the latest values via its dep array.
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inflightRef = useRef<Promise<void> | null>(null);
+  const dirtyRef = useRef(false);
+  const initialMountRef = useRef(true);
+
+  /**
+   * Run a single save round trip. Resolves on completion regardless of
+   * outcome so the flusher never hangs.
+   */
+  async function runSave() {
+    setSaveState('saving');
+    setErrorMsg(null);
+    try {
+      const result = await updateListing(listingId, buildPayload());
+      if (result.ok) {
+        dirtyRef.current = false;
+        setSaveState('saved');
+        // brief "Saved" flash, then back to idle
+        setTimeout(() => {
+          setSaveState((s) => (s === 'saved' ? 'idle' : s));
+        }, 1500);
+      } else {
+        setSaveState('error');
+        setErrorMsg(result.error);
+      }
+    } catch (err) {
+      setSaveState('error');
+      setErrorMsg(err instanceof Error ? err.message : 'unknown');
+    }
+  }
+
+  /**
+   * Cancel any pending debounce, flush whatever's dirty, await any in-flight
+   * save. Called by PublishPanel before publish; also exposed for unmount.
+   */
+  async function flushNow(): Promise<void> {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    if (inflightRef.current) {
+      await inflightRef.current;
+    }
+    if (dirtyRef.current) {
+      const p = runSave();
+      inflightRef.current = p.finally(() => {
+        if (inflightRef.current === p) inflightRef.current = null;
+      });
+      await p;
+    }
+  }
+
+  // Debounced auto-save. Skip the very first effect run (mount) so we don't
+  // round-trip a no-op save on page load. The form-state vars ARE the deps;
+  // runSave/inflightRef are intentionally stable across renders.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: form-state deps drive auto-save; runSave reads latest state via closure
+  useEffect(() => {
+    if (initialMountRef.current) {
+      initialMountRef.current = false;
+      return;
+    }
+    dirtyRef.current = true;
+    setSaveState('pending');
+    setErrorMsg(null);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      debounceRef.current = null;
+      // If a save is already in flight, wait for it before kicking the next.
+      const tick = async () => {
+        if (inflightRef.current) await inflightRef.current;
+        const p = runSave();
+        inflightRef.current = p.finally(() => {
+          if (inflightRef.current === p) inflightRef.current = null;
+        });
+      };
+      void tick();
+    }, AUTOSAVE_DEBOUNCE_MS);
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+    };
+  }, [price, beds, baths, sqft, yearBuilt, lotNum, lotUnit, hoa, style, description, communityId]);
+
+  // Register the flush hook for PublishPanel.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: register once on mount.
+  useEffect(() => {
+    const unregister = registerFlush(flushNow);
+    return unregister;
+  }, []);
+
+  // Best-effort flush on tab close. Note: server actions can't be called from
+  // beforeunload (no fetch keepalive on Next server actions), so we just warn
+  // the user if there's unsaved work.
+  useEffect(() => {
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      if (dirtyRef.current || saveState === 'pending' || saveState === 'saving') {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    }
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [saveState]);
 
   async function onGenerate() {
     setGenState('loading');
@@ -185,42 +315,16 @@ export function EditListingForm({ listingId, initial, communities, listingContex
     }
   }
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setSaveState('saving');
-    setErrorMsg(null);
-
-    const payload: UpdateListingInput = {
-      price: parseIntOrNull(price),
-      beds: parseFloatOrNull(beds),
-      baths: parseFloatOrNull(baths),
-      sqft: parseIntOrNull(sqft),
-      year_built: parseIntOrNull(yearBuilt),
-      lot_size: composeLotSize(lotNum, lotUnit),
-      hoa: hoa.trim() === '' ? null : hoa.trim(),
-      style: style.trim() === '' ? null : style.trim(),
-      description,
-      community_id: communityId === '' ? null : communityId,
-    };
-
-    startTransition(async () => {
-      const result = await updateListing(listingId, payload);
-      if (result.ok) {
-        setSaveState('saved');
-        setTimeout(() => setSaveState((s) => (s === 'saved' ? 'idle' : s)), 2000);
-      } else {
-        setSaveState('error');
-        setErrorMsg(result.error);
-      }
-    });
-  }
-
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
-      <p className="rounded border border-bronze/20 bg-ink2/40 p-3 text-xs text-cream/60">
-        <span className="text-red-300">*</span> Required to publish (address, list price, bedrooms,
-        bathrooms, and at least one ready video). Other fields are optional and can be added later.
-      </p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <p className="flex-1 rounded border border-bronze/20 bg-ink2/40 p-3 text-xs text-cream/60">
+          <span className="text-red-300">*</span> Required to publish (address, list price,
+          bedrooms, bathrooms, and at least one ready video). Other fields are optional and can be
+          added later. <span className="text-cream/80">Changes save automatically.</span>
+        </p>
+        <SaveBadge state={saveState} error={errorMsg} />
+      </div>
 
       <fieldset className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="List price (USD)" required>
@@ -486,26 +590,51 @@ export function EditListingForm({ listingId, initial, communities, listingContex
           className={`${INPUT_CLASS} min-h-[10rem] resize-y`}
         />
       </Field>
-
-      <div className="flex items-center gap-3 pt-2">
-        <button
-          type="submit"
-          disabled={isPending || saveState === 'saving'}
-          className="rounded bg-gold px-4 py-2 text-sm font-medium text-ink transition hover:opacity-90 disabled:opacity-50"
-        >
-          {saveState === 'saving' ? 'Saving…' : 'Save changes'}
-        </button>
-        {saveState === 'saved' && <span className="text-sm text-emerald-400">✓ Saved</span>}
-        {saveState === 'error' && (
-          <span className="text-sm text-red-400">Error: {errorMsg ?? 'unknown'}</span>
-        )}
-      </div>
-    </form>
+    </div>
   );
 }
 
 const INPUT_CLASS =
   'w-full rounded border border-bronze/30 bg-ink2 px-3 py-2 text-sm text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold';
+
+function SaveBadge({ state, error }: { state: SaveState; error: string | null }) {
+  if (state === 'idle') {
+    return (
+      <span className="shrink-0 rounded border border-cream/15 px-2 py-1 text-[11px] text-cream/40">
+        Auto-save on
+      </span>
+    );
+  }
+  if (state === 'pending') {
+    return (
+      <span className="shrink-0 rounded border border-cream/15 px-2 py-1 text-[11px] text-cream/60">
+        Editing…
+      </span>
+    );
+  }
+  if (state === 'saving') {
+    return (
+      <span className="shrink-0 rounded border border-bronze/40 bg-bronze/10 px-2 py-1 text-[11px] text-cream/80">
+        Saving…
+      </span>
+    );
+  }
+  if (state === 'saved') {
+    return (
+      <span className="shrink-0 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-300">
+        ✓ Saved
+      </span>
+    );
+  }
+  return (
+    <span
+      title={error ?? undefined}
+      className="shrink-0 rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-[11px] text-red-300"
+    >
+      Save failed
+    </span>
+  );
+}
 
 function Field({
   label,
