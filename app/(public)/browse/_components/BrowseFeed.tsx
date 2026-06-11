@@ -554,9 +554,9 @@ export function BrowseFeed({ cards }: { cards: BrowseCard[] }) {
     }
     try {
       await navigator.clipboard.writeText(url);
-      alert('Link copied');
+      // Silent copy — user requested no popup after share.
     } catch {
-      window.prompt('Copy link', url);
+      /* ignore — nothing else to do without clipboard access */
     }
   }, [active]);
 
