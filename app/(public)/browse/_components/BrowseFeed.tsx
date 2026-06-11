@@ -15,6 +15,7 @@ import { hlsUrl, thumbnailUrl } from '@/lib/cloudflare/stream';
 import Hls from 'hls.js';
 import Link from 'next/link';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { LeadModal } from '../../_components/LeadModal';
 
 export type BrowseSourceVideo = {
   cfVideoId: string;
@@ -462,18 +463,7 @@ function Card({
   );
 }
 
-export function BrowseFeed({
-  cards,
-  onContact,
-}: {
-  cards: BrowseCard[];
-  /**
-   * Optional override for the Contact rail button. When set, clicking
-   * Contact calls this with the active card instead of falling through to
-   * mailto:/tel:. `/v/[agent]/[listing]` uses this to open LeadModal.
-   */
-  onContact?: (card: BrowseCard) => void;
-}) {
+export function BrowseFeed({ cards }: { cards: BrowseCard[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [likeAnimKey, setLikeAnimKey] = useState(0);
@@ -485,6 +475,7 @@ export function BrowseFeed({
   // they swipe. Browser autoplay policy forces initial muted=true; we flip
   // false on first explicit user gesture (the Sound button).
   const [muted, setMuted] = useState(true);
+  const [leadOpen, setLeadOpen] = useState(false);
   const cardRefs = useRef<Map<number, HTMLElement>>(new Map());
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
@@ -692,19 +683,8 @@ export function BrowseFeed({
         <ActionButton label="Share" onClick={onShare}>
           <ShareIcon />
         </ActionButton>
-        {active && (onContact || active.agent.email || active.agent.phone) && (
-          <ActionButton
-            label="Contact"
-            {...(onContact
-              ? { onClick: () => onContact(active) }
-              : {
-                  href: active.agent.email
-                    ? `mailto:${active.agent.email}?subject=${encodeURIComponent(
-                        `Interested in ${active.listing.address}`,
-                      )}`
-                    : `tel:${active.agent.phone ?? ''}`,
-                })}
-          >
+        {active && (
+          <ActionButton label="Contact" onClick={() => setLeadOpen(true)}>
             <MessageIcon />
           </ActionButton>
         )}
@@ -751,6 +731,16 @@ export function BrowseFeed({
             Swipe up for more
           </span>
         </div>
+      )}
+
+      {active && (
+        <LeadModal
+          open={leadOpen}
+          onClose={() => setLeadOpen(false)}
+          agent={{ name: active.agent.name }}
+          listing={{ address: active.listing.address }}
+          listingId={active.listing.id}
+        />
       )}
     </div>
   );

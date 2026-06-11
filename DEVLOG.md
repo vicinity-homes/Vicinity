@@ -8,6 +8,27 @@ Institutional memory for the project. Updated incrementally, not at session end.
 
 ---
 
+## 2026-06-11 — Contact UX unified: LeadModal everywhere
+
+**Objective**: User feedback — Share/Contact behaved differently between `/browse` (mailto: link) and `/v/<agent>/<listing>` (LeadModal form). User wanted both unified to the public-link version (LeadModal).
+
+**Actions**:
+- Moved `LeadModal.tsx` from `_components/` (under `/v/`) up to `app/(public)/_components/` (shared).
+- Decoupled LeadModal from `FeedAgent`/`FeedListing`: now takes minimal `{ name }` and `{ address }` shapes — fewer cross-component types.
+- BrowseFeed: dropped the `onContact` prop; renders `<LeadModal>` itself, opens on Contact-button click. Now both feeds get identical Contact UX with zero plumbing.
+- VideoFeed shrank to ~30 LOC: just `page_view` + `<BrowseFeed/>` + empty state. Removed `agent`/`listing` props entirely (unused after LeadModal moved up).
+- Deleted `_components/types.ts` (FeedAgent/FeedListing no longer used anywhere).
+
+**Decisions**:
+- Move LeadModal → BrowseFeed instead of `onContact` callback override. Single source of truth wins; the override pattern was a leak.
+- Share UX was already shared via BrowseFeed's `onShare` (navigator.share → clipboard fallback) — no change needed there. User likely conflated it with Contact when reporting.
+
+**Verification**: `npx tsc --noEmit` clean. `pnpm build` green. `biome check` clean.
+
+**Next**: per-video description field (still gated on owner-side migration window).
+
+---
+
 ## 2026-06-11 — Public listing feed: parity with /browse rail
 
 **Objective**: User feedback — the share-link feed (`/v/[agentSlug]/[listingSlug]`) felt second-class vs `/browse`. Right rail had only Heart/Share/Contact, missing Schools/Nearby/Area/Sound. Goal: identical playback + rail UX as discovery, single source of truth.

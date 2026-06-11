@@ -14,13 +14,15 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import type { FeedAgent, FeedListing } from './types';
+
+type LeadAgent = { name: string };
+type LeadListing = { address: string };
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  agent: FeedAgent;
-  listing: FeedListing;
+  agent: LeadAgent;
+  listing: LeadListing;
   listingId: string;
 };
 

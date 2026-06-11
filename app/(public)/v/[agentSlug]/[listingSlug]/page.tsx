@@ -217,23 +217,7 @@ export default async function PublicListingPage({
 
   if (listingVideos.length === 0) {
     // No hero — render empty state via VideoFeed (it handles cards.length === 0).
-    return (
-      <VideoFeed
-        agent={{ slug: agent.slug, name: agent.name }}
-        listing={{
-          slug: listing.slug,
-          address: listing.address,
-          city: listing.city,
-          state: listing.state,
-          price: listing.price,
-          beds: listing.beds,
-          baths: listing.baths,
-          sqft: listing.sqft,
-        }}
-        listingId={listing.id}
-        cards={[]}
-      />
-    );
+    return <VideoFeed listingId={listing.id} cards={[]} />;
   }
 
   const hero = listingVideos[0];
@@ -312,21 +296,5 @@ export default async function PublicListingPage({
     },
   };
 
-  return (
-    <VideoFeed
-      agent={{ slug: agent.slug, name: agent.name }}
-      listing={{
-        slug: listing.slug,
-        address: listing.address,
-        city: listing.city,
-        state: listing.state,
-        price: listing.price,
-        beds: listing.beds,
-        baths: listing.baths,
-        sqft: listing.sqft,
-      }}
-      listingId={listing.id}
-      cards={[card]}
-    />
-  );
+  return <VideoFeed listingId={listing.id} cards={[card]} />;
 }
