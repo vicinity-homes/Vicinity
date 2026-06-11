@@ -2,10 +2,10 @@
 
 /**
  * Phase 4.6 — publish / unpublish UI panel.
- *
- * Shows a status banner + the relevant button. On publish failure (missing
- * required fields), surfaces the list inline so the agent knows what to fix
- * without leaving the page.
+ * Phase 8/listing-form-ux (2026-06-11) — translate raw missing[] keys returned
+ * by publishListing into human-readable labels with concrete fix hints. Old UX
+ * showed e.g. "beds" / "at least one ready video" verbatim, which read as
+ * cryptic when an agent had filled placeholders that looked like real values.
  *
  * Public URL is shown when published so the agent can copy/share immediately.
  */
@@ -20,6 +20,40 @@ interface Props {
   status: string;
   agentSlug: string | null;
   listingSlug: string;
+}
+
+/**
+ * Translate raw publish-gate keys into agent-facing labels + fix hints.
+ * Keep keys in sync with publish-actions.ts `missing.push(...)` calls.
+ */
+const MISSING_LABELS: Record<string, { label: string; hint: string }> = {
+  address: {
+    label: 'Property address',
+    hint: 'Address is set when the listing is created and cannot be edited here.',
+  },
+  price: {
+    label: 'List price',
+    hint: 'Enter a list price greater than $0.',
+  },
+  beds: {
+    label: 'Bedrooms',
+    hint: 'Pick a value (0 = studio).',
+  },
+  baths: {
+    label: 'Bathrooms',
+    hint: 'Pick a value greater than 0.',
+  },
+  'at least one ready video': {
+    label: 'At least one ready video',
+    hint: 'Upload a video above and wait for its status to show "Ready" before publishing.',
+  },
+};
+
+function describeMissing(key: string): { label: string; hint: string } {
+  const hit = MISSING_LABELS[key];
+  if (hit) return hit;
+  // Fallback: show the raw key so unknown gates aren't silently swallowed.
+  return { label: key, hint: '' };
 }
 
 export function PublishPanel({ listingId, status, agentSlug, listingSlug }: Props) {
@@ -119,7 +153,8 @@ export function PublishPanel({ listingId, status, agentSlug, listingSlug }: Prop
           )}
           {!isPublished && !isArchived && (
             <p className="mt-1 text-xs text-cream/60">
-              Requires: address, price, beds, baths, ≥1 ready video.
+              Required to publish: address, list price, bedrooms, bathrooms, and at least one ready
+              video.
             </p>
           )}
         </div>
@@ -168,11 +203,24 @@ export function PublishPanel({ listingId, status, agentSlug, listingSlug }: Prop
       </div>
       {missing && missing.length > 0 && (
         <div className="mt-4 rounded border border-red-500/40 bg-red-500/10 p-3 text-sm">
-          <p className="font-medium text-red-300">Cannot publish — missing:</p>
-          <ul className="mt-1 list-disc space-y-0.5 pl-5 text-red-200/90">
-            {missing.map((m) => (
-              <li key={m}>{m}</li>
-            ))}
+          <p className="font-medium text-red-300">
+            Can't publish yet — please fix the following and try again:
+          </p>
+          <ul className="mt-2 space-y-2 pl-1 text-red-200/90">
+            {missing.map((m) => {
+              const { label, hint } = describeMissing(m);
+              return (
+                <li key={m} className="flex gap-2">
+                  <span aria-hidden="true" className="text-red-300">
+                    •
+                  </span>
+                  <span>
+                    <span className="font-medium">{label}</span>
+                    {hint ? <span className="ml-1 text-red-200/70">— {hint}</span> : null}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

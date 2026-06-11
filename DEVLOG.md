@@ -8,6 +8,37 @@ Institutional memory for the project. Updated incrementally, not at session end.
 
 ---
 
+## 2026-06-11 — Listing form UX overhaul (phase8/listing-form-ux)
+
+**Objective**: User reported that publishing a draft failed with a misleading message — the panel only listed `beds`/`baths` as missing while *every* field (price, beds, baths, ready video) was actually required. Placeholders like `950000` and `4` looked like default values, so the agent thought the form was filled. Goal: distinguish required vs optional, replace error keys with human-readable hints, and use dropdowns where the long tail is small.
+
+**Actions**:
+- `PublishPanel.tsx` — added `MISSING_LABELS` map translating raw publish-gate keys (`address`, `price`, `beds`, `baths`, `at least one ready video`) into a label + concrete fix hint. Banner text changed from "Cannot publish — missing:" to "Can't publish yet — please fix the following and try again:". Status hint updated to spell out the full gate.
+- `EditListingForm.tsx` — top-of-form legend explaining required vs optional. New `<Field>` accepts `required`/`optional` props rendering a colored badge next to the label. Required: list price, bedrooms, bathrooms (publish gate). Optional: sqft, year built, lot size, HOA, style, description, community.
+  - **Beds**: `<select>` 0-6 (0 labelled "studio") + "7 or more…" → number input escape; supports loading prefilled long-tail values straight into the input.
+  - **Baths**: same pattern, 1 / 1.5 / … / 5 + "More than 5…" escape.
+  - **Style**: `<select>` of 10 common architectural styles + "Other…" → free-text escape. Pre-existing styles outside the list start in escape mode.
+  - **Lot size**: split into number + unit `<select>` (acres/sqft). Composes back into the existing `text` DB column on save (`"0.35 acres"` / `"15000 sqft"`); `parseLotSize` reads existing strings round-trip-safe. No DB migration.
+  - All numeric placeholders changed from bare values (`950000`, `4`, `3.5`) to `e.g. ...` form so the agent can't mistake them for defaults.
+- `NewListingForm.tsx` — beds/baths converted to dropdowns identical in shape to the edit form (no escape — escape lives in the edit page). Labels gained `<OptionalBadge>` and the `(optional)` parenthetical was removed in favor of the badge. Top-of-section explanation banner. Placeholders now `e.g. 1250000` / `e.g. 3200`. Footer copy updated (was Phase-4.1-flavored).
+
+**Decisions**:
+- Lot size kept as `text` column even with the new UI — splitting into number+unit purely client-side avoids a migration and preserves any legacy values that already include units.
+- Style dropdown intentionally short (10 entries) — the long tail goes through "Other…" so we don't lock listings into an enum we can't extend without a deploy.
+- Beds = 0 is a valid studio value (matches `publish-actions.ts` which only checks `null`, not `<= 0`).
+- Did NOT add an inline client-side publish-readiness check — the server is the source of truth (RLS + ready-video count) and duplicating that logic risks drift. The improved server-side error message is enough.
+
+**Validation**:
+- `npx tsc --noEmit` clean.
+- `npx next build` succeeds, `/dashboard/listings/[id]/edit` route size 23.1 kB (was ~21 kB pre-change, +2 kB acceptable for the dropdowns + escape logic).
+- `npx biome check` clean after format auto-fix.
+
+**Branch**: `phase8/listing-form-ux` (mini-phase; merge after user review).
+
+**Next steps**: Smoke-test on live preview after merge — create a draft with the new form, leave price empty, hit Publish, verify the banner now reads "List price — Enter a list price greater than $0." instead of `price`.
+
+---
+
 ## 2026-06-11 — Contact UX unified: LeadModal everywhere
 
 **Objective**: User feedback — Share/Contact behaved differently between `/browse` (mailto: link) and `/v/<agent>/<listing>` (LeadModal form). User wanted both unified to the public-link version (LeadModal).

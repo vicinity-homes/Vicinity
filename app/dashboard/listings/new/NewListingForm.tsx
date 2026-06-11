@@ -234,64 +234,86 @@ export function NewListingForm() {
         )}
       </div>
 
+      <p className="rounded border border-bronze/20 bg-ink2/40 p-3 text-xs text-cream/60">
+        Address is required to create a draft. Price, beds, baths, and at least one ready video are
+        required to publish — you can fill those here or on the next screen.
+      </p>
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
-          <label htmlFor="price" className="block text-sm font-medium">
-            Price (USD, optional)
+          <label htmlFor="price" className="flex items-center gap-2 text-sm font-medium">
+            <span>List price (USD)</span>
+            <OptionalBadge />
           </label>
           <input
             id="price"
             type="number"
             min="1"
-            placeholder="1250000"
+            placeholder="e.g. 1250000"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none"
           />
         </div>
         <div className="space-y-1">
-          <label htmlFor="sqft" className="block text-sm font-medium">
-            Sqft (optional)
+          <label htmlFor="sqft" className="flex items-center gap-2 text-sm font-medium">
+            <span>Square feet</span>
+            <OptionalBadge />
           </label>
           <input
             id="sqft"
             type="number"
             min="1"
-            placeholder="3200"
+            placeholder="e.g. 3200"
             value={sqft}
             onChange={(e) => setSqft(e.target.value)}
             className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none"
           />
         </div>
         <div className="space-y-1">
-          <label htmlFor="beds" className="block text-sm font-medium">
-            Beds (optional)
+          <label htmlFor="beds" className="flex items-center gap-2 text-sm font-medium">
+            <span>Bedrooms</span>
+            <OptionalBadge />
           </label>
-          <input
+          <select
             id="beds"
-            type="number"
-            min="0"
-            step="0.5"
-            placeholder="4"
             value={beds}
             onChange={(e) => setBeds(e.target.value)}
-            className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none"
-          />
+            className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-cream focus:border-gold focus:outline-none"
+          >
+            <option value="">— Select —</option>
+            <option value="0">0 (studio)</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7+</option>
+          </select>
         </div>
         <div className="space-y-1">
-          <label htmlFor="baths" className="block text-sm font-medium">
-            Baths (optional)
+          <label htmlFor="baths" className="flex items-center gap-2 text-sm font-medium">
+            <span>Bathrooms</span>
+            <OptionalBadge />
           </label>
-          <input
+          <select
             id="baths"
-            type="number"
-            min="0"
-            step="0.5"
-            placeholder="3"
             value={baths}
             onChange={(e) => setBaths(e.target.value)}
-            className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none"
-          />
+            className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-cream focus:border-gold focus:outline-none"
+          >
+            <option value="">— Select —</option>
+            <option value="1">1</option>
+            <option value="1.5">1.5</option>
+            <option value="2">2</option>
+            <option value="2.5">2.5</option>
+            <option value="3">3</option>
+            <option value="3.5">3.5</option>
+            <option value="4">4</option>
+            <option value="4.5">4.5</option>
+            <option value="5">5+</option>
+          </select>
         </div>
       </div>
 
@@ -306,9 +328,16 @@ export function NewListingForm() {
       </button>
 
       <p className="text-xs text-cream/60">
-        Phase 4.1 captures address + optional pricing fields. The next page will let you upload
-        videos, set the cover photo, and publish.
+        After creating the draft you'll upload videos, fine-tune details, and publish.
       </p>
     </form>
+  );
+}
+
+function OptionalBadge() {
+  return (
+    <span className="rounded border border-cream/15 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-cream/40">
+      Optional
+    </span>
   );
 }
