@@ -255,7 +255,7 @@ function SortableVideoItem({
     <li
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 rounded border p-3 ${
+      className={`flex flex-wrap items-center gap-3 rounded border p-3 ${
         isCover ? 'border-gold/60 bg-ink2' : 'border-bronze/30 bg-ink2'
       }`}
     >
@@ -280,26 +280,26 @@ function SortableVideoItem({
           </div>
         )}
       </div>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 basis-[8rem]">
         <div className="flex items-center gap-2">
           <span className="truncate text-sm text-cream">{video.title ?? video.cf_video_id}</span>
           {isCover ? (
-            <span className="rounded bg-gold px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">
+            <span className="flex-shrink-0 rounded bg-gold px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">
               Cover
             </span>
           ) : null}
         </div>
-        <div className="text-xs text-cream/50">
+        <div className="truncate text-xs text-cream/50">
           {video.kind} · <StatusText status={video.status} />
         </div>
       </div>
-      <div className="flex flex-shrink-0 items-center gap-2">
+      <div className="flex w-full flex-shrink-0 items-center gap-2 sm:w-auto">
         {isCover ? (
           <button
             type="button"
             onClick={() => onSetCover(null)}
             disabled={coverPending}
-            className="rounded border border-bronze/40 px-2 py-1 text-xs text-cream/70 hover:border-bronze/60 hover:text-cream disabled:opacity-50"
+            className="w-full whitespace-nowrap rounded border border-bronze/40 px-2 py-1 text-xs text-cream/70 hover:border-bronze/60 hover:text-cream disabled:opacity-50 sm:w-auto"
           >
             Clear cover
           </button>
@@ -313,7 +313,7 @@ function SortableVideoItem({
                 ? 'Use this video as the listing cover'
                 : 'Available once processing finishes'
             }
-            className="rounded border border-bronze/40 px-2 py-1 text-xs text-cream/70 hover:border-gold hover:text-gold disabled:opacity-30"
+            className="w-full whitespace-nowrap rounded border border-bronze/40 px-2 py-1 text-xs text-cream/70 hover:border-gold hover:text-gold disabled:opacity-30 sm:w-auto"
           >
             Set as cover
           </button>

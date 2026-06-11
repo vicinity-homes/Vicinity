@@ -100,7 +100,7 @@ export function SocialCopyPanel({ listingId }: Props) {
           type="text"
           value={highlightsRaw}
           onChange={(e) => setHighlightsRaw(e.target.value)}
-          placeholder="renovated kitchen, walk to schools, finished basement"
+          placeholder="e.g. renovated kitchen, walk to schools"
           className={INPUT_CLASS}
           maxLength={500}
         />

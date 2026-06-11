@@ -20,7 +20,28 @@ import * as tus from 'tus-js-client';
 
 const MAX_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
 
-type Status = 'idle' | 'creating' | 'uploading' | 'done' | 'error';
+type Status = 'idle' | 'picked' | 'creating' | 'uploading' | 'done' | 'error';
+
+/**
+ * Turn an iOS/Android camera filename like
+ *   `80286515262__A36D0705-4E7F-466B-8EE7-9AD52895DF45.MOV`
+ * into something a human will tolerate ("Walkthrough" fallback). The agent can
+ * still edit it before upload starts.
+ */
+function cleanTitle(filename: string): string {
+  let name = filename.replace(/\.[^.]+$/, ''); // strip extension
+  name = name
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '')
+    .replace(/^IMG[_-]?\d+/i, '')
+    .replace(/^MVI[_-]?\d+/i, '')
+    .replace(/^VID[_-]?\d+/i, '')
+    .replace(/\b\d{6,}\b/g, '')
+    .replace(/[_\-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!name || /^[\s\d]*$/.test(name)) return 'Walkthrough';
+  return name.slice(0, 80);
+}
 
 export type ListingTarget = { scope: 'listing'; listingId: string };
 export type CommunityKind = 'school' | 'poi' | 'neighborhood';
@@ -50,9 +71,11 @@ export function VideoUploader({ target, onUploaded }: Props) {
   const [progress, setProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [pickedFile, setPickedFile] = useState<File | null>(null);
+  const [title, setTitle] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  async function handleFile(file: File) {
+  function handlePicked(file: File) {
     setErrorMsg(null);
     setFileName(file.name);
 
@@ -67,6 +90,16 @@ export function VideoUploader({ target, onUploaded }: Props) {
       return;
     }
 
+    setPickedFile(file);
+    setTitle(cleanTitle(file.name));
+    setStatus('picked');
+  }
+
+  async function startUpload() {
+    if (!pickedFile) return;
+    const file = pickedFile;
+    const finalTitle = title.trim() || cleanTitle(file.name);
+
     setStatus('creating');
     setProgress(0);
 
@@ -77,14 +110,14 @@ export function VideoUploader({ target, onUploaded }: Props) {
             parent_id: target.listingId,
             kind: 'walkthrough' as const,
             upload_length: file.size,
-            title: file.name,
+            title: finalTitle,
           }
         : {
             scope: 'community' as const,
             parent_id: target.communityId,
             kind: target.kind,
             upload_length: file.size,
-            title: file.name,
+            title: finalTitle,
             ...(target.schoolId ? { school_id: target.schoolId } : {}),
             ...(target.poiId ? { poi_id: target.poiId } : {}),
           };
@@ -128,7 +161,7 @@ export function VideoUploader({ target, onUploaded }: Props) {
       onSuccess: () => {
         setStatus('done');
         setProgress(100);
-        onUploaded?.({ rowId, videoId, title: file.name, kind: uploadedKind });
+        onUploaded?.({ rowId, videoId, title: finalTitle, kind: uploadedKind });
       },
       onError: (err) => {
         setStatus('error');
@@ -144,6 +177,8 @@ export function VideoUploader({ target, onUploaded }: Props) {
     setProgress(0);
     setErrorMsg(null);
     setFileName(null);
+    setPickedFile(null);
+    setTitle('');
     if (inputRef.current) inputRef.current.value = '';
   }
 
@@ -164,7 +199,7 @@ export function VideoUploader({ target, onUploaded }: Props) {
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
-              if (f) handleFile(f);
+              if (f) handlePicked(f);
             }}
           />
           <span className="text-sm font-medium">Click to select a video</span>
@@ -174,9 +209,61 @@ export function VideoUploader({ target, onUploaded }: Props) {
         </label>
       )}
 
+      {status === 'picked' && (
+        <div className="space-y-4">
+          <div>
+            <div className="mb-1 text-xs" style={{ color: 'var(--muted)' }}>
+              Selected file
+            </div>
+            <div
+              className="break-all rounded-lg border px-3 py-2 text-xs"
+              style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
+            >
+              {fileName}
+            </div>
+          </div>
+          <div>
+            <label htmlFor="vu-title" className="mb-1 block text-xs">
+              Video title <span style={{ color: 'var(--muted)' }}>(shown to buyers)</span>
+            </label>
+            <input
+              id="vu-title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={80}
+              placeholder="e.g. Front exterior walkthrough"
+              className="w-full rounded-lg border px-3 py-2 text-sm"
+              style={{ borderColor: 'var(--border)', background: 'transparent' }}
+            />
+            <div className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>
+              {title.length}/80 — defaults to a cleaned-up filename, edit to taste.
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={startUpload}
+              className="rounded-lg px-4 py-2 text-sm font-medium transition hover:opacity-90"
+              style={{ background: 'var(--brand)', color: '#0c0c0c' }}
+            >
+              Start upload
+            </button>
+            <button
+              type="button"
+              onClick={reset}
+              className="rounded-lg border px-4 py-2 text-sm font-medium transition hover:opacity-90"
+              style={{ borderColor: 'var(--border)' }}
+            >
+              Pick another file
+            </button>
+          </div>
+        </div>
+      )}
+
       {(status === 'creating' || status === 'uploading') && (
         <div className="space-y-3">
-          <div className="text-sm font-medium truncate">{fileName}</div>
+          <div className="break-all text-sm font-medium">{title || fileName}</div>
           <div
             className="h-2 w-full overflow-hidden rounded-full"
             style={{ background: 'var(--border)' }}
@@ -197,7 +284,12 @@ export function VideoUploader({ target, onUploaded }: Props) {
 
       {status === 'done' && (
         <div className="space-y-3">
-          <div className="text-sm font-medium">✓ Upload complete: {fileName}</div>
+          <div className="text-sm font-medium">
+            ✓ Upload complete
+            <span className="mt-1 block break-all font-normal" style={{ color: 'var(--muted)' }}>
+              {title || fileName}
+            </span>
+          </div>
           <div className="text-xs" style={{ color: 'var(--muted)' }}>
             Cloudflare is processing the video. Refresh in ~60s to see status flip to ready.
           </div>
