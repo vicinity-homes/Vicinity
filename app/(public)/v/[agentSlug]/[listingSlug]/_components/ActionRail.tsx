@@ -73,41 +73,41 @@ function ContactIcon() {
   );
 }
 
-export function ActionRail({ liked, onToggleLike, onContact, likeAnimKey = 0 }: Props) {
+export function ActionRail({
+  liked,
+  onToggleLike,
+  listing,
+  agent,
+  onContact,
+  likeAnimKey = 0,
+}: Props) {
   async function handleShare() {
     const url = typeof window !== 'undefined' ? window.location.href : '';
-    // Per user feedback (2026-06-10): "share link should just have link
-    // copied not a text box". iOS native share sheet was injecting title+text
-    // alongside the URL into Messages/WhatsApp, which the user found noisy.
-    // Plain clipboard copy + brief toast — same as the dashboard CopyLinkButton.
+    const shareData = {
+      title: `${listing.address} · ${listing.city}, ${listing.state}`,
+      text: `Check out this listing from ${agent.name}`,
+      url,
+    };
+    try {
+      if (typeof navigator !== 'undefined' && 'share' in navigator) {
+        await navigator.share(shareData);
+        return;
+      }
+    } catch {
+      // user cancelled or share failed — fall through to clipboard.
+    }
     try {
       await navigator.clipboard?.writeText(url);
     } catch {
-      // clipboard blocked — last resort prompt so user can grab the URL
-      if (typeof window !== 'undefined') window.prompt('Copy link', url);
-      return;
-    }
-    // Lightweight ephemeral toast — no dependency, dismissed after 1.6s.
-    if (typeof document !== 'undefined') {
-      const el = document.createElement('div');
-      el.textContent = 'Link copied';
-      el.className =
-        'fixed left-1/2 bottom-24 z-50 -translate-x-1/2 rounded-full bg-ink/90 px-4 py-2 text-xs text-cream border border-gold/40 shadow-xl backdrop-blur-md transition-opacity duration-300';
-      document.body.appendChild(el);
-      setTimeout(() => {
-        el.style.opacity = '0';
-      }, 1300);
-      setTimeout(() => el.remove(), 1700);
+      // clipboard blocked — silent. Phase 3.7 may add a toast.
     }
   }
 
   const buttonBase =
     'rail-btn flex h-12 w-12 items-center justify-center rounded-full border bg-ink/55 backdrop-blur-md shadow-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60';
-  // Kills iOS Safari 300ms double-tap delay that made Contact feel "frozen".
-  const tapStyle = { touchAction: 'manipulation' as const };
 
   return (
-    <div className="pointer-events-none absolute inset-y-0 right-3 z-30 flex items-center">
+    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
       <div className="pointer-events-auto flex flex-col items-center gap-4">
         {/* Heart with pop animation — `key` toggles re-mount so anim replays each press. */}
         <div key={likeAnimKey} className={likeAnimKey > 0 ? 'heart-pop' : ''}>
@@ -116,7 +116,6 @@ export function ActionRail({ liked, onToggleLike, onContact, likeAnimKey = 0 }: 
             aria-label={liked ? 'Unsave listing' : 'Save listing'}
             aria-pressed={liked}
             onClick={onToggleLike}
-            style={tapStyle}
             className={`${buttonBase} ${liked ? 'border-rose-400/80 bg-rose-500/90 text-white' : 'border-white/15 text-cream hover:text-gold'}`}
           >
             <HeartIcon filled={liked} />
@@ -130,7 +129,6 @@ export function ActionRail({ liked, onToggleLike, onContact, likeAnimKey = 0 }: 
           type="button"
           aria-label="Share listing"
           onClick={handleShare}
-          style={tapStyle}
           className={`${buttonBase} border-white/15 text-cream hover:text-gold`}
         >
           <ShareIcon />
@@ -141,7 +139,6 @@ export function ActionRail({ liked, onToggleLike, onContact, likeAnimKey = 0 }: 
           type="button"
           aria-label="Contact agent"
           onClick={onContact}
-          style={tapStyle}
           className={`${buttonBase} border-gold/50 bg-gold/15 text-gold hover:bg-gold/25`}
         >
           <ContactIcon />
