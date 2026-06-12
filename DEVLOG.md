@@ -8,6 +8,37 @@ Institutional memory for the project. Updated incrementally, not at session end.
 
 ---
 
+## 2026-06-12 — Phase 11: platform-wide /nearby + community video geo
+
+**Objective.** Make `/nearby` a real page (was Phase 13 placeholder) and let agents tag community videos with lat/lng so platform-wide radius search works.
+
+**Actions.**
+- `lib/geo/distance.ts`: `latLngBoundingBox()` (b-tree-friendly bbox prefilter) + `haversineMiles()` (exact great-circle for sort/filter).
+- `GET /api/nearby?lat&lng&radius` (public, no auth): returns published listings + ready community_videos within radius, capped at 200 each, sorted by distance. bbox prefilter via lat/lng b-tree (the partial index from migration 0011), then exact haversine in JS.
+- `app/(public)/nearby/page.tsx`: real shell with metadata.
+- `NearbyClient`: navigator.geolocation prompt → fetches `/api/nearby`. Manual lat/lng fallback if geolocation denied. Radius slider 1..50 mi, default 10. Renders listings grid (linked to `/v/...`) + community videos grid (thumbnails only — clicking deferred since community → listing routing is multi-step).
+- `lib/zod/schemas.ts`: `VideoCreateUpload` accepts optional `lat`/`lng` (community scope).
+- `app/api/video/create-upload/route.ts`: persists lat/lng on community_videos row insert.
+- `components/dashboard/VideoUploader.tsx`: `CommunityTarget` typed with optional `lat`/`lng`.
+- `CommunityVideoPanel`: lat/lng inputs + "Use my current location" button. Validates -90..90 / -180..180 client-side. Optional but encourages agents to fill it in (without it, the video won't appear in nearby).
+
+**Decisions / deviations.**
+1. **bbox + haversine in JS, not PostGIS.** Stays in V1 simplicity envelope and lets b-tree on (lat, lng) carry the load. PostGIS upgrade path is open (migration comments document it).
+2. **Radius cap = 50 mi UI / 100 mi API.** Anything larger is out of scope for "nearby" semantics.
+3. **Community videos in /nearby are display-only**, no click-through. Community-page routing is a fast-follow; today there's no public community detail page anyway.
+4. **Existing community videos stay invisible to /nearby until backfilled.** The migration's `lat/lng` columns are nullable; we don't need to retrofit historic rows for V1.
+
+**Issues / resolution.** None — typecheck and build green on first complete pass.
+
+**Learnings.** Bbox prefilter is the cheap win that makes geolocation queries work without PostGIS. The partial index (`where lat is not null and lng is not null`) keeps the index small since most legacy community_videos lack geo.
+
+**Next steps.**
+1. **User reviews + applies migration 0011** before any of Phase 10/11 surfaces work in prod.
+2. (Optional fast-follow) geocode community video lat/lng from the community's centroid when an agent skips the input — better than NULL.
+3. (Optional fast-follow) link community video tiles to their listing(s) — but that's V2.
+
+---
+
 ## 2026-06-12 — Phase 10: listing photos + photo-only listings shipped end-to-end
 
 **Objective.** Let agents attach photos to a listing (alongside or instead of video), and surface photo-only listings in the grid. Photo-only listings stay out of the swipe feed (video-only by design).

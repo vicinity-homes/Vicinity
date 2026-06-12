@@ -57,7 +57,30 @@ export function CommunityVideoPanel({
   const [kind, setKind] = useState<CommunityKind>('neighborhood');
   const [schoolId, setSchoolId] = useState<string>('');
   const [poiId, setPoiId] = useState<string>('');
+  // Phase 11 (2026-06-12) — geo for platform-wide nearby. Stored as strings
+  // for input control; converted to numbers when building target.
+  const [lat, setLat] = useState<string>('');
+  const [lng, setLng] = useState<string>('');
+  const [geoError, setGeoError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  function useMyLocation() {
+    setGeoError(null);
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setGeoError('Geolocation not available in this browser.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLat(pos.coords.latitude.toFixed(6));
+        setLng(pos.coords.longitude.toFixed(6));
+      },
+      (err) => {
+        setGeoError(err.message || 'Could not read location.');
+      },
+      { enableHighAccuracy: false, timeout: 8000 },
+    );
+  }
 
   // Sync if a parent refresh delivers new initial data (e.g. after a delete).
   useEffect(() => {
@@ -102,6 +125,19 @@ export function CommunityVideoPanel({
     }
   }
 
+  const latNum = lat.trim() === '' ? undefined : Number(lat);
+  const lngNum = lng.trim() === '' ? undefined : Number(lng);
+  const geoOk =
+    (latNum === undefined && lngNum === undefined) ||
+    (typeof latNum === 'number' &&
+      Number.isFinite(latNum) &&
+      latNum >= -90 &&
+      latNum <= 90 &&
+      typeof lngNum === 'number' &&
+      Number.isFinite(lngNum) &&
+      lngNum >= -180 &&
+      lngNum <= 180);
+
   const target =
     kind === 'school'
       ? {
@@ -109,6 +145,8 @@ export function CommunityVideoPanel({
           communityId,
           kind: 'school' as const,
           ...(schoolId ? { schoolId } : {}),
+          ...(geoOk && latNum !== undefined ? { lat: latNum } : {}),
+          ...(geoOk && lngNum !== undefined ? { lng: lngNum } : {}),
         }
       : kind === 'poi'
         ? {
@@ -116,8 +154,16 @@ export function CommunityVideoPanel({
             communityId,
             kind: 'poi' as const,
             ...(poiId ? { poiId } : {}),
+            ...(geoOk && latNum !== undefined ? { lat: latNum } : {}),
+            ...(geoOk && lngNum !== undefined ? { lng: lngNum } : {}),
           }
-        : { scope: 'community' as const, communityId, kind: 'neighborhood' as const };
+        : {
+            scope: 'community' as const,
+            communityId,
+            kind: 'neighborhood' as const,
+            ...(geoOk && latNum !== undefined ? { lat: latNum } : {}),
+            ...(geoOk && lngNum !== undefined ? { lng: lngNum } : {}),
+          };
 
   return (
     <section className="rounded border border-bronze/30 bg-ink2 p-6">
@@ -244,6 +290,53 @@ export function CommunityVideoPanel({
             No POIs yet — add one above to link it to a video.
           </p>
         )}
+
+        {/* Phase 11 — location for platform-wide /nearby. Optional but strongly
+            encouraged: without lat/lng the video won't appear in radius searches. */}
+        <div className="rounded border border-bronze/15 bg-ink p-3">
+          <div className="mb-2 flex items-baseline justify-between gap-2">
+            <h4 className="text-xs font-medium uppercase tracking-wide text-cream/60">
+              Location (optional, but enables Nearby)
+            </h4>
+            <button
+              type="button"
+              onClick={useMyLocation}
+              className="rounded border border-bronze/30 px-2 py-1 text-[11px] text-cream/70 hover:border-gold hover:text-cream"
+            >
+              Use my current location
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block">
+              <span className="mb-1 block text-[11px] text-cream/50">Latitude</span>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={lat}
+                onChange={(e) => setLat(e.target.value)}
+                placeholder="e.g. 33.838"
+                className="w-full rounded border border-bronze/30 bg-ink px-2 py-1 text-sm text-cream focus:border-gold focus:outline-none"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-[11px] text-cream/50">Longitude</span>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={lng}
+                onChange={(e) => setLng(e.target.value)}
+                placeholder="e.g. -84.378"
+                className="w-full rounded border border-bronze/30 bg-ink px-2 py-1 text-sm text-cream focus:border-gold focus:outline-none"
+              />
+            </label>
+          </div>
+          {!geoOk && (
+            <p className="mt-2 text-[11px] text-red-400">
+              Lat must be -90..90 and lng -180..180, or both empty.
+            </p>
+          )}
+          {geoError && <p className="mt-2 text-[11px] text-red-400">{geoError}</p>}
+        </div>
         <VideoUploader target={target} onUploaded={handleUploaded} />
         {error && <p className="text-xs text-red-400">{error}</p>}
       </div>

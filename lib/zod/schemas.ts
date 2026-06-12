@@ -53,6 +53,12 @@ export const VideoCreateUpload = z.object({
   // Community-scope only: optional school/POI link. Validated against scope at the route handler.
   school_id: z.string().uuid().optional(),
   poi_id: z.string().uuid().optional(),
+  // Phase 11 (2026-06-12) — community-scope geo. Optional on the wire so
+  // older clients keep working; the route handler enforces presence for
+  // community scope when we want platform-wide nearby coverage. Lat in
+  // [-90, 90], lng in [-180, 180].
+  lat: z.number().gte(-90).lte(90).optional(),
+  lng: z.number().gte(-180).lte(180).optional(),
 });
 export type VideoCreateUpload = z.infer<typeof VideoCreateUpload>;
 

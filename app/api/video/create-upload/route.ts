@@ -188,6 +188,11 @@ async function handleCommunity(
       school_id: input.school_id ?? null,
       poi_id: input.poi_id ?? null,
       title: input.title ?? null,
+      // Phase 11 — platform-wide nearby. Falls back to NULL for callers
+      // that don't supply geo (older clients); those rows won't show up
+      // in the radius query until backfilled.
+      lat: input.lat ?? null,
+      lng: input.lng ?? null,
       status: 'processing',
       uploaded_by: agent.id,
     })

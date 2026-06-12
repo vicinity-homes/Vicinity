@@ -1,51 +1,38 @@
 /**
- * `/nearby` — placeholder for Phase 11.
+ * `/nearby` — Phase 11 real implementation (2026-06-12).
  *
- * Phase 13 (2026-06-12) ships only the route shell so the BottomNav tab
- * doesn't 404. Phase 11 will replace this with:
- *   - geolocation permission flow
- *   - distance slider (default 10mi, 5/10/25/50)
- *   - feed of community videos + listings within radius
+ * Buyer/agent (or anon) views content within X miles of their current
+ * location. Default 10 mi, slider to 1..50 mi.
  *
- * Keeping the placeholder explicit so the route exists in production but the
- * UX is honest about being incomplete.
+ * Flow:
+ *   1. Mount → request browser geolocation (one-time prompt).
+ *   2. On grant → GET /api/nearby?lat&lng&radius → render two grids:
+ *        - Listings (linked to /v/{a}/{l})
+ *        - Community videos (linked to /v/{a}/{l} via community → not yet,
+ *          for V1 just show the thumbnail; clicking is deferred).
+ *   3. Slider change → re-fetch.
+ *
+ * Permissions: if user denies geolocation, surface a manual lat/lng input
+ * (mirrors the agent upload form pattern).
  */
 
-import { Logo } from '@/app/_components/Logo';
-import type { Metadata } from 'next';
-import Link from 'next/link';
+import { NearbyClient } from './NearbyClient';
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Nearby · Vicinity',
-  description: 'Listings and community videos near you.',
 };
 
 export default function NearbyPage() {
   return (
-    <main className="min-h-dvh bg-ink text-cream pb-20 md:pb-0">
-      <header className="sticky top-0 z-20 flex items-center justify-between border-cream/10 border-b bg-ink/85 px-4 py-3 backdrop-blur-md">
-        <Logo variant="overlay" />
-        <div className="font-medium text-cream/80 text-sm uppercase tracking-wider">Nearby</div>
-        <div className="w-9" aria-hidden="true" />
-      </header>
-
-      <section className="mx-auto max-w-md px-6 py-16 text-center">
-        <div className="mb-3 text-gold text-xs uppercase tracking-[0.3em]">Coming soon</div>
-        <h1 className="font-serif text-3xl text-cream">Nearby</h1>
-        <p className="mt-4 text-cream/70 text-sm leading-relaxed">
-          Find listings and community tours within a few miles of where you are. We&apos;re wiring
-          up the geolocation flow next — it&apos;ll default to a 10-mile radius and let you dial it
-          in.
+    <main className="min-h-dvh bg-ink pb-24 text-cream md:pb-8">
+      <div className="mx-auto max-w-5xl px-4 py-6">
+        <h1 className="font-serif text-2xl">Nearby</h1>
+        <p className="mt-1 text-cream/60 text-sm">
+          Listings and community videos within <span className="text-cream/80">your radius</span>.
+          Default 10 miles.
         </p>
-        <div className="mt-8">
-          <Link
-            href="/browse"
-            className="btn-gold inline-flex items-center justify-center rounded-full px-6 py-3 text-sm"
-          >
-            Browse all listings
-          </Link>
-        </div>
-      </section>
+        <NearbyClient />
+      </div>
     </main>
   );
 }

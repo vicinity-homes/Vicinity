@@ -51,6 +51,10 @@ export type CommunityTarget = {
   kind: CommunityKind;
   schoolId?: string;
   poiId?: string;
+  // Phase 11 (2026-06-12) — geo for platform-wide nearby. Optional so
+  // older callers compile; agents are encouraged to fill them in.
+  lat?: number;
+  lng?: number;
 };
 export type UploadTarget = ListingTarget | CommunityTarget;
 
@@ -120,6 +124,8 @@ export function VideoUploader({ target, onUploaded }: Props) {
             title: finalTitle,
             ...(target.schoolId ? { school_id: target.schoolId } : {}),
             ...(target.poiId ? { poi_id: target.poiId } : {}),
+            ...(typeof target.lat === 'number' ? { lat: target.lat } : {}),
+            ...(typeof target.lng === 'number' ? { lng: target.lng } : {}),
           };
 
     let uploadUrl: string;
