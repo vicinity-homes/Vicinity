@@ -8,6 +8,38 @@ Institutional memory for the project. Updated incrementally, not at session end.
 
 ---
 
+## 2026-06-12 — Phase 14.1: shorter Explore CTA + sound-on autoplay (Option C)
+
+**Objective**: Two owner follow-ups on phase14:
+1. Landing CTA "Explore Listings" → just "Explore" (the word "Listings" is redundant — the whole site is listings).
+2. Swipe-feed video should start with sound, not require a tap.
+
+**Branch**: `phase14.1/explore-label-and-audio` off `c1db8cb`.
+
+**Actions**:
+- `app/page.tsx`: CTA text "Explore Listings" → "Explore".
+- `app/(public)/browse/_components/BrowseFeed.tsx`:
+  - Flipped initial `muted` state from `true` to `false` — we now optimistically attempt autoplay-with-sound on the first card.
+  - Added `onAutoplayBlocked?: () => void` to `CardProps`. The card's play-on-active effect tries `play()` with the requested mute state; on rejection (browser blocked autoplay-with-sound for lack of sticky activation), it sets `v.muted = true`, fires `onAutoplayBlocked`, and retries muted. The retry always succeeds because `muted` autoplay is universally allowed.
+  - Parent `BrowseFeed` passes `onAutoplayBlocked={() => setMuted(true)}` so the global mute state — and therefore the bottom-bar Sound button label/icon — reflects what the user actually hears.
+
+**Decisions**:
+- **Option C (try-with-sound, fallback-to-muted)** vs the safer Option A (unlock on landing-CTA click) or Option B (full-screen Tap-to-unmute overlay). Owner picked C explicitly. The argument for C: most real traffic to `/browse` arrives via a click on the Landing "Explore" CTA, which gives Chromium and Safari sticky activation for the same-origin `/browse/feed` page — `play()` with sound just works in that path. Direct navigations (shared links opened in a new tab, address-bar paste) still get a graceful fallback to muted, with the Sound button correctly showing "Sound" so the user knows how to unmute.
+- **Did not add a Tap-to-unmute overlay.** The CTA-click handshake covers the dominant traffic path; an overlay everyone has to dismiss would be friction for the 80% case to fix the 20% case. The bottom-bar Sound button already exists for the fallback case.
+- **Optimistic state, reactive correction.** `useState(false)` paints the bottom bar in the "Mute" state (because we expect sound). If the browser disagrees, the catch handler flips it. This avoids a one-frame flash of "Sound" (muted) before unmuting that a useEffect-based unmute-after-mount approach would cause.
+
+**Issues / resolution**:
+- An intermediate patch left a duplicate `useState` because the comment block and declaration were on adjacent lines and the old text matched only partially. Caught immediately by the LSP duplicate-binding error. Fixed in the next patch.
+
+**Verification**:
+- `npx tsc --noEmit` → exit 0.
+- `npx biome check` → clean.
+- `npm run build` → green.
+
+**Next steps**: Merge to main and watch Vercel deploy. If we see autoplay-blocked telemetry in production for Safari (stricter than Chrome), the fix is to add a one-time pointermove/click listener on `/` that primes audio context — a Phase 14.2 follow-up, not blocking this ship.
+
+---
+
 ## 2026-06-12 — Phase 14: UX cleanup pass (logos, Browse→Explore, Home tab, video letterbox, landing nav prune)
 
 **Objective**: Owner-driven UX cleanup post-v0.10.0. Five surgical changes:

@@ -293,6 +293,8 @@ interface CardProps {
   poolSize: number;
   /** Global mute state from parent feed — propagated to <video> on every render. */
   muted: boolean;
+  /** Called if the browser blocks autoplay-with-sound and we fall back to muted. */
+  onAutoplayBlocked?: () => void;
 }
 
 /**
@@ -371,6 +373,7 @@ function Card({
   onSwipe,
   poolSize,
   muted,
+  onAutoplayBlocked,
 }: CardProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -426,6 +429,9 @@ function Card({
   }, [shouldMount, sel.cfVideoId]);
 
   // Play/pause on active changes.
+  // Try with current mute state first; if browser blocks autoplay-with-sound
+  // (no sticky activation), fall back to muted and signal parent to flip
+  // the global mute state so the Sound button reflects reality.
   // biome-ignore lint/correctness/useExhaustiveDependencies: sel.cfVideoId triggers replay after source switch
   useEffect(() => {
     const v = videoRef.current;
@@ -434,7 +440,18 @@ function Card({
       v.muted = muted;
       v.play()
         .then(() => setPaused(false))
-        .catch(() => setPaused(true));
+        .catch(() => {
+          // Autoplay-with-sound was blocked. Retry muted — this always works.
+          if (!v.muted) {
+            v.muted = true;
+            onAutoplayBlocked?.();
+            v.play()
+              .then(() => setPaused(false))
+              .catch(() => setPaused(true));
+          } else {
+            setPaused(true);
+          }
+        });
     } else {
       v.pause();
       setPaused(true);
@@ -646,10 +663,14 @@ export function BrowseFeed({
   const [sourceByCard, setSourceByCard] = useState<Record<string, Source>>({});
   const [cycleByCard, setCycleByCard] = useState<Record<string, number>>({});
   const [pausedActive, setPausedActive] = useState(true);
-  // Global mute state — once the user unmutes, every card stays unmuted as
-  // they swipe. Browser autoplay policy forces initial muted=true; we flip
-  // false on first explicit user gesture (the Sound button).
-  const [muted, setMuted] = useState(true);
+  // Global mute state. We optimistically start UNMUTED — if the user arrived
+  // via a click on the Landing "Explore" CTA (or any in-app navigation), the
+  // browser's sticky activation lets us autoplay with sound. If the user
+  // landed directly on /browse/feed (e.g. via a shared link in a new tab),
+  // the browser will reject autoplay-with-sound and the Card's catch handler
+  // calls setMuted(true) to fall back to muted playback. In either case the
+  // bottom-bar Sound button reflects the actual state.
+  const [muted, setMuted] = useState(false);
   const [leadOpen, setLeadOpen] = useState(false);
   const cardRefs = useRef<Map<number, HTMLElement>>(new Map());
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -821,6 +842,7 @@ export function BrowseFeed({
               setPaused={isThisActive ? setPausedActive : () => {}}
               poolSize={poolFor(card, cardSource)}
               muted={muted}
+              onAutoplayBlocked={() => setMuted(true)}
               onSwipe={(delta) => {
                 // Horizontal swipe cycles within the current source's b-roll pool.
                 const pool = poolFor(card, cardSource);

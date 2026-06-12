@@ -48,7 +48,7 @@ export default async function HomePage() {
               href="/browse"
               className="btn-gold inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5"
             >
-              Explore Listings <ArrowRight size={16} />
+              Explore <ArrowRight size={16} />
             </Link>
             <Link
               href="/login"
