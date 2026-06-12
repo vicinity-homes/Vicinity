@@ -43,16 +43,25 @@ export default async function BrowsePage() {
             {cards.map((card, idx) => (
               <Link
                 key={card.listing.id}
-                href={`/browse/feed?start=${encodeURIComponent(card.listing.id)}`}
+                href={
+                  card.mediaKind === 'video'
+                    ? `/browse/feed?start=${encodeURIComponent(card.listing.id)}`
+                    : `/v/${card.agent.slug}/${card.listing.slug}`
+                }
                 prefetch={false}
                 className="group block overflow-hidden rounded-xl bg-ink/60 ring-1 ring-cream/10 transition-shadow hover:ring-gold/60"
               >
                 <div className="relative aspect-[3/4] w-full bg-black/40">
-                  {/* Cover thumbnail — use Cloudflare Stream poster from the
-                   * hero video. Lazy-loaded by next/image; first 4 are eager
-                   * so the LCP card paints fast on mobile. */}
+                  {/* Cover thumbnail — Cloudflare Stream poster (video) or
+                   * Supabase Storage public URL (photo-only listing).
+                   * Lazy-loaded by next/image; first 4 are eager so the LCP
+                   * card paints fast on mobile. */}
                   <Image
-                    src={thumbnailUrl(card.hero.cfVideoId)}
+                    src={
+                      card.mediaKind === 'video'
+                        ? thumbnailUrl(card.hero.cfVideoId)
+                        : (card.heroPhotoUrl as string)
+                    }
                     alt={card.listing.address}
                     fill
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"

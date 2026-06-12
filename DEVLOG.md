@@ -8,6 +8,37 @@ Institutional memory for the project. Updated incrementally, not at session end.
 
 ---
 
+## 2026-06-12 — Phase 10: listing photos + photo-only listings shipped end-to-end
+
+**Objective.** Let agents attach photos to a listing (alongside or instead of video), and surface photo-only listings in the grid. Photo-only listings stay out of the swipe feed (video-only by design).
+
+**Actions.**
+- New migration `0011_listing_photos_and_geo.sql` (Phase 10 + 11 combined; **NOT pushed to db** — awaits user review). Creates `listing_photos` table parallel to `listing_videos` (rejected the `listing_media` view-shim plan because it would break every existing `from('listing_videos').insert(...)` call site). Also creates Supabase Storage bucket `listing-photos` (public, RLS by `listings/{listing_id}/...` path prefix). Phase 11 piece adds `community_videos.lat/lng + zip + community_id` for platform-wide nearby (will hook up next session).
+- `lib/supabase/storage.ts`: `photoPublicUrl(path)` + `nextPhotoStoragePath(listingId, ext)` helpers.
+- `app/dashboard/listings/[id]/edit/photo-actions.ts`: server actions for record (after browser-side upload to storage) and delete. Mirrors the Cloudflare Stream pattern but without the webhook (Supabase Storage upload is sync from the browser).
+- `PhotoPanel` component (no dnd-kit reorder — deferred). Accepts files, uploads each to storage with `supabase.storage.from('listing-photos').upload(...)`, then calls server action to insert the row. Delete = signed RPC, removes both storage object and row.
+- Wired `PhotoPanel` into edit page; reordered sections so Photos sits between Videos and Generate-Tour stub.
+- Publish gate widened: `at least one ready video OR ready photo` (was video-only).
+- `BrowseCard` typed with discriminant `mediaKind: 'video' | 'photo'` + optional `heroPhotoUrl`. `fetchBrowseCards` now emits photo-only cards when no ready video exists. Grid (`/browse`) renders photo cover and links to `/v/{a}/{l}` (not feed). Feed (`/browse/feed`) filters `mediaKind === 'video'` so photo-only listings never reach the swipe surface.
+- Listing detail page `/v/[agent]/[listing]`: when `listingVideos.length === 0`, fall back to a minimal photo gallery if photos exist; otherwise the existing empty-state.
+
+**Decisions / deviations from plan.**
+1. **Storage = Supabase Storage, not Cloudflare Images.** Removes a vendor procurement step (no new env var, no new account). Keep Cloudflare Stream for video.
+2. **Parallel `listing_photos` table, not `listing_media` consolidation.** The original plan's view-shim would require INSTEAD-OF rules and tangle RLS for marginal payoff; existing video code paths stay untouched.
+3. **Photo reorder UI deferred.** V1 uploads photos in selection order; reorder lands in a fast-follow once needed.
+4. **Photo-only listings link from grid → listing detail page directly**, bypassing the swipe feed. Preserves "TikTok for Homebuying" framing — the feed is video-only.
+
+**Issues / resolution.**
+- biome rule `lint/performance/noImgElement` doesn't exist in this version → 3 fabricated suppressions raised parse errors. Replaced with plain comments.
+- Got 6 type-juggling spots in `browse-cards.ts` (photo / video / undefined). Resolved with `mediaKind === 'video' ? thumbnailUrl(...) : (heroPhotoUrl as string)` discriminated paths.
+
+**Learnings.** Discriminated unions on `BrowseCard` are cheaper than parallel card types — touched ≤4 consumers (`/browse`, `/browse/feed`, `/v/...`, `BrowseFeed.tsx`). Splitting the type would have rippled into 10+ files.
+
+**Next steps.**
+1. **User reviews** `0011_listing_photos_and_geo.sql` before any db push. Storage bucket creation is part of the migration too.
+2. Phase 11 application code (community videos lat/lng surfaces; `/nearby` real implementation; distance slider).
+3. Photo reorder UI fast-follow if agents complain.
+
 ## 2026-06-12 — Phase 12: AI tour video stub (interface only, same branch)
 
 **Objective**: Land the *contract* for the future "Generate AI tour video from listing photos" feature without picking a provider yet. Owner directive: "create necessary frontend and backend interfaces, mark it Coming soon." No queue, no worker, no provider integration. Just the route, the button, and a doc that the eventual implementation can be measured against.

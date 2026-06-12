@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { type CommunityOption, EditListingForm, type ListingContext } from './EditListingForm';
 import { GenerateTourPanel } from './GenerateTourPanel';
+import { type ListingPhotoRow, PhotoPanel } from './PhotoPanel';
 import { PublishPanel } from './PublishPanel';
 import { SocialCopyPanel } from './SocialCopyPanel';
 import { type ListingVideoRow, VideoPanel } from './VideoPanel';
@@ -81,6 +82,14 @@ export default async function EditListingPage({
     .order('created_at', { ascending: true })) as { data: ListingVideoRow[] | null };
 
   const videos = videosRaw ?? [];
+
+  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+  const { data: photosRaw } = (await (supabase as any)
+    .from('listing_photos')
+    .select('id, storage_path, alt_text, width, height, sort_order')
+    .eq('listing_id', listing.id)
+    .order('sort_order', { ascending: true })) as { data: ListingPhotoRow[] | null };
+  const photos = photosRaw ?? [];
 
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
   const { data: communitiesRaw } = (await (supabase as any)
@@ -179,6 +188,16 @@ export default async function EditListingPage({
           initialVideos={videos}
           initialCoverVideoId={initialCoverVideoId}
         />
+      </section>
+
+      <section className="rounded border border-bronze/30 bg-ink2 p-6">
+        <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+          <h2 className="text-base font-semibold">Photos</h2>
+          <span className="text-xs text-cream/50">
+            JPEG / PNG / WebP — used as fallback when no video is uploaded
+          </span>
+        </div>
+        <PhotoPanel listingId={listing.id} initialPhotos={photos} />
       </section>
 
       <section className="rounded border border-bronze/30 bg-ink2 p-6">

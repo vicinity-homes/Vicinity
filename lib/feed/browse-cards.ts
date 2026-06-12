@@ -47,6 +47,12 @@ type ListingVideoRow = {
   sort_order: number;
 };
 
+type ListingPhotoRow = {
+  listing_id: string;
+  storage_path: string;
+  sort_order: number;
+};
+
 type CommunityVideoRow = {
   community_id: string;
   cf_video_id: string;
@@ -95,52 +101,68 @@ export async function fetchBrowseCards(): Promise<BrowseCard[]> {
     new Set(listings.map((l) => l.community_id).filter((x): x is string => !!x)),
   );
 
-  const [listingVidsResp, agentsResp, commVidsResp, schoolsResp, poisResp, communitiesResp] =
-    await Promise.all([
-      // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-      (supabase as any)
-        .from('listing_videos')
-        .select('listing_id, cf_video_id, title, kind, sort_order')
-        .in('listing_id', listingIds)
-        .eq('status', 'ready')
-        .order('sort_order', { ascending: true }),
-      // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-      (supabase as any)
-        .from('agents')
-        .select('id, slug, name, email, phone')
-        .in('id', agentIds),
-      communityIds.length > 0
-        ? // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-          (supabase as any)
-            .from('community_videos')
-            .select('community_id, cf_video_id, title, kind, school_id, poi_id')
-            .in('community_id', communityIds)
-            .eq('status', 'ready')
-        : Promise.resolve({ data: [] }),
-      communityIds.length > 0
-        ? // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-          (supabase as any)
-            .from('schools')
-            .select('community_id, id, name, grades, rating')
-            .in('community_id', communityIds)
-        : Promise.resolve({ data: [] }),
-      communityIds.length > 0
-        ? // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-          (supabase as any)
-            .from('pois')
-            .select('community_id, id, name, distance_text')
-            .in('community_id', communityIds)
-        : Promise.resolve({ data: [] }),
-      communityIds.length > 0
-        ? // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-          (supabase as any)
-            .from('communities')
-            .select('id, name, description')
-            .in('id', communityIds)
-        : Promise.resolve({ data: [] }),
-    ]);
+  const [
+    listingVidsResp,
+    listingPhotosResp,
+    agentsResp,
+    commVidsResp,
+    schoolsResp,
+    poisResp,
+    communitiesResp,
+  ] = await Promise.all([
+    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+    (supabase as any)
+      .from('listing_videos')
+      .select('listing_id, cf_video_id, title, kind, sort_order')
+      .in('listing_id', listingIds)
+      .eq('status', 'ready')
+      .order('sort_order', { ascending: true }),
+    // Phase 10: fetch photos in parallel for the photo-only fallback.
+    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+    (supabase as any)
+      .from('listing_photos')
+      .select('listing_id, storage_path, sort_order')
+      .in('listing_id', listingIds)
+      .eq('status', 'ready')
+      .order('sort_order', { ascending: true }),
+    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+    (supabase as any)
+      .from('agents')
+      .select('id, slug, name, email, phone')
+      .in('id', agentIds),
+    communityIds.length > 0
+      ? // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+        (supabase as any)
+          .from('community_videos')
+          .select('community_id, cf_video_id, title, kind, school_id, poi_id')
+          .in('community_id', communityIds)
+          .eq('status', 'ready')
+      : Promise.resolve({ data: [] }),
+    communityIds.length > 0
+      ? // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+        (supabase as any)
+          .from('schools')
+          .select('community_id, id, name, grades, rating')
+          .in('community_id', communityIds)
+      : Promise.resolve({ data: [] }),
+    communityIds.length > 0
+      ? // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+        (supabase as any)
+          .from('pois')
+          .select('community_id, id, name, distance_text')
+          .in('community_id', communityIds)
+      : Promise.resolve({ data: [] }),
+    communityIds.length > 0
+      ? // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+        (supabase as any)
+          .from('communities')
+          .select('id, name, description')
+          .in('id', communityIds)
+      : Promise.resolve({ data: [] }),
+  ]);
 
   const listingVideos = (listingVidsResp.data ?? []) as ListingVideoRow[];
+  const listingPhotos = (listingPhotosResp.data ?? []) as ListingPhotoRow[];
   const agents = (agentsResp.data ?? []) as AgentRow[];
   const commVideos = (commVidsResp.data ?? []) as CommunityVideoRow[];
   const schools = (schoolsResp.data ?? []) as SchoolRow[];
@@ -150,6 +172,12 @@ export async function fetchBrowseCards(): Promise<BrowseCard[]> {
   const heroByListing = new Map<string, ListingVideoRow>();
   for (const v of listingVideos) {
     if (!heroByListing.has(v.listing_id)) heroByListing.set(v.listing_id, v);
+  }
+  // First photo per listing (already ordered by sort_order asc) — used as
+  // hero when no ready video exists.
+  const heroPhotoByListing = new Map<string, ListingPhotoRow>();
+  for (const p of listingPhotos) {
+    if (!heroPhotoByListing.has(p.listing_id)) heroPhotoByListing.set(p.listing_id, p);
   }
   const agentsById = new Map(agents.map((a) => [a.id, a] as const));
   const communitiesById = new Map(communities.map((c) => [c.id, c] as const));
@@ -163,11 +191,16 @@ export async function fetchBrowseCards(): Promise<BrowseCard[]> {
     commVidsByCommunity.set(v.community_id, arr);
   }
 
+  const { photoPublicUrl } = await import('@/lib/supabase/storage');
+
   const cards: BrowseCard[] = [];
   for (const l of listings) {
     const hero = heroByListing.get(l.id);
+    const heroPhoto = heroPhotoByListing.get(l.id);
     const agent = agentsById.get(l.agent_id);
-    if (!hero || !agent) continue;
+    if (!agent) continue;
+    // Phase 10: include listings that have either a ready video OR a ready photo.
+    if (!hero && !heroPhoto) continue;
 
     const community = l.community_id ? (communitiesById.get(l.community_id) ?? null) : null;
     const cVids = l.community_id ? (commVidsByCommunity.get(l.community_id) ?? []) : [];
@@ -207,8 +240,10 @@ export async function fetchBrowseCards(): Promise<BrowseCard[]> {
       }));
 
     cards.push({
-      id: hero.cf_video_id,
-      hero: { cfVideoId: hero.cf_video_id },
+      id: hero ? hero.cf_video_id : `photo:${l.id}`,
+      mediaKind: hero ? 'video' : 'photo',
+      hero: { cfVideoId: hero?.cf_video_id ?? '' },
+      heroPhotoUrl: hero ? undefined : photoPublicUrl((heroPhoto as ListingPhotoRow).storage_path),
       schoolVideos,
       nearbyVideos,
       communityVideos,

@@ -23,7 +23,13 @@ export default async function BrowseFeedPage({
   searchParams: Promise<{ start?: string }>;
 }) {
   const { start } = await searchParams;
-  const cards = await fetchBrowseCards();
+  const allCards = await fetchBrowseCards();
+  // Phase 10 (2026-06-12): the immersive swipe feed is video-only by
+  // design ("TikTok for Homebuying"). Photo-only listings still appear in
+  // the grid at `/browse`; clicking one opens the listing detail page,
+  // not this feed. Filter them out here so we don't surface a broken
+  // black card with no <video> source.
+  const cards = allCards.filter((c) => c.mediaKind === 'video');
 
   // Resolve `start` (a listing id) → array index. Bad / missing ids fall
   // through to 0 silently — preferable to a 404 because the swipe is just

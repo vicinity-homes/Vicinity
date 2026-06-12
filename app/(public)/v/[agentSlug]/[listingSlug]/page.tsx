@@ -217,7 +217,56 @@ export default async function PublicListingPage({
   const { agent, listing, listingVideos, communityVideos, schools, pois, community } = data;
 
   if (listingVideos.length === 0) {
-    // No hero — render empty state via VideoFeed (it handles cards.length === 0).
+    // No hero video. Phase 10 (2026-06-12): if the listing has photos,
+    // render a minimal photo gallery so photo-only listings have a
+    // detail page; otherwise fall back to the VideoFeed empty state.
+    const supabase = await createClient();
+    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+    const { data: photoRows } = (await (supabase as any)
+      .from('listing_photos')
+      .select('id, storage_path, alt_text, sort_order')
+      .eq('listing_id', listing.id)
+      .eq('status', 'ready')
+      .order('sort_order', { ascending: true })) as {
+      data:
+        | { id: string; storage_path: string; alt_text: string | null; sort_order: number }[]
+        | null;
+    };
+    const photos = photoRows ?? [];
+    if (photos.length > 0) {
+      const { photoPublicUrl } = await import('@/lib/supabase/storage');
+      return (
+        <main className="min-h-dvh bg-ink pb-20 text-cream md:pb-0">
+          <div className="mx-auto max-w-3xl px-4 py-6">
+            <h1 className="font-serif text-2xl">{listing.address}</h1>
+            <p className="text-cream/70 text-sm">
+              {listing.city}, {listing.state}
+            </p>
+            <div className="mt-2 text-cream/80 text-sm">
+              {listing.price != null ? `$${listing.price.toLocaleString()}` : 'Price on request'}
+              {listing.beds != null && listing.baths != null
+                ? ` · ${listing.beds} bd · ${listing.baths} ba`
+                : ''}
+            </div>
+            <div className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {photos.map((p) => (
+                // Cross-origin Supabase asset.
+                <img
+                  key={p.id}
+                  src={photoPublicUrl(p.storage_path)}
+                  alt={p.alt_text ?? listing.address}
+                  loading="lazy"
+                  className="w-full rounded border border-bronze/20 object-cover"
+                />
+              ))}
+            </div>
+            <div className="mt-8 rounded border border-bronze/30 bg-ink2 p-4 text-cream/70 text-xs">
+              Listed by {agent.name}. Video walkthrough coming soon.
+            </div>
+          </div>
+        </main>
+      );
+    }
     return <VideoFeed listingId={listing.id} cards={[]} />;
   }
 
@@ -273,6 +322,7 @@ export default async function PublicListingPage({
 
   const card: BrowseCard = {
     id: hero.cf_video_id,
+    mediaKind: 'video',
     hero: { cfVideoId: hero.cf_video_id },
     heroVideos: heroVideos.length > 1 ? heroVideos : undefined,
     schoolVideos,

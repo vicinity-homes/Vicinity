@@ -56,12 +56,23 @@ export async function publishListing(listingId: string): Promise<PublishResult> 
     .eq('listing_id', listingId)
     .eq('status', 'ready')) as { count: number | null };
 
+  // Phase 10 (2026-06-12): photos count toward the publish gate too.
+  // Either ≥1 ready video or ≥1 ready photo unblocks publish.
+  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+  const { count: readyPhotoCount } = (await (supabase as any)
+    .from('listing_photos')
+    .select('id', { count: 'exact', head: true })
+    .eq('listing_id', listingId)
+    .eq('status', 'ready')) as { count: number | null };
+
   const missing: string[] = [];
   if (!listing.address) missing.push('address');
   if (listing.price == null || listing.price <= 0) missing.push('price');
   if (listing.beds == null) missing.push('beds');
   if (listing.baths == null || listing.baths <= 0) missing.push('baths');
-  if ((readyVideoCount ?? 0) < 1) missing.push('at least one ready video');
+  if ((readyVideoCount ?? 0) < 1 && (readyPhotoCount ?? 0) < 1) {
+    missing.push('at least one ready video or photo');
+  }
 
   if (missing.length > 0) return { ok: false, missing };
 

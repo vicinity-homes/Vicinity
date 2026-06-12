@@ -14,7 +14,18 @@ export type BrowseSourceVideo = {
 
 export type BrowseCard = {
   id: string;
+  /**
+   * Phase 10 (2026-06-12): listings can be photo-only (no ready video).
+   * `mediaKind` discriminates how the grid renders the cover; the swipe
+   * feed filters to `mediaKind === 'video'` because the immersive feed
+   * is video-only by design ("TikTok for Homebuying" framing).
+   *   - 'video' → use `hero.cfVideoId` for poster/HLS.
+   *   - 'photo' → use `heroPhotoUrl` directly. `hero.cfVideoId` is empty.
+   */
+  mediaKind: 'video' | 'photo';
   hero: { cfVideoId: string };
+  /** Set when mediaKind === 'photo'. Public Supabase Storage URL. */
+  heroPhotoUrl?: string;
   /**
    * Optional richer hero pool — when set, the 'hero' source cycles through
    * these videos (horizontal swipe / repeat-tap Hero source on the rail).

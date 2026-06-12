@@ -44,6 +44,10 @@ const MISSING_LABELS: Record<string, { label: string; hint: string }> = {
     label: 'Bathrooms',
     hint: 'Pick a value greater than 0.',
   },
+  'at least one ready video or photo': {
+    label: 'A ready video or photo',
+    hint: 'Upload a video or photo above and wait for status to show "Ready" before publishing.',
+  },
   'at least one ready video': {
     label: 'At least one ready video',
     hint: 'Upload a video above and wait for its status to show "Ready" before publishing.',
