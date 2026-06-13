@@ -8,6 +8,31 @@ Institutional memory for the project. Updated incrementally, not at session end.
 
 ---
 
+## 2026-06-13 22:00 UTC — phase20 kickoff: photo listing parity + community photo upload
+
+**Objective**: Vivian's photo-only listings currently render a bare 2-col grid with just address + price + "Listed by" — no Like, no Save, no Share, no Contact, no description, no schools/POIs. Video listings have all of those via `BrowseFeed`. Asymmetry confuses buyers and tanks lead conversion on photo listings.
+
+**User decisions** (this session):
+1. **方案 A**: bring photo-listing detail page up to video parity (Like/Save/Share/Contact/LeadModal/Description). Photo listings do **not** enter `/browse/feed` — Phase 10 video-only feed decision preserved.
+2. Community editor gets photo upload, but community photos stay **invisible to buyers** — they're raw material for future AI video generation.
+3. **Q1 → A1.lite**: photo detail page = horizontal-swipe carousel within a single card (Zillow / Instagram / 朋友圈 mental model), not vertical-swipe between photos. Right rail full, bottom strip is text-only schools/POIs (no video jumps).
+4. **Q2 → option 2**: community photos visible in dashboard only, zero buyer-side exposure. Vivian gets upload confirmation; buyers see nothing change.
+
+**Plan** (full breakdown in IMPLEMENTATION.md Phase 20):
+- 20.1 — extract `<PhotoFeed>` client component, mirror `BrowseFeed`'s rail, full-screen carousel, expandable description, schools/POI text strip.
+- 20.2 — `0015_community_photos` migration (private bucket, agent-only RLS), `CommunityPhotoPanel`, `photo-actions.ts`. Buyer surfaces byte-for-byte unchanged (verification gate).
+- 20.3 — DEFERRED: community photo buyer surface / AI video generation.
+
+**Owner blockers** (must do before/after AI agent runs):
+1. Phase 20.2 lands → Owner creates `community-photos` bucket in Supabase Studio (private, 10 MB limit, image/jpeg+png+webp) before running migration.
+2. Phase 20.1 lands on Vercel preview → Owner real-device mobile test for swipe feel + LeadModal submission.
+
+**Branch**: `phase20/photo-parity` (cut from main).
+
+**Next**: kick off Claude Code in print mode for 20.1.
+
+---
+
 ## 2026-06-13 21:30 UTC — phase19: bottom-nav redesign, role-aware FAB, top-right avatar
 
 **Objective**: Vivian flagged the bottom nav as visually cluttered (8 mobile tabs for agents — Home/Explore/Nearby/+Listing/+Community/Dashboard/Leads/Profile). Two `+` icons sitting next to each other competed for attention; buyer/agent layouts had different tab counts so the visual skeleton shifted across roles.

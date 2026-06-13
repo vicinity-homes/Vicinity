@@ -233,3 +233,47 @@ Next:
 ```
 
 <!-- session log entries below -->
+
+---
+
+## Phase 20 — Photo listing parity + community photo upload
+
+Goal: photo-only listings get the same buyer-side richness as video listings (Like/Save/Share/Contact + LeadModal + description + full-screen carousel). Community editor gains photo upload as a future-AI-video raw-material library. **Swipe feed (`/browse/feed`) stays video-only — Phase 10 decision preserved.**
+
+### 20.1 — Listing detail photo parity (A1.lite)
+
+- [ ] **20.1.1** Extract the photo branch in `app/(public)/v/[agentSlug]/[listingSlug]/page.tsx` (L218–L275) into a new client component `app/(public)/v/[agentSlug]/[listingSlug]/_components/PhotoFeed.tsx`.
+- [ ] **20.1.2** Full-screen photo carousel (horizontal swipe + left/right arrows + `3/12` counter overlay). One listing = one card; photos scroll laterally inside it. Use `next/image` with `priority` on first photo, `sizes` set for mobile-first.
+- [ ] **20.1.3** Right rail (mirror `BrowseFeed`'s rail layout): Like (in-memory toggle, same as feed) · Save (placeholder → `/saved`, same as feed) · Share (Web Share API + clipboard fallback) · Contact (opens `LeadModal`).
+- [ ] **20.1.4** Bottom overlay: address · price · beds·baths·sqft · expandable description (collapsed to 2 lines, "Read more" expands).
+- [ ] **20.1.5** Bottom text strip: schools (name · grade · rating) and POIs (name · distance). **No** video-jump affordance — community videos surface only on `/browse/feed` and the video branch of detail pages, not here.
+- [ ] **20.1.6** When the listing has zero videos, do **not** render `<VideoFeed>` (already Phase-10 behavior — verify regression-free).
+- [ ] **20.1.7** Verification: manual test on `/v/<vivian>/<photo-only-listing>` mobile viewport — LeadModal flow E2E (submit → email lands), Heart and Save look identical to `BrowseFeed`, Lighthouse mobile ≥85, LCP < 2.5s on a 12-photo listing.
+
+**Definition of done**: a buyer landing on a photo-only listing URL has the same "I can like, save, share, and contact the agent" affordances as a video listing.
+
+### 20.2 — Community photo upload (raw-material library)
+
+Buyer surfaces stay byte-for-byte unchanged; this is dashboard-only ingestion for future AI video generation.
+
+- [ ] **20.2.1** Migration `supabase/migrations/0015_community_photos.sql`:
+      - `community_photos(id uuid pk, community_id uuid fk, storage_path text, kind text check in ('school','poi','neighborhood'), school_id uuid null fk, poi_id uuid null fk, lat double precision null, lng double precision null, alt_text text null, width int null, height int null, sort_order int default 0, created_at timestamptz default now())`
+      - RLS: agent-of-community read+write; **no public/anon read** (raw-material library, not buyer-visible).
+      - Bucket `community-photos` (public-read OFF — agent-only via signed URL or RLS), 10 MB limit, MIME allow `image/jpeg|png|webp`. **Owner creates the bucket in Supabase Studio before running the migration.**
+      - Realtime publication for the dashboard panel.
+- [ ] **20.2.2** `lib/supabase/storage.ts` — add `COMMUNITY_PHOTOS_BUCKET`, `nextCommunityPhotoStoragePath()`, and a `communityPhotoSignedUrl()` helper (signed URL since bucket is private).
+- [ ] **20.2.3** `app/dashboard/communities/[id]/CommunityPhotoPanel.tsx` — mirror `app/dashboard/listings/[id]/edit/PhotoPanel.tsx` plus the `kind / school_id / poi_id / lat / lng` selectors that `CommunityVideoPanel` already uses. Reuse `VideoUploader`'s drag-drop primitive for photos.
+- [ ] **20.2.4** `app/dashboard/communities/photo-actions.ts` — server actions `recordCommunityPhoto` / `deleteCommunityPhoto` mirroring `app/dashboard/listings/[id]/edit/photo-actions.ts`. RLS gates writes; status set to `'ready'` synchronously (no async transcode).
+- [ ] **20.2.5** Mount `<CommunityPhotoPanel />` in `app/dashboard/communities/[id]/page.tsx` directly below `<CommunityVideoPanel />`.
+- [ ] **20.2.6** Buyer-surface no-op verification:
+      - `lib/feed/browse-cards.ts` — **NOT modified** (must stay byte-identical to main)
+      - `app/(public)/browse/page.tsx` — **NOT modified**
+      - `app/(public)/browse/feed/page.tsx` — **NOT modified**
+      - `app/(public)/v/[a]/[l]/page.tsx` — public-side query unchanged (no community_photos join). Visual diff vs main on a published listing should be 0 px.
+
+**Definition of done**: Vivian can upload, thumbnail-preview, and delete community photos in the dashboard. Buyer-facing pages render byte-for-byte identical to main on a representative listing.
+
+### 20.3 — DEFERRED: community photo buyer surface / AI video generation
+
+Explicitly out of scope. Photos sit in `community_photos` as raw material. When we wire AI video generation (Phase 2x or later), we revisit display.
+
