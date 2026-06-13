@@ -8,6 +8,36 @@ Institutional memory for the project. Updated incrementally, not at session end.
 
 ---
 
+## 2026-06-13 23:30 UTC — phase20.1 complete: photo listings reuse BrowseFeed (B2)
+
+**Objective**: Implement photo-listing parity per Phase 20.1 spec.
+
+**Architecture decision**: B2 over B1.
+- B1 (original plan): mirror `BrowseFeed` into a separate `<PhotoFeed>` component. Fast to ship but duplicates ~600 lines of UI; Phase 21 (persistent Like/Save) would have to dual-update.
+- B2 (chosen): extend `BrowseFeed` itself with a `PhotoCard` sub-component. Card-level branch on `mediaKind`; same outer chrome (action bar, LeadModal, share, top header). Right rail hidden for photo cards. Schools + POIs surface as a plain text strip inside the photo caption (no video-jump affordance). State plumbing (cycleByCard, swipe, ←/→) reused as-is.
+- Cost: touched the 1015-line BrowseFeed. Risk mitigated by the fact that all video-card code paths (`Card` function, source pool logic, rail JSX) are gated by `mediaKind !== 'photo'` — video behavior is untouched.
+
+**Actions**:
+- `app/(public)/browse/_components/BrowseFeed.tsx`: added `PhotoCard` (~165 LOC), extended `BrowseCard` type with `photos?: string[]`, `photoSchools?`, `photoPois?`. Updated `poolFor` for photo branch. Map in `BrowseFeed` routes `mediaKind === 'photo'` to `PhotoCard`. Right rail wrapped in `active?.mediaKind !== 'photo' && (…)`.
+- `app/(public)/v/[agentSlug]/[listingSlug]/page.tsx`: removed the placeholder 2-col grid (L242-L275); builds a photo `BrowseCard` with `photos[]`, `photoSchools`, `photoPois` and feeds the existing `<VideoFeed>` (which is a thin pass-through to BrowseFeed).
+- `lib/feed/browse-cards.ts`: **NOT modified** (Phase 20.2 byte-identity verification preserved).
+- `app/(public)/browse/page.tsx` and `app/(public)/browse/feed/page.tsx`: NOT modified.
+
+**Verification**:
+- `npx tsc --noEmit` → clean.
+- `npx biome check` → clean.
+- `npm run build` → clean. `/v/[agentSlug]/[listingSlug]` 896 B / 269 kB (was ~860 B before, +photo card code ~+25 kB across shared chunks).
+
+**Issues**:
+- Initial attempt put `if (card.mediaKind === 'photo') return <PhotoCard …/>` early-return inside `Card`, which would violate React hooks rules (subsequent useRef/useEffect would be conditional). Refactored into a sibling component called from the parent's map.
+- biome flagged `photos[0]!.storage_path` (no-non-null-assertion) and the alt-text "photo" word (a11y noRedundantAlt). Both fixed.
+
+**Resolution**: phase20/photo-parity branch at `b61da05`, not pushed to origin yet.
+
+**Next steps**: 20.1.7 verification needs Vivian's photo-only listing on a real mobile device — owner action. Then start 20.2 (community photo upload). Owner still needs to create the `community-photos` bucket in Supabase Studio before 20.2 lands.
+
+---
+
 ## 2026-06-13 22:00 UTC — phase20 kickoff: photo listing parity + community photo upload
 
 **Objective**: Vivian's photo-only listings currently render a bare 2-col grid with just address + price + "Listed by" — no Like, no Save, no Share, no Contact, no description, no schools/POIs. Video listings have all of those via `BrowseFeed`. Asymmetry confuses buyers and tanks lead conversion on photo listings.

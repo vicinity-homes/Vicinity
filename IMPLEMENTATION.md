@@ -242,13 +242,15 @@ Goal: photo-only listings get the same buyer-side richness as video listings (Li
 
 ### 20.1 — Listing detail photo parity (A1.lite)
 
-- [ ] **20.1.1** Extract the photo branch in `app/(public)/v/[agentSlug]/[listingSlug]/page.tsx` (L218–L275) into a new client component `app/(public)/v/[agentSlug]/[listingSlug]/_components/PhotoFeed.tsx`.
-- [ ] **20.1.2** Full-screen photo carousel (horizontal swipe + left/right arrows + `3/12` counter overlay). One listing = one card; photos scroll laterally inside it. Use `next/image` with `priority` on first photo, `sizes` set for mobile-first.
-- [ ] **20.1.3** Right rail (mirror `BrowseFeed`'s rail layout): Like (in-memory toggle, same as feed) · Save (placeholder → `/saved`, same as feed) · Share (Web Share API + clipboard fallback) · Contact (opens `LeadModal`).
-- [ ] **20.1.4** Bottom overlay: address · price · beds·baths·sqft · expandable description (collapsed to 2 lines, "Read more" expands).
-- [ ] **20.1.5** Bottom text strip: schools (name · grade · rating) and POIs (name · distance). **No** video-jump affordance — community videos surface only on `/browse/feed` and the video branch of detail pages, not here.
-- [ ] **20.1.6** When the listing has zero videos, do **not** render `<VideoFeed>` (already Phase-10 behavior — verify regression-free).
-- [ ] **20.1.7** Verification: manual test on `/v/<vivian>/<photo-only-listing>` mobile viewport — LeadModal flow E2E (submit → email lands), Heart and Save look identical to `BrowseFeed`, Lighthouse mobile ≥85, LCP < 2.5s on a 12-photo listing.
+**Architecture chosen 2026-06-13: B2 (extend BrowseFeed)** — instead of mirroring BrowseFeed into a separate `<PhotoFeed>` component (B1, original plan), we extended `BrowseFeed` itself to route `mediaKind === 'photo'` cards to a new `PhotoCard` sub-component within the same file. Same Like/Save/Share/Contact action bar + LeadModal flow. Single-source-of-truth for the swipe / cycle / keyboard state. Right rail is hidden for photo cards (no source to switch to, no audio to mute); schools + POIs surface as a plain text strip in the photo caption. Trade: touched the 1015-line BrowseFeed, but the long-term cost of two parallel rails would be higher (Phase 21 persistence would have to dual-update).
+
+- [x] **20.1.1** ~~Extract photo branch into `<PhotoFeed>`~~ → **B2**: added `PhotoCard` inside `BrowseFeed.tsx`; detail page builds a photo `BrowseCard` and feeds existing `<VideoFeed>` (which is itself a thin pass-through to `BrowseFeed`).
+- [x] **20.1.2** Full-screen photo carousel (horizontal swipe + ‹/› desktop arrows + `3/12` counter). Reuses `cycleByCard` plumbing — keyboard ←/→ already work via existing handler.
+- [x] **20.1.3** Action bar (bottom): Like / Save / Contact — same code path as video cards, no fork.
+- [x] **20.1.4** Bottom overlay: address · price · beds·baths·sqft · expandable `DescriptionBlock` (reused).
+- [x] **20.1.5** Bottom text strip: schools (name · rating) + POIs (name · distance). No video-jump affordance.
+- [x] **20.1.6** Zero-video + zero-photo fall-through: `<VideoFeed cards={[]}/>` empty state preserved.
+- [ ] **20.1.7** Verification: real-device test on Vivian's photo-only listing (Lighthouse ≥85, LCP < 2.5s on a 12-photo listing, LeadModal email lands).
 
 **Definition of done**: a buyer landing on a photo-only listing URL has the same "I can like, save, share, and contact the agent" affordances as a video listing.
 
