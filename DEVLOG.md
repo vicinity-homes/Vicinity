@@ -6,6 +6,35 @@ Institutional memory for the project. Updated incrementally, not at session end.
 
 **Format per entry**: timestamp, objective, actions, decisions, issues, resolution, learnings, next steps. Keep concise.
 
+## 2026-06-13 23:55 UTC — phase20.2 complete: community photo upload (private library)
+
+**Objective**: Implement Phase 20.2 — let agents upload photos to a community's private library, **buyer-invisible**, as raw material for future AI video generation.
+
+**Architecture**:
+- Decided **separate page** `/dashboard/communities/[id]/photos` (not embedded in the long editor) to match the Phase 17 video split. Editor header now has parallel `+ Add photos` and `+ Add video` buttons.
+- New table `community_photos` over folding into `community_videos` — different storage backend (Supabase Storage vs CF Stream), different lifecycle (synchronous `'ready'` vs async polling), keeping the buyer hot-path table (`community_videos`) pure with no `media_kind` discriminator.
+- Bucket private (public-read=OFF). Dashboard previews use server-minted signed URLs (1h TTL). No anon read policy = buyer-invisibility enforced at infra, not just app code.
+
+**Actions**:
+- `supabase/migrations/0015_community_photos.sql` — table, indexes, Realtime, RLS, storage RLS for `community-photos` bucket.
+- `lib/supabase/storage.ts` — `COMMUNITY_PHOTOS_BUCKET` + `nextCommunityPhotoStoragePath()`.
+- `app/dashboard/communities/[id]/photo-actions.ts` — `recordCommunityPhoto`, `deleteCommunityPhoto`, `signCommunityPhotoUrls` (batch sign).
+- `app/dashboard/communities/[id]/CommunityPhotoPanel.tsx` — client uploader, mirrors `PhotoPanel` plus optional kind/school/poi tagging captured per-batch.
+- `app/dashboard/communities/[id]/photos/page.tsx` — server page; loads photos + signs URLs in a single batch before passing to client.
+- `app/dashboard/communities/[id]/page.tsx` — `+ Add photos` button next to `+ Add video`.
+- **NOT modified**: `lib/feed/browse-cards.ts`, `app/(public)/browse/**`, `app/(public)/v/[a]/[l]/page.tsx`. Buyer surfaces byte-identical to main.
+
+**Verification**:
+- `npx tsc --noEmit` → clean.
+- `npx biome check` → clean (1 auto-fix on whitespace).
+- `npm run build` → clean. `/dashboard/communities/[id]/photos` route registered (3.88 kB / 165 kB).
+
+**Owner action required before this works in prod**:
+1. Apply migration `0015_community_photos.sql` via `supabase db push` or Studio SQL editor.
+2. Create bucket `community-photos` in Supabase Storage: public-read = **OFF**, file size limit 10 MB, MIME jpeg/png/webp.
+
+**Resolution**: phase20/photo-parity branch — Phase 20 (20.1 + 20.2) implementation complete. Ready to merge to main.
+
 ---
 
 ## 2026-06-13 23:30 UTC — phase20.1 complete: photo listings reuse BrowseFeed (B2)

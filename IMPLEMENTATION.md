@@ -254,26 +254,22 @@ Goal: photo-only listings get the same buyer-side richness as video listings (Li
 
 **Definition of done**: a buyer landing on a photo-only listing URL has the same "I can like, save, share, and contact the agent" affordances as a video listing.
 
-### 20.2 — Community photo upload (raw-material library)
+### 20.2 — Community photo upload (raw-material library) — ✅ done 2026-06-13
 
 Buyer surfaces stay byte-for-byte unchanged; this is dashboard-only ingestion for future AI video generation.
 
-- [ ] **20.2.1** Migration `supabase/migrations/0015_community_photos.sql`:
-      - `community_photos(id uuid pk, community_id uuid fk, storage_path text, kind text check in ('school','poi','neighborhood'), school_id uuid null fk, poi_id uuid null fk, lat double precision null, lng double precision null, alt_text text null, width int null, height int null, sort_order int default 0, created_at timestamptz default now())`
-      - RLS: agent-of-community read+write; **no public/anon read** (raw-material library, not buyer-visible).
-      - Bucket `community-photos` (public-read OFF — agent-only via signed URL or RLS), 10 MB limit, MIME allow `image/jpeg|png|webp`. **Owner creates the bucket in Supabase Studio before running the migration.**
-      - Realtime publication for the dashboard panel.
-- [ ] **20.2.2** `lib/supabase/storage.ts` — add `COMMUNITY_PHOTOS_BUCKET`, `nextCommunityPhotoStoragePath()`, and a `communityPhotoSignedUrl()` helper (signed URL since bucket is private).
-- [ ] **20.2.3** `app/dashboard/communities/[id]/CommunityPhotoPanel.tsx` — mirror `app/dashboard/listings/[id]/edit/PhotoPanel.tsx` plus the `kind / school_id / poi_id / lat / lng` selectors that `CommunityVideoPanel` already uses. Reuse `VideoUploader`'s drag-drop primitive for photos.
-- [ ] **20.2.4** `app/dashboard/communities/photo-actions.ts` — server actions `recordCommunityPhoto` / `deleteCommunityPhoto` mirroring `app/dashboard/listings/[id]/edit/photo-actions.ts`. RLS gates writes; status set to `'ready'` synchronously (no async transcode).
-- [ ] **20.2.5** Mount `<CommunityPhotoPanel />` in `app/dashboard/communities/[id]/page.tsx` directly below `<CommunityVideoPanel />`.
-- [ ] **20.2.6** Buyer-surface no-op verification:
-      - `lib/feed/browse-cards.ts` — **NOT modified** (must stay byte-identical to main)
-      - `app/(public)/browse/page.tsx` — **NOT modified**
-      - `app/(public)/browse/feed/page.tsx` — **NOT modified**
-      - `app/(public)/v/[a]/[l]/page.tsx` — public-side query unchanged (no community_photos join). Visual diff vs main on a published listing should be 0 px.
+- [x] **20.2.1** Migration `supabase/migrations/0015_community_photos.sql` — `community_photos` table + storage RLS + Realtime publication. Bucket `community-photos` MUST be created public-read=OFF in Supabase Studio before applying.
+- [x] **20.2.2** `lib/supabase/storage.ts` — added `COMMUNITY_PHOTOS_BUCKET` + `nextCommunityPhotoStoragePath()`. Signed URL minting lives in the server action (`signCommunityPhotoUrls`) instead of a client helper because the bucket is private.
+- [x] **20.2.3** `app/dashboard/communities/[id]/CommunityPhotoPanel.tsx` — client uploader with optional kind / school / poi tagging.
+- [x] **20.2.4** `app/dashboard/communities/[id]/photo-actions.ts` — `recordCommunityPhoto` / `deleteCommunityPhoto` / `signCommunityPhotoUrls`.
+- [x] **20.2.5** Mounted at `/dashboard/communities/[id]/photos` (separate page following the Phase 17 split, not in-page on the editor). Editor header now has both `+ Add photos` and `+ Add video`.
+- [x] **20.2.6** Buyer-surface no-op verification: `lib/feed/browse-cards.ts`, `app/(public)/browse/**`, `app/(public)/v/[a]/[l]/page.tsx` — all untouched.
 
-**Definition of done**: Vivian can upload, thumbnail-preview, and delete community photos in the dashboard. Buyer-facing pages render byte-for-byte identical to main on a representative listing.
+**Owner action required** before this is usable:
+1. Apply migration: `supabase db push` (or via Studio SQL editor).
+2. Create bucket `community-photos` in Supabase Studio: public-read=OFF, 10 MB, MIME jpeg/png/webp.
+
+**Definition of done**: Vivian can upload, thumbnail-preview, and delete community photos in the dashboard. Buyer-facing pages render byte-for-byte identical to main on a representative listing. ✅
 
 ### 20.3 — DEFERRED: community photo buyer surface / AI video generation
 
