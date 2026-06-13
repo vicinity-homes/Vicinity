@@ -5,6 +5,19 @@ Format matches the standard release template (Features / Improvements / Bug Fixe
 
 ---
 
+## Release Notes - v0.10.1
+
+**Release Date:** 2026-06-12
+
+Tiny mobile bug fix in the agent dashboard.
+
+### 🐛 Bug Fixes
+
+**Broken menu icon in the agent dashboard header**
+On mobile, a small menu button in the top-left of the listing editor opened an empty panel. The bottom navigation already covers everything that menu was meant to reach, so the redundant button was removed. Mobile dashboards now rely entirely on the bottom tab bar; sign-out still lives on the Profile screen.
+
+---
+
 ## Release Notes - v0.10.0
 
 **Release Date:** 2026-06-12

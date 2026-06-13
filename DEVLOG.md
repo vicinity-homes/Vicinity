@@ -8,6 +8,28 @@ Institutional memory for the project. Updated incrementally, not at session end.
 
 ---
 
+## 2026-06-12 01:26 UTC — hotfix: remove broken dashboard hamburger (BottomNav covers it)
+
+**Objective**: Vivian (third-party reporter via owner) caught broken dropdown in top-left of `/dashboard/listings/<id>/edit` on mobile — panel opens but appears empty. Owner asked: why do we even need this dropdown when BottomNav already has everything?
+
+**Root cause**: `app/dashboard/top-bar.tsx` had a `<details>` hamburger added in Phase 8 hotfix (Vivian flight feedback that mobile dashboard nav was unreachable). The right-side `<div>` containing it had no `ml-auto`, so when desktop `<nav>` (`hidden md:flex`) collapsed on mobile, `justify-between` left the lone child at flex-start = far left. The dropdown panel was `absolute right-0 w-56` — designed for "hamburger in top-right" geometry. With hamburger in top-left, the panel's left edge sat at roughly x=-188 and got clipped by the viewport. Visible result: a thin sliver of dark background with all menu item text cut off → "empty panel".
+
+**Decision**: Delete the entire mobile hamburger block instead of fixing geometry. Phase 14 added a global `BottomNav` that already covers Home / Explore / Nearby / New / Community / Dashboard / Leads / Profile, and the Profile page has Sign out. The hamburger became redundant the moment BottomNav shipped — nobody removed it. Deleting it is the right answer; "fix the panel position" would just preserve dead UI.
+
+**Actions**:
+- `app/dashboard/top-bar.tsx`: removed the `<details>` block + its mobile-only Sign out form. Kept desktop nav + name/brokerage + desktop Sign out. Right-side `<div>` is now `md:flex hidden` (only renders on desktop).
+- Updated file header doc to reflect that mobile nav is BottomNav's job.
+
+**Verification**: tsc --noEmit clean; biome check on the file clean. Mobile (md-) renders only the dark sticky header with no controls; BottomNav handles all reachability. Desktop unchanged.
+
+**Hotfix justification**: production-broken UI on a path Vivian actually uses. Direct push to main per project hotfix convention.
+
+**Learnings**: When new global navigation ships (BottomNav in phase14), do a `grep -rn "<details>\|hamburger\|md:hidden" app/` sweep to find redundant mobile-only fallbacks left over from earlier phases. They tend to silently rot — and in this case actively break.
+
+**Next steps**: None for this surface. If Phase 15 introduces more dashboard sections, just add them to `BottomNav.tsx` not the TopBar.
+
+---
+
 ## 2026-06-12 — Phase 14.1: shorter Explore CTA + sound-on autoplay (Option C)
 
 **Objective**: Two owner follow-ups on phase14:
