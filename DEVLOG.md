@@ -6,6 +6,49 @@ Institutional memory for the project. Updated incrementally, not at session end.
 
 **Format per entry**: timestamp, objective, actions, decisions, issues, resolution, learnings, next steps. Keep concise.
 
+---
+
+## 2026-06-14 00:30 UTC — phase21 complete: persistent Save via anonymous device-id (C+X)
+
+**Objective**: Make Save survive page reloads. Like stays in-memory animation.
+
+**Scope choice**: C (device-id, future buyer-login merge) + X (Save only, not Like). Rationale: zero buyer-auth friction today + clear forward path for cross-device sync once login ships.
+
+**Architecture**:
+- New table `saved_listings(device_id, listing_id, user_id null, created_at)` PK on `(device_id, listing_id)`. RLS deny-all → all access via server actions using service-role client. **Why deny-all over header-based RLS**: `device_id` lives in browser-controllable localStorage; if it sat in a custom header gating RLS, any client could forge another device's saves. Server actions let us validate UUID shape with zod and insert with the trusted client.
+- `user_id` column is nullable so future buyer-login can run a one-line `update saved_listings set user_id = $1 where device_id = $2 and user_id is null` to merge anonymous saves on first sign-in. `saved_listings_user_idx` partial index keeps that update cheap.
+- `/saved` reuses the `/browse` Pinterest grid via new `fetchBrowseCardsByIds(ids[])` helper that funnels through `assembleCards` → single source of truth for card shape (covers, beds/baths, agent slug routing).
+
+**Actions**:
+- `supabase/migrations/0016_saved_listings.sql` — table + RLS + counts view.
+- `lib/buyer/device-id.ts` — `crypto.randomUUID` + RFC4122 fallback + UUID validator.
+- `app/_actions/saved-listings.ts` — `saveListing` / `unsaveListing` / `listSavedListingIds` / `listSavedListings`. zod-validated. `saveListing` rejects non-published listings.
+- `app/(public)/browse/_components/BrowseFeed.tsx` — mount hydrate + optimistic `toggleSave` with server-fail revert.
+- `app/(public)/saved/page.tsx` rewritten + new `_components/SavedClient.tsx` + `_actions.ts` thin wrapper.
+- `lib/feed/browse-cards.ts` — `fetchBrowseCardsByIds()` preserves caller order.
+
+**Decisions**:
+- **Service-role + server-action over RLS**: device_id is forgeable client-side, so a header-RLS approach would let anyone read/delete other devices' saves. Server actions hold the only write path.
+- **/saved is fully client-rendered**: device_id requires `window.localStorage`; SSR fetch would need cookies, which we deliberately didn't introduce (would create a cookie-tracking surface area Vivian doesn't need).
+- **Like stays in-memory**: at the housing-vertical scale, "I liked this" is a less meaningful signal than "I want to revisit this." We avoid the second table and second toggle path until the product asks for it.
+
+**Issues**:
+- First server-action draft used columns `bedrooms / bathrooms / cover_video_id / cover_photo_path` from a hallucinated schema — actual schema is `beds / baths` with no cover columns. tsc didn't catch it (stub-typed Supabase client returns `any`); fixed by re-reading `0001_init.sql`.
+- LSP diagnostics lagged behind file writes (showed "cannot find name listSavedListingIds" after import added). `tsc --noEmit` was the source of truth and passed clean.
+
+**Verification**:
+- `npx tsc --noEmit` → clean.
+- `npx biome check` → clean (4 auto-fixes on whitespace).
+- `npm run build` → clean. `/saved` route 3.21 kB / 112 kB First Load JS.
+
+**Owner action**: apply migration `0016_saved_listings.sql` via `supabase db push` or Studio SQL editor.
+
+**Honest caveats for Vivian**: per-browser saves, no cross-device sync until buyer login, Like is reaction-only.
+
+**Resolution**: phase21/persistent-save merged to main.
+
+---
+
 ## 2026-06-13 23:55 UTC — phase20.2 complete: community photo upload (private library)
 
 **Objective**: Implement Phase 20.2 — let agents upload photos to a community's private library, **buyer-invisible**, as raw material for future AI video generation.

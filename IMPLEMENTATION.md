@@ -236,6 +236,30 @@ Next:
 
 ---
 
+## Phase 21 — Persistent Save (anonymous device-id, scope C+X) — ✅ done 2026-06-13
+
+**Scope choice 2026-06-13**: C (anonymous device-id with future buyer-login merge path) + X (Save persists, Like stays in-memory animation). Rationale: Vicinity has no buyer auth yet (Phase 22+); a login wall on Save would gate the most-engagement-positive action behind the highest-friction step. device_id gets us "saves persist across reloads on the same browser" today, and the schema (`user_id` nullable) makes the eventual login merge a one-line `update`.
+
+- [x] **21.1** Migration `supabase/migrations/0016_saved_listings.sql` — `saved_listings(device_id, listing_id, user_id null, created_at)` + RLS deny-all + `saved_listing_counts` aggregate view + indexes.
+- [x] **21.2** `lib/buyer/device-id.ts` — localStorage UUID v4 with `crypto.randomUUID` + RFC4122 fallback. Validated on read.
+- [x] **21.3** `app/_actions/saved-listings.ts` — `saveListing`, `unsaveListing`, `listSavedListingIds`, `listSavedListings`. Service-role client bypasses RLS; zod validates `device_id` shape and `listing_id` UUID; `saveListing` confirms listing is published before insert.
+- [x] **21.4** `app/(public)/browse/_components/BrowseFeed.tsx` — `useEffect` mount hydrates saved set; `toggleSave` does optimistic flip + server action + revert on failure.
+- [x] **21.5** `/saved` page rewritten — server `page.tsx` shell + client `SavedClient.tsx` reading device_id and fetching via server action `fetchSavedCardsAction` → reuses `/browse` grid layout (Pinterest cards).
+- [x] **21.6** `lib/feed/browse-cards.ts` — added `fetchBrowseCardsByIds()` to render saved set with the same card shape as the explore grid.
+
+**Owner action required**:
+1. Apply migration: `supabase db push` (or run `0016_saved_listings.sql` in Studio SQL editor).
+2. No bucket / no env var changes (uses existing `SUPABASE_SERVICE_ROLE_KEY`).
+
+**Honest caveats baked in to V1** (tell Vivian):
+- Saves are **per-browser**: clearing site data, switching browsers, or Incognito = different `device_id` = saves not visible.
+- Saves do **not** sync across phone ↔ laptop (no buyer login yet).
+- Like is **in-memory only** (intentional — pure double-tap reaction animation, not a list surface).
+
+**Definition of done**: a buyer hits Save in `/browse/feed`, reloads the tab, and the heart is still filled. /saved page lists the same listings in newest-first order. ✅
+
+---
+
 ## Phase 20 — Photo listing parity + community photo upload
 
 Goal: photo-only listings get the same buyer-side richness as video listings (Like/Save/Share/Contact + LeadModal + description + full-screen carousel). Community editor gains photo upload as a future-AI-video raw-material library. **Swipe feed (`/browse/feed`) stays video-only — Phase 10 decision preserved.**
