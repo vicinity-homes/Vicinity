@@ -88,7 +88,22 @@ export default async function ProfilePage() {
             {user.email ? <div className="mt-3 text-cream/60 text-xs">{user.email}</div> : null}
           </div>
 
-          <div className="mt-6 flex flex-col gap-2">
+          <div className="mt-6">
+            <NearbyRadiusPref />
+          </div>
+
+          <div className="mt-6 rounded-xl border border-cream/10 bg-ink2/40 p-4 text-xs text-cream/60">
+            <div className="font-medium text-cream/80">Account settings</div>
+            <div className="mt-1">
+              Need to change your password? Use{' '}
+              <Link href="/forgot-password" className="text-gold hover:underline">
+                Forgot password
+              </Link>{' '}
+              to send yourself a one-time code.
+            </div>
+          </div>
+
+          <div className="mt-8 flex flex-col gap-2">
             <Link
               href="/dashboard"
               className="btn-gold inline-flex items-center justify-center rounded-full px-6 py-3 text-sm"
@@ -111,21 +126,6 @@ export default async function ProfilePage() {
                 Sign out
               </button>
             </form>
-          </div>
-
-          <div className="mt-10 rounded-xl border border-cream/10 bg-ink2/40 p-4 text-xs text-cream/60">
-            <div className="font-medium text-cream/80">Account settings</div>
-            <div className="mt-1">
-              Need to change your password? Use{' '}
-              <Link href="/forgot-password" className="text-gold hover:underline">
-                Forgot password
-              </Link>{' '}
-              to send yourself a one-time code.
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <NearbyRadiusPref />
           </div>
         </section>
       </main>
