@@ -3,6 +3,13 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.26.1 — 2026-06-14
+
+### 🐛 Bug Fixes
+- **Public listing video page no longer stretches across the desktop browser.** Videos now show in their natural mobile portrait size, centered on the page — same experience whether you open the link on phone or laptop.
+
+---
+
 ## v0.26.0 — 2026-06-14
 
 ### 🚀 Features

@@ -2,6 +2,21 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-14 — Phase 26.1: Desktop video feed not stretched
+
+**Objective**: User reported the public link video page (`/v/...`) and `/browse/feed` stretch video to fill the wide Mac browser viewport. Should keep mobile portrait sizing.
+
+**Actions**:
+- `app/(public)/browse/_components/BrowseFeed.tsx` outer container: added `mx-auto md:w-[min(430px,calc(100vh*9/16))] md:shadow-2xl md:shadow-black/50` so the feed becomes a phone-width column centered on desktop. Mobile (default) still `w-full`. All inner absolute-positioned overlays (top header, right rail, bottom action bar) automatically follow the column width — no per-element changes needed.
+
+**Verification**: `pnpm tsc --noEmit` clean, `pnpm build` clean. Pushed `39b235a`.
+
+**Decisions**: Width clamps to `min(430px, 100vh * 9/16)` — never wider than 430px, never wider than 9:16 derived from viewport height (so on short windows it shrinks instead of overflowing the screen).
+
+**Learnings**: All the previously-added `md:object-contain` / `md:block` blur logic was paving over the symptom (stretched container) rather than fixing the cause. With the column constrained, those don't visually trigger anymore but kept in place — harmless and useful if column ever widens.
+
+---
+
 ## 2026-06-14 — phase26: desktop chrome parity (SiteHeader + nav SSOT)
 
 **Objective**: mobile gained a full nav surface (BottomNav + top-right avatar)
