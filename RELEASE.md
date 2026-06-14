@@ -5,6 +5,23 @@ Format matches the standard release template (Features / Improvements / Bug Fixe
 
 ---
 
+## Release Notes - v0.17.0
+
+**Release Date:** 2026-06-14
+
+### Improvements
+
+- **One Upload button, one upload page.** The community editor used to have separate `+ Add video` and `+ Add photos` actions that opened different screens. Now there's a single `+ Upload` button on every community card and inside the editor; it opens a unified page where the video uploader (with the 12-category picker) is the primary panel and the private photo library sits underneath as a collapsible section. Less context switching.
+- **A simpler community editor.** The Schools and POIs management sections are gone from the editor. They were rarely touched and made the page long; the page is now the metadata form plus the Upload button. Existing schools/POIs already in the database keep showing up everywhere they always did — only the dashboard's add/edit/delete UI is hidden.
+- **Address instead of coordinates.** Uploading a community video now asks for an optional plain-English address (e.g. *Smith Park, 123 Main St*) instead of a "link to a POI" dropdown. If you skip it, the page quietly uses your phone's location for our Nearby radius search — you never see coordinates, and nothing is required.
+- **Old links keep working.** The previous per-community `/videos` and `/photos` URLs now redirect to the new upload page, so any saved bookmarks or pasted links land in the right place.
+
+### Known issues
+
+- The "Add a property / Add a community video" sheet on the buyer-facing home screen still uses placeholder copy — naming pass coming next.
+
+---
+
 ## Release Notes - v0.16.0
 
 **Release Date:** 2026-06-14

@@ -1,18 +1,14 @@
 'use client';
 
 /**
- * CommunityPhotoPanel — Phase 20.2 (2026-06-13).
+ * CommunityPhotoPanel — Phase 20.2 (2026-06-13);
+ * Phase 23 (2026-06-14) trimmed school/POI categorization.
  *
  * Lets an authenticated agent upload photos to a community's private
  * photo library. Photos are NOT visible to buyers — they're raw material
- * for future AI video generation.
- *
- * Flow mirrors PhotoPanel (listing photos):
- *   1. Pick files → client uploads each to private bucket via supabase-js.
- *      Storage RLS scopes by community_id + agent membership.
- *   2. On upload success, recordCommunityPhoto() inserts a row.
- *   3. Existing photos: server passes signed URLs (1h TTL) for the grid.
- *      Bucket is private so we cannot construct a public URL.
+ * for future AI video generation. Phase 23 dropped the school/poi/kind
+ * picker because we no longer surface schools/POIs in the editor; every
+ * photo is now stored as `kind='neighborhood'` server-side.
  */
 
 import {
@@ -23,7 +19,6 @@ import { createClient } from '@/lib/supabase/client';
 import { COMMUNITY_PHOTOS_BUCKET, nextCommunityPhotoStoragePath } from '@/lib/supabase/storage';
 import { Trash2, Upload } from 'lucide-react';
 import { useCallback, useRef, useState, useTransition } from 'react';
-import type { PoiRow, SchoolRow } from './page';
 
 export interface CommunityPhotoRow {
   id: string;
@@ -41,8 +36,6 @@ export interface CommunityPhotoRow {
 interface Props {
   communityId: string;
   initialPhotos: CommunityPhotoRow[];
-  schools: SchoolRow[];
-  pois: PoiRow[];
 }
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -55,13 +48,10 @@ interface PendingItem {
   error?: string;
 }
 
-export function CommunityPhotoPanel({ communityId, initialPhotos, schools, pois }: Props) {
+export function CommunityPhotoPanel({ communityId, initialPhotos }: Props) {
   const [photos, setPhotos] = useState<CommunityPhotoRow[]>(initialPhotos);
   const [pending, setPending] = useState<PendingItem[]>([]);
   const [globalError, setGlobalError] = useState<string | null>(null);
-  const [kind, setKind] = useState<'school' | 'poi' | 'neighborhood'>('neighborhood');
-  const [schoolId, setSchoolId] = useState<string>('');
-  const [poiId, setPoiId] = useState<string>('');
   const [_, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -69,11 +59,6 @@ export function CommunityPhotoPanel({ communityId, initialPhotos, schools, pois 
     async (files: FileList) => {
       setGlobalError(null);
       const supabase = createClient();
-      // Snapshot tagging at the moment of pick so a mid-batch dropdown
-      // change doesn't retag in-flight uploads.
-      const taggedKind = kind;
-      const taggedSchool = kind === 'school' && schoolId ? schoolId : null;
-      const taggedPoi = kind === 'poi' && poiId ? poiId : null;
 
       for (const file of Array.from(files)) {
         const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -108,9 +93,9 @@ export function CommunityPhotoPanel({ communityId, initialPhotos, schools, pois 
         const result = await recordCommunityPhoto({
           communityId,
           storagePath: path,
-          kind: taggedKind,
-          schoolId: taggedSchool,
-          poiId: taggedPoi,
+          kind: 'neighborhood',
+          schoolId: null,
+          poiId: null,
           lat: null,
           lng: null,
           width: dims?.width ?? null,
@@ -126,18 +111,16 @@ export function CommunityPhotoPanel({ communityId, initialPhotos, schools, pois 
           continue;
         }
 
-        // For freshly uploaded photos, we use the local object-URL preview
-        // until the page revalidates and refetches with a signed URL.
         setPending((prev) => prev.filter((p) => p.tempId !== tempId));
         setPhotos((prev) => [
           ...prev,
           {
             id: result.id,
             storage_path: path,
-            signed_url: preview, // local preview; revalidated on next nav
-            kind: taggedKind,
-            school_id: taggedSchool,
-            poi_id: taggedPoi,
+            signed_url: preview,
+            kind: 'neighborhood',
+            school_id: null,
+            poi_id: null,
             alt_text: null,
             width: dims?.width ?? null,
             height: dims?.height ?? null,
@@ -146,7 +129,7 @@ export function CommunityPhotoPanel({ communityId, initialPhotos, schools, pois 
         ]);
       }
     },
-    [communityId, kind, schoolId, poiId],
+    [communityId],
   );
 
   const handleDelete = useCallback(
@@ -167,7 +150,7 @@ export function CommunityPhotoPanel({ communityId, initialPhotos, schools, pois 
   return (
     <section className="rounded border border-bronze/30 bg-ink2 p-5">
       <div className="mb-4 flex items-baseline justify-between">
-        <h2 className="text-base font-semibold">Upload photos (private library)</h2>
+        <h2 className="text-base font-semibold">Photo library (private)</h2>
         <span className="text-cream/50 text-xs">{photos.length} uploaded</span>
       </div>
       <p className="mb-4 text-cream/60 text-xs">
@@ -181,68 +164,6 @@ export function CommunityPhotoPanel({ communityId, initialPhotos, schools, pois 
           {globalError}
         </div>
       ) : null}
-
-      <details className="mb-4 rounded border border-bronze/20 bg-ink/50 px-3 py-2 text-sm">
-        <summary className="cursor-pointer select-none text-cream/60 text-xs uppercase tracking-wide hover:text-cream">
-          Categorize next upload (optional)
-        </summary>
-        <div className="mt-3 space-y-3">
-          <label className="block">
-            <span className="mb-1 block font-medium text-cream/70 text-xs">Kind</span>
-            <select
-              value={kind}
-              onChange={(e) => {
-                setKind(e.target.value as 'school' | 'poi' | 'neighborhood');
-                setSchoolId('');
-                setPoiId('');
-              }}
-              className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-cream text-sm focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
-            >
-              <option value="neighborhood">neighborhood</option>
-              <option value="school">school</option>
-              <option value="poi">poi</option>
-            </select>
-          </label>
-          {kind === 'school' && schools.length > 0 && (
-            <label className="block">
-              <span className="mb-1 block font-medium text-cream/70 text-xs">
-                Link to school (optional)
-              </span>
-              <select
-                value={schoolId}
-                onChange={(e) => setSchoolId(e.target.value)}
-                className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-cream text-sm focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
-              >
-                <option value="">— unlinked —</option>
-                {schools.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          {kind === 'poi' && pois.length > 0 && (
-            <label className="block">
-              <span className="mb-1 block font-medium text-cream/70 text-xs">
-                Link to POI (optional)
-              </span>
-              <select
-                value={poiId}
-                onChange={(e) => setPoiId(e.target.value)}
-                className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-cream text-sm focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
-              >
-                <option value="">— unlinked —</option>
-                {pois.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} [{p.poi_type}]
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-        </div>
-      </details>
 
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
         {photos.map((photo) => (
@@ -270,11 +191,6 @@ export function CommunityPhotoPanel({ communityId, initialPhotos, schools, pois 
             >
               <Trash2 size={14} aria-hidden="true" />
             </button>
-            {photo.kind !== 'neighborhood' && (
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-ink/90 to-transparent px-2 py-1 text-[10px] text-cream/80">
-                {photo.kind}
-              </div>
-            )}
           </div>
         ))}
 

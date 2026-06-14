@@ -222,6 +222,9 @@ async function handleCommunity(
   };
   if (input.lat !== undefined && input.lat !== null) insertPayload.lat = input.lat;
   if (input.lng !== undefined && input.lng !== null) insertPayload.lng = input.lng;
+  if (input.address && input.address.trim() !== '') {
+    insertPayload.address = input.address.trim();
+  }
 
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
   const { data: row, error: insertErr } = (await (supabase as any)

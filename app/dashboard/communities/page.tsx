@@ -90,10 +90,10 @@ export default async function CommunitiesListPage() {
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <Link
-                    href={`/dashboard/communities/${c.id}/videos`}
+                    href={`/dashboard/communities/${c.id}/upload`}
                     className="inline-flex items-center justify-center gap-1 rounded-lg border border-bronze/40 px-3 py-1.5 text-cream text-xs hover:border-gold hover:text-gold"
                   >
-                    + Add video
+                    + Upload
                   </Link>
                   {canEdit ? (
                     <Link

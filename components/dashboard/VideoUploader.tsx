@@ -61,6 +61,10 @@ export type CommunityTarget = {
   // older callers compile; agents are encouraged to fill them in.
   lat?: number;
   lng?: number;
+  // Phase 23 (2026-06-14) — optional human-readable address. When set we
+  // forward it on the wire; when empty we still send lat/lng (silent geo)
+  // but no address.
+  address?: string;
 };
 export type UploadTarget = ListingTarget | CommunityTarget;
 
@@ -133,6 +137,9 @@ export function VideoUploader({ target, onUploaded }: Props) {
             ...(target.poiId ? { poi_id: target.poiId } : {}),
             ...(typeof target.lat === 'number' ? { lat: target.lat } : {}),
             ...(typeof target.lng === 'number' ? { lng: target.lng } : {}),
+            ...(target.address && target.address.trim() !== ''
+              ? { address: target.address.trim() }
+              : {}),
           };
 
     let uploadUrl: string;

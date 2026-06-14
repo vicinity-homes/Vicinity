@@ -66,6 +66,11 @@ export const VideoCreateUpload = z.object({
   // [-90, 90], lng in [-180, 180].
   lat: z.number().gte(-90).lte(90).optional(),
   lng: z.number().gte(-180).lte(180).optional(),
+  // Phase 23 (2026-06-14) — community-scope optional human-readable address.
+  // When the agent types one we keep it; if blank the UI still passes lat/lng
+  // (silent browser geolocation) for nearby queries but does not surface a
+  // map / coords UI.
+  address: z.string().max(200).optional(),
 });
 export type VideoCreateUpload = z.infer<typeof VideoCreateUpload>;
 

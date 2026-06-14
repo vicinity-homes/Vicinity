@@ -1,11 +1,11 @@
 /**
- * /dashboard/communities/[id] — community editor (Phase 4.4 + Phase 17).
+ * /dashboard/communities/[id] — community editor.
  *
- * Phase 17: video upload moved to `./videos`. This page now only handles
- * metadata + schools + POIs, and gates the metadata sub-form to the
- * creator (or legacy unowned rows). Migration 0013 enforces creator-only
- * UPDATE on the DB; UI mirrors that so non-creators get read-only metadata
- * instead of a save button that 403s.
+ * Phase 17: video upload moved off this page (now at ./upload).
+ * Phase 23 (2026-06-14): dropped Schools and POIs sections — agents weren't
+ * using them and they cluttered the page. The DB tables stay (other code
+ * paths still read them) but the UI no longer surfaces add/edit/delete.
+ * Add-photos and Add-video are now a single "Upload" button (combined page).
  */
 
 import { createClient } from '@/lib/supabase/server';
@@ -23,6 +23,9 @@ interface CommunityRow {
   created_by: string | null;
 }
 
+// Re-exported for downstream consumers that import these row types from
+// this page module (e.g. the upload subpage). These mirror the shape of
+// the corresponding tables; we keep them here to avoid churning callers.
 export interface SchoolRow {
   id: string;
   name: string;
@@ -77,22 +80,6 @@ export default async function CommunityEditorPage({
   const myAgentId = agentRow?.id ?? null;
   const canEditMetadata = community.created_by == null || community.created_by === myAgentId;
 
-  const [{ data: schoolsRaw }, { data: poisRaw }] = await Promise.all([
-    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-    (supabase as any)
-      .from('schools')
-      .select('id, name, grades, rating, source_url, recorded_at')
-      .eq('community_id', id)
-      .order('name', { ascending: true }) as Promise<{ data: SchoolRow[] | null }>,
-    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-    (supabase as any)
-      .from('pois')
-      .select('id, name, poi_type, distance_text, source_url, recorded_at')
-      .eq('community_id', id)
-      .order('poi_type', { ascending: true })
-      .order('name', { ascending: true }) as Promise<{ data: PoiRow[] | null }>,
-  ]);
-
   return (
     <div className="mx-auto max-w-3xl space-y-6 py-4">
       <header className="flex items-baseline justify-between gap-3">
@@ -105,26 +92,15 @@ export default async function CommunityEditorPage({
         </div>
         <div className="flex shrink-0 gap-2">
           <Link
-            href={`/dashboard/communities/${community.id}/photos`}
-            className="rounded border border-bronze/40 px-3 py-2 text-cream/80 text-sm transition hover:border-gold hover:text-cream"
-          >
-            + Add photos
-          </Link>
-          <Link
-            href={`/dashboard/communities/${community.id}/videos`}
+            href={`/dashboard/communities/${community.id}/upload`}
             className="rounded bg-gold px-3 py-2 font-medium text-ink text-sm transition hover:opacity-90"
           >
-            + Add video
+            + Upload
           </Link>
         </div>
       </header>
 
-      <CommunityEditor
-        community={community}
-        schools={schoolsRaw ?? []}
-        pois={poisRaw ?? []}
-        canEditMetadata={canEditMetadata}
-      />
+      <CommunityEditor community={community} canEditMetadata={canEditMetadata} />
     </div>
   );
 }

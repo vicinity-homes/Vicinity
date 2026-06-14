@@ -4,6 +4,88 @@ Institutional memory for the project. Updated incrementally, not at session end.
 
 **Order**: REVERSE chronological — newest entry at the top. Always insert above existing entries.
 
+---
+
+## 2026-06-14 — Phase 23 — Upload page consolidation + UI cleanup
+
+**Objective.** Trim the agent-side community editor to the minimum the
+dashboard actually exercises, and merge the two upload entry points into
+one screen.
+
+**UX changes.**
+- Editor `/dashboard/communities/[id]` no longer renders the Schools or
+  POIs management sections. The DB tables stay (browse/feed code paths
+  still read them), but there's no UI to add/edit/delete from the
+  dashboard. Recover from git history if we want them back.
+- `+ Add video` and `+ Add photos` are gone as separate actions. The
+  community list and editor header now expose a single `+ Upload` button
+  that routes to the new combined page.
+- New page: `/dashboard/communities/[id]/upload` — the 12-category video
+  uploader is the primary panel; private photo library is a collapsible
+  `<details>` underneath.
+- Old `/videos` and `/photos` subpages are now thin redirects to
+  `/upload` so existing bookmarks keep working.
+
+**Video upload form.**
+- Removed the "Link to school" / "Link to POI" dropdowns. The 12-cat
+  picker already encodes which kind of video this is; the school/POI
+  link was rarely used and the panel needs schools/POIs loaded on the
+  page just to render two empty selects.
+- Removed lat/lng UI. Replaced by an optional free-text `address`
+  field (e.g. "Smith Park, 123 Main St"). When the field is empty we
+  silently call `navigator.geolocation.getCurrentPosition` on mount and
+  forward those coords; if the browser denies, the row saves with
+  neither — Nearby just skips it. Nothing about geo is ever surfaced.
+
+**Migration 0018 (`community_video_address`).**
+- Adds `community_videos.address text NULL`. Idempotent. Backwards
+  compatible — old rows continue to read fine.
+
+**Code paths touched.**
+- New: `supabase/migrations/0018_community_video_address.sql`,
+  `app/dashboard/communities/[id]/upload/page.tsx`.
+- Modified: `lib/zod/schemas.ts` (+`address`),
+  `app/api/video/create-upload/route.ts` (insert address when present),
+  `components/dashboard/VideoUploader.tsx` (+`address` on
+  `CommunityTarget`),
+  `app/dashboard/communities/[id]/CommunityVideoPanel.tsx` (single
+  address input, silent geo, no school/POI dropdowns),
+  `app/dashboard/communities/[id]/CommunityPhotoPanel.tsx` (no
+  schools/pois props; photos default to `kind='neighborhood'`),
+  `app/dashboard/communities/[id]/page.tsx` (no SchoolsSection/
+  PoisSection, single Upload button),
+  `app/dashboard/communities/[id]/CommunityEditor.tsx` (just metadata
+  form),
+  `app/dashboard/communities/[id]/{videos,photos}/page.tsx`
+  (redirects),
+  `app/dashboard/communities/page.tsx` (`+ Upload` link).
+
+**Verification.**
+- `npx tsc --noEmit` → 0 errors.
+- `biome check` (touched files) → clean.
+- `npm run build` → all routes compile, including new `/upload`.
+
+**Decisions.**
+- `address` is on `community_videos`, not on a separate locations
+  table. It's a label for the video, not a normalized POI. Cheap to
+  add, cheap to drop.
+- Silent geo (no UI) is a deliberate UX choice — the "give us a heads
+  up about where this is" prompt the browser shows is enough; we don't
+  want to confuse uploaders with a coords toggle.
+- The `kind` column on `community_videos` and `community_photos` stays
+  not-null; we just stop varying it. Cleanup migration can come later.
+- Bookmarks → redirects: cheaper than a hard 404 and we already had
+  `/videos` and `/photos` linked from history.
+
+**Out of scope.**
+- Reverse-geocoding the silent coords into an address.
+- Dropping `community_photos.kind` / `community_photos.school_id` /
+  `community_photos.poi_id` columns.
+- A real "Add a property" / "Add a community video" disambiguation
+  modal on the buyer-facing side (the screenshot the user shared).
+
+---
+
 **Format per entry**: timestamp, objective, actions, decisions, issues, resolution, learnings, next steps. Keep concise.
 
 ---

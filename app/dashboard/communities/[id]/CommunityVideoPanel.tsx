@@ -1,19 +1,16 @@
 'use client';
 
 /**
- * CommunityVideoPanel — Phase 4.5; Phase 22 (2026-06-14) re-categorized.
+ * CommunityVideoPanel — Phase 4.5; Phase 22 (2026-06-14) re-categorized;
+ * Phase 23 (2026-06-14) trimmed link-to-school / link-to-POI sections and
+ * replaced the lat/lng UI with a single human-readable `address` field.
  *
- * Lists community_videos for one community + embeds VideoUploader with the
- * 'community' scope. Before uploading, the agent picks ONE of 12 categories
- * (split into Bucket A "Only on Vicinity" and Bucket B "Real look at the data")
- * — see lib/zod/community-video-categories.ts for the full taxonomy.
- *
- * - school_run can optionally link to a specific schools row.
- * - any other category can optionally link to a specific pois row.
- * - the legacy `kind` column is still populated server-side, derived from the
- *   selected category, so old code keeps working until we drop it.
- *
- * Polls /api/video/list?community_id=… for status flips.
+ * Why the cuts (Phase 23): linking a video to a specific school / POI row
+ * was rarely used and double-coupled the picker with `kind`. The 12-cat
+ * picker already says "this is a school_run" — agents don't need to also
+ * pick which school. Geo coords are still captured (silently, via browser
+ * geolocation) so the platform-wide Nearby query keeps working, but the
+ * UI never shows them.
  */
 
 import { deleteCommunityVideo } from '@/app/dashboard/communities/actions';
@@ -31,15 +28,11 @@ import {
 } from '@/lib/zod/community-video-categories';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import type { PoiRow, SchoolRow } from './page';
 
 export interface CommunityVideoRow {
   id: string;
   cf_video_id: string;
   kind: string;
-  // Phase 22: optional on the row because old rows may not have it migrated
-  // until 0017 runs in the env this code is rendered against. UI falls back
-  // to `kind` if `category` is missing.
   category?: string | null;
   category_needs_review?: boolean | null;
   school_id: string | null;
@@ -57,56 +50,40 @@ const BUCKET_B = COMMUNITY_VIDEO_CATEGORIES.filter((c) => c.bucket === 'b');
 export function CommunityVideoPanel({
   communityId,
   initialVideos,
-  schools,
-  pois,
 }: {
   communityId: string;
   initialVideos: CommunityVideoRow[];
-  schools: SchoolRow[];
-  pois: PoiRow[];
 }) {
   const router = useRouter();
   const [videos, setVideos] = useState<CommunityVideoRow[]>(initialVideos);
-  // Phase 22: category drives the picker; kind is derived for the wire format.
   const [category, setCategory] = useState<CommunityVideoCategoryId>('walk_the_block');
-  const [schoolId, setSchoolId] = useState<string>('');
-  const [poiId, setPoiId] = useState<string>('');
-  // Phase 11 (2026-06-12) — geo for platform-wide nearby. Stored as strings
-  // for input control; converted to numbers when building target.
-  const [lat, setLat] = useState<string>('');
-  const [lng, setLng] = useState<string>('');
-  const [geoError, setGeoError] = useState<string | null>(null);
+  const [address, setAddress] = useState<string>('');
+  // Phase 23: silent geo. Captured once on mount; never surfaced in the UI.
+  // If the user denies geolocation we just don't send lat/lng — the row still
+  // saves with `address` (or neither, in which case Nearby just skips it).
+  const [lat, setLat] = useState<number | undefined>(undefined);
+  const [lng, setLng] = useState<number | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
   const meta = getCategoryMeta(category);
   const kind: CommunityKind = legacyKindForCategory(category);
 
-  // When category changes, drop any optional link that no longer makes sense.
-  function pickCategory(next: CommunityVideoCategoryId) {
-    setCategory(next);
-    if (next !== 'school_run') setSchoolId('');
-    if (next === 'school_run') setPoiId('');
-  }
-
-  function useMyLocation() {
-    setGeoError(null);
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setGeoError('Geolocation not available in this browser.');
-      return;
-    }
+  // Silent geolocation on mount. Browser will prompt once; if the user
+  // denies, we proceed without coords — no UI flag, no error toast.
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setLat(pos.coords.latitude.toFixed(6));
-        setLng(pos.coords.longitude.toFixed(6));
+        setLat(Number(pos.coords.latitude.toFixed(6)));
+        setLng(Number(pos.coords.longitude.toFixed(6)));
       },
-      (err) => {
-        setGeoError(err.message || 'Could not read location.');
+      () => {
+        // silent; coords stay undefined
       },
       { enableHighAccuracy: false, timeout: 8000 },
     );
-  }
+  }, []);
 
-  // Sync if a parent refresh delivers new initial data (e.g. after a delete).
   useEffect(() => {
     setVideos(initialVideos);
   }, [initialVideos]);
@@ -120,11 +97,10 @@ export function CommunityVideoPanel({
       const json = (await res.json()) as { videos: CommunityVideoRow[] };
       setVideos(json.videos);
     } catch {
-      // network blip; next tick will retry
+      // network blip
     }
   }, [communityId]);
 
-  // Poll while any video is processing (mirror Phase 2 pattern, simpler — no Realtime).
   useEffect(() => {
     const hasProcessing = videos.some((v) => v.status === 'processing');
     if (!hasProcessing) return;
@@ -147,28 +123,14 @@ export function CommunityVideoPanel({
     }
   }
 
-  const latNum = lat.trim() === '' ? undefined : Number(lat);
-  const lngNum = lng.trim() === '' ? undefined : Number(lng);
-  const geoOk =
-    (latNum === undefined && lngNum === undefined) ||
-    (typeof latNum === 'number' &&
-      Number.isFinite(latNum) &&
-      latNum >= -90 &&
-      latNum <= 90 &&
-      typeof lngNum === 'number' &&
-      Number.isFinite(lngNum) &&
-      lngNum >= -180 &&
-      lngNum <= 180);
-
   const target = {
     scope: 'community' as const,
     communityId,
     kind,
     category,
-    ...(category === 'school_run' && schoolId ? { schoolId } : {}),
-    ...(category !== 'school_run' && poiId ? { poiId } : {}),
-    ...(geoOk && latNum !== undefined ? { lat: latNum } : {}),
-    ...(geoOk && lngNum !== undefined ? { lng: lngNum } : {}),
+    ...(typeof lat === 'number' ? { lat } : {}),
+    ...(typeof lng === 'number' ? { lng } : {}),
+    ...(address.trim() !== '' ? { address: address.trim() } : {}),
   };
 
   return (
@@ -185,14 +147,14 @@ export function CommunityVideoPanel({
           subtitle="Scarce content nobody else has"
           items={BUCKET_A}
           selected={category}
-          onPick={pickCategory}
+          onPick={setCategory}
         />
         <CategoryGroup
           title="Real look at the data"
           subtitle="The visceral layer over numbers buyers can already find"
           items={BUCKET_B}
           selected={category}
-          onPick={pickCategory}
+          onPick={setCategory}
         />
         <div className="rounded border border-gold/30 bg-gold/5 px-3 py-2 text-xs text-cream/80">
           <span className="font-medium text-gold">{meta.label}</span>
@@ -203,110 +165,28 @@ export function CommunityVideoPanel({
         </div>
       </div>
 
+      {/* ── Address (Phase 23) ───────────────────────────────────── */}
+      <div className="mb-4">
+        <label htmlFor="cv-address" className="mb-1 block text-xs font-medium text-cream/70">
+          Address <span className="text-cream/40">(optional)</span>
+        </label>
+        <input
+          id="cv-address"
+          type="text"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          placeholder="e.g. Smith Park, 123 Main St — or leave blank to use current location"
+          maxLength={200}
+          className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-sm text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+        />
+        <p className="mt-1 text-[11px] text-cream/50">
+          What's in the video — readable for buyers. If left blank, we use your phone's location
+          quietly so this still shows up in Nearby.
+        </p>
+      </div>
+
       <VideoUploader target={target} onUploaded={handleUploaded} />
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
-
-      {/* Optional school/POI link — only relevant for some categories. */}
-      <details className="mt-4 rounded border border-bronze/20 bg-ink/50 px-3 py-2 text-sm">
-        <summary className="cursor-pointer select-none text-xs uppercase tracking-wide text-cream/60 hover:text-cream">
-          Link to a specific school / place (optional)
-        </summary>
-        <div className="mt-3 space-y-3">
-          {category === 'school_run' && (
-            <div className="block">
-              <span className="mb-1 block text-xs font-medium text-cream/70">Link to school</span>
-              {schools.length > 0 ? (
-                <select
-                  value={schoolId}
-                  onChange={(e) => setSchoolId(e.target.value)}
-                  className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
-                >
-                  <option value="">— unlinked —</option>
-                  {schools.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p className="text-xs text-cream/40">
-                  No schools yet — add one in the editor to link it to a video.
-                </p>
-              )}
-            </div>
-          )}
-          {category !== 'school_run' && (
-            <div className="block">
-              <span className="mb-1 block text-xs font-medium text-cream/70">Link to POI</span>
-              {pois.length > 0 ? (
-                <select
-                  value={poiId}
-                  onChange={(e) => setPoiId(e.target.value)}
-                  className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
-                >
-                  <option value="">— unlinked —</option>
-                  {pois.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} [{p.poi_type}]
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p className="text-xs text-cream/40">
-                  No POIs yet — add one in the editor to link it to a video.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      </details>
-
-      <details className="mt-3 rounded border border-bronze/20 bg-ink/50 px-3 py-2 text-sm">
-        <summary className="cursor-pointer select-none text-xs uppercase tracking-wide text-cream/60 hover:text-cream">
-          Add location (enables Nearby)
-        </summary>
-        <div className="mt-3">
-          <div className="mb-2 flex justify-end">
-            <button
-              type="button"
-              onClick={useMyLocation}
-              className="rounded border border-bronze/30 px-2 py-1 text-[11px] text-cream/70 hover:border-gold hover:text-cream"
-            >
-              Use my current location
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="block">
-              <span className="mb-1 block text-[11px] text-cream/50">Latitude</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={lat}
-                onChange={(e) => setLat(e.target.value)}
-                placeholder="e.g. 33.838"
-                className="w-full rounded border border-bronze/30 bg-ink px-2 py-1 text-sm text-cream focus:border-gold focus:outline-none"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-[11px] text-cream/50">Longitude</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={lng}
-                onChange={(e) => setLng(e.target.value)}
-                placeholder="e.g. -84.378"
-                className="w-full rounded border border-bronze/30 bg-ink px-2 py-1 text-sm text-cream focus:border-gold focus:outline-none"
-              />
-            </label>
-          </div>
-          {!geoOk && (
-            <p className="mt-2 text-[11px] text-red-400">
-              Lat must be -90..90 and lng -180..180, or both empty.
-            </p>
-          )}
-          {geoError && <p className="mt-2 text-[11px] text-red-400">{geoError}</p>}
-        </div>
-      </details>
 
       {videos.length > 0 && (
         <details className="mt-4" open>
@@ -315,12 +195,6 @@ export function CommunityVideoPanel({
           </summary>
           <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {videos.map((v) => {
-              const linked =
-                v.school_id != null
-                  ? (schools.find((s) => s.id === v.school_id)?.name ?? 'school')
-                  : v.poi_id != null
-                    ? (pois.find((p) => p.id === v.poi_id)?.name ?? 'poi')
-                    : null;
               const displayCategory = v.category
                 ? (COMMUNITY_VIDEO_CATEGORIES.find((c) => c.id === v.category)?.label ?? v.category)
                 : v.kind;
@@ -343,7 +217,6 @@ export function CommunityVideoPanel({
                           needs review
                         </span>
                       ) : null}
-                      {linked ? ` · ${linked}` : null}
                       {' · '}
                       <span
                         className={
