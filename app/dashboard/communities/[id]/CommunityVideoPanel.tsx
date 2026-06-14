@@ -1,20 +1,19 @@
 'use client';
 
 /**
- * CommunityVideoPanel — Phase 4.5.
+ * CommunityVideoPanel — Phase 4.5; Phase 22 (2026-06-14) re-categorized.
  *
  * Lists community_videos for one community + embeds VideoUploader with the
- * 'community' scope. Before uploading, the agent picks:
- *   - kind: school | poi | neighborhood
- *   - if kind=school: optional school link (one of the community's schools)
- *   - if kind=poi:    optional poi link (one of the community's POIs)
- *   - if kind=neighborhood: no link (footage is just for the community)
+ * 'community' scope. Before uploading, the agent picks ONE of 12 categories
+ * (split into Bucket A "Only on Vicinity" and Bucket B "Real look at the data")
+ * — see lib/zod/community-video-categories.ts for the full taxonomy.
  *
- * After upload, polls /api/video/list?community_id=… for status flips
- * (mirrors the listing VideoPanel pattern; no Realtime here for V1 simplicity).
+ * - school_run can optionally link to a specific schools row.
+ * - any other category can optionally link to a specific pois row.
+ * - the legacy `kind` column is still populated server-side, derived from the
+ *   selected category, so old code keeps working until we drop it.
  *
- * No reorder, no cover photo — those are listing-level concerns. Community
- * videos surface on the public listing page later (Phase 5).
+ * Polls /api/video/list?community_id=… for status flips.
  */
 
 import { deleteCommunityVideo } from '@/app/dashboard/communities/actions';
@@ -24,6 +23,12 @@ import {
   VideoUploader,
 } from '@/components/dashboard/VideoUploader';
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
+import {
+  COMMUNITY_VIDEO_CATEGORIES,
+  type CommunityVideoCategoryId,
+  getCategoryMeta,
+  legacyKindForCategory,
+} from '@/lib/zod/community-video-categories';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import type { PoiRow, SchoolRow } from './page';
@@ -32,6 +37,11 @@ export interface CommunityVideoRow {
   id: string;
   cf_video_id: string;
   kind: string;
+  // Phase 22: optional on the row because old rows may not have it migrated
+  // until 0017 runs in the env this code is rendered against. UI falls back
+  // to `kind` if `category` is missing.
+  category?: string | null;
+  category_needs_review?: boolean | null;
   school_id: string | null;
   poi_id: string | null;
   title: string | null;
@@ -40,6 +50,9 @@ export interface CommunityVideoRow {
 }
 
 const POLL_MS = 5000;
+
+const BUCKET_A = COMMUNITY_VIDEO_CATEGORIES.filter((c) => c.bucket === 'a');
+const BUCKET_B = COMMUNITY_VIDEO_CATEGORIES.filter((c) => c.bucket === 'b');
 
 export function CommunityVideoPanel({
   communityId,
@@ -54,7 +67,8 @@ export function CommunityVideoPanel({
 }) {
   const router = useRouter();
   const [videos, setVideos] = useState<CommunityVideoRow[]>(initialVideos);
-  const [kind, setKind] = useState<CommunityKind>('neighborhood');
+  // Phase 22: category drives the picker; kind is derived for the wire format.
+  const [category, setCategory] = useState<CommunityVideoCategoryId>('walk_the_block');
   const [schoolId, setSchoolId] = useState<string>('');
   const [poiId, setPoiId] = useState<string>('');
   // Phase 11 (2026-06-12) — geo for platform-wide nearby. Stored as strings
@@ -63,6 +77,16 @@ export function CommunityVideoPanel({
   const [lng, setLng] = useState<string>('');
   const [geoError, setGeoError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const meta = getCategoryMeta(category);
+  const kind: CommunityKind = legacyKindForCategory(category);
+
+  // When category changes, drop any optional link that no longer makes sense.
+  function pickCategory(next: CommunityVideoCategoryId) {
+    setCategory(next);
+    if (next !== 'school_run') setSchoolId('');
+    if (next === 'school_run') setPoiId('');
+  }
 
   function useMyLocation() {
     setGeoError(null);
@@ -109,8 +133,6 @@ export function CommunityVideoPanel({
   }, [videos, refresh]);
 
   function handleUploaded(_video: UploadedVideo) {
-    // Optimistic refresh from server so we pick up the inserted row + its IDs
-    // (the kind/school/poi/etc. fields aren't on UploadedVideo).
     refresh();
   }
 
@@ -138,32 +160,16 @@ export function CommunityVideoPanel({
       lngNum >= -180 &&
       lngNum <= 180);
 
-  const target =
-    kind === 'school'
-      ? {
-          scope: 'community' as const,
-          communityId,
-          kind: 'school' as const,
-          ...(schoolId ? { schoolId } : {}),
-          ...(geoOk && latNum !== undefined ? { lat: latNum } : {}),
-          ...(geoOk && lngNum !== undefined ? { lng: lngNum } : {}),
-        }
-      : kind === 'poi'
-        ? {
-            scope: 'community' as const,
-            communityId,
-            kind: 'poi' as const,
-            ...(poiId ? { poiId } : {}),
-            ...(geoOk && latNum !== undefined ? { lat: latNum } : {}),
-            ...(geoOk && lngNum !== undefined ? { lng: lngNum } : {}),
-          }
-        : {
-            scope: 'community' as const,
-            communityId,
-            kind: 'neighborhood' as const,
-            ...(geoOk && latNum !== undefined ? { lat: latNum } : {}),
-            ...(geoOk && lngNum !== undefined ? { lng: lngNum } : {}),
-          };
+  const target = {
+    scope: 'community' as const,
+    communityId,
+    kind,
+    category,
+    ...(category === 'school_run' && schoolId ? { schoolId } : {}),
+    ...(category !== 'school_run' && poiId ? { poiId } : {}),
+    ...(geoOk && latNum !== undefined ? { lat: latNum } : {}),
+    ...(geoOk && lngNum !== undefined ? { lng: lngNum } : {}),
+  };
 
   return (
     <section className="rounded border border-bronze/30 bg-ink2 p-5">
@@ -172,80 +178,85 @@ export function CommunityVideoPanel({
         <span className="text-xs text-cream/50">{videos.length} uploaded</span>
       </div>
 
-      {/* Primary action — keep above the fold. Defaults are sane
-          (kind=neighborhood, no link, no geo) so the agent can just drop a
-          file and ship; everything else is tucked into <details> below. */}
+      {/* ── Category picker — Phase 22 ───────────────────────────── */}
+      <div className="mb-4 space-y-3">
+        <CategoryGroup
+          title="Only on Vicinity"
+          subtitle="Scarce content nobody else has"
+          items={BUCKET_A}
+          selected={category}
+          onPick={pickCategory}
+        />
+        <CategoryGroup
+          title="Real look at the data"
+          subtitle="The visceral layer over numbers buyers can already find"
+          items={BUCKET_B}
+          selected={category}
+          onPick={pickCategory}
+        />
+        <div className="rounded border border-gold/30 bg-gold/5 px-3 py-2 text-xs text-cream/80">
+          <span className="font-medium text-gold">{meta.label}</span>
+          <span className="text-cream/60"> — {meta.blurb}.</span>
+          <div className="mt-1 text-[11px] text-cream/60">
+            <span className="font-medium">Must include:</span> {meta.hardRule}
+          </div>
+        </div>
+      </div>
+
       <VideoUploader target={target} onUploaded={handleUploaded} />
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
 
+      {/* Optional school/POI link — only relevant for some categories. */}
       <details className="mt-4 rounded border border-bronze/20 bg-ink/50 px-3 py-2 text-sm">
         <summary className="cursor-pointer select-none text-xs uppercase tracking-wide text-cream/60 hover:text-cream">
-          Categorize this video (optional)
+          Link to a specific school / place (optional)
         </summary>
         <div className="mt-3 space-y-3">
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-cream/70">Kind</span>
-            <select
-              value={kind}
-              onChange={(e) => {
-                setKind(e.target.value as CommunityKind);
-                setSchoolId('');
-                setPoiId('');
-              }}
-              className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
-            >
-              <option value="neighborhood">neighborhood</option>
-              <option value="school">school</option>
-              <option value="poi">poi</option>
-            </select>
-          </label>
-          {kind === 'school' && schools.length > 0 && (
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-cream/70">
-                Link to school (optional)
-              </span>
-              <select
-                value={schoolId}
-                onChange={(e) => setSchoolId(e.target.value)}
-                className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
-              >
-                <option value="">— unlinked —</option>
-                {schools.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+          {category === 'school_run' && (
+            <div className="block">
+              <span className="mb-1 block text-xs font-medium text-cream/70">Link to school</span>
+              {schools.length > 0 ? (
+                <select
+                  value={schoolId}
+                  onChange={(e) => setSchoolId(e.target.value)}
+                  className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+                >
+                  <option value="">— unlinked —</option>
+                  {schools.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-xs text-cream/40">
+                  No schools yet — add one in the editor to link it to a video.
+                </p>
+              )}
+            </div>
           )}
-          {kind === 'poi' && pois.length > 0 && (
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-cream/70">
-                Link to POI (optional)
-              </span>
-              <select
-                value={poiId}
-                onChange={(e) => setPoiId(e.target.value)}
-                className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
-              >
-                <option value="">— unlinked —</option>
-                {pois.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} [{p.poi_type}]
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          {kind === 'school' && schools.length === 0 && (
-            <p className="text-xs text-cream/40">
-              No schools yet — add one in the editor to link it to a video.
-            </p>
-          )}
-          {kind === 'poi' && pois.length === 0 && (
-            <p className="text-xs text-cream/40">
-              No POIs yet — add one in the editor to link it to a video.
-            </p>
+          {category !== 'school_run' && (
+            <div className="block">
+              <span className="mb-1 block text-xs font-medium text-cream/70">Link to POI</span>
+              {pois.length > 0 ? (
+                <select
+                  value={poiId}
+                  onChange={(e) => setPoiId(e.target.value)}
+                  className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+                >
+                  <option value="">— unlinked —</option>
+                  {pois.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} [{p.poi_type}]
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-xs text-cream/40">
+                  No POIs yet — add one in the editor to link it to a video.
+                </p>
+              )}
+            </div>
           )}
         </div>
       </details>
@@ -310,6 +321,9 @@ export function CommunityVideoPanel({
                   : v.poi_id != null
                     ? (pois.find((p) => p.id === v.poi_id)?.name ?? 'poi')
                     : null;
+              const displayCategory = v.category
+                ? (COMMUNITY_VIDEO_CATEGORIES.find((c) => c.id === v.category)?.label ?? v.category)
+                : v.kind;
               return (
                 <li key={v.id} className="flex gap-3 rounded border border-bronze/20 p-3 text-sm">
                   <div
@@ -323,7 +337,12 @@ export function CommunityVideoPanel({
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium text-cream">{v.title ?? '(untitled)'}</div>
                     <div className="text-xs text-cream/50">
-                      {v.kind}
+                      {displayCategory}
+                      {v.category_needs_review ? (
+                        <span className="ml-1 rounded bg-yellow-500/20 px-1 py-0.5 text-[10px] text-yellow-300">
+                          needs review
+                        </span>
+                      ) : null}
                       {linked ? ` · ${linked}` : null}
                       {' · '}
                       <span
@@ -353,5 +372,51 @@ export function CommunityVideoPanel({
         </details>
       )}
     </section>
+  );
+}
+
+// ─── helpers ─────────────────────────────────────────────────────
+
+function CategoryGroup({
+  title,
+  subtitle,
+  items,
+  selected,
+  onPick,
+}: {
+  title: string;
+  subtitle: string;
+  items: readonly { id: CommunityVideoCategoryId; label: string; blurb: string }[];
+  selected: CommunityVideoCategoryId;
+  onPick: (id: CommunityVideoCategoryId) => void;
+}) {
+  return (
+    <div>
+      <div className="mb-1 flex items-baseline gap-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-gold">{title}</span>
+        <span className="text-[11px] text-cream/50">{subtitle}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {items.map((c) => {
+          const isSel = selected === c.id;
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onPick(c.id)}
+              className={[
+                'rounded border px-2 py-2 text-left text-xs transition',
+                isSel
+                  ? 'border-gold bg-gold/10 text-cream'
+                  : 'border-bronze/30 bg-ink text-cream/80 hover:border-gold/60 hover:text-cream',
+              ].join(' ')}
+            >
+              <div className="font-medium">{c.label}</div>
+              <div className="mt-0.5 text-[11px] text-cream/50">{c.blurb}</div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

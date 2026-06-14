@@ -8,6 +8,42 @@ Institutional memory for the project. Updated incrementally, not at session end.
 
 ---
 
+## 2026-06-14 22:30 UTC — Phase 22: 12-category community video taxonomy
+
+**Objective**: Replace the 3-value `kind` axis (school | poi | neighborhood) with a 12-category taxonomy that splits content into Bucket A "Only on Vicinity" (scarce, qualitative, hard to fake — `walk_the_block`, `listen_here`, `morning_rush`, `after_dark`, `hidden_spot`, `local_pick`) and Bucket B "Real look at the data" (the visceral layer over numbers buyers can already find — `school_run`, `daily_errands`, `the_park`, `eating_out`, `get_active`, `transit_reality`). Vivian's framing: "school啥的 别的地方有数据的 我们也要有视频作补充 这是我们的卖点". MVP does NOT enforce minimum-categories-per-community and does NOT block on resident verification.
+
+**Migration strategy** (`0017_community_video_categories.sql`): additive, zero-downtime.
+- Add `category text` (nullable until backfill), `bucket text generated always as (...) stored`, `category_needs_review boolean default false`.
+- Backfill from legacy `kind`: `school → school_run`, `poi → eating_out` (most common Costco-style use), `neighborhood → walk_the_block`. All backfilled rows flagged `needs_review = true` so an agent can re-classify in the dashboard.
+- `kind` column retained (still NOT NULL) — old code keeps reading it. New code reads `category` and falls back. Drop happens in a future cleanup migration once UI is stabilized.
+- New CHECK constraint: `category` (when set) must be in the 12-value enum.
+
+**Code paths**:
+- `lib/zod/community-video-categories.ts` — single source of truth for the 12 ids, labels, blurbs, hard-rules, bucket assignment, and `legacyKindForCategory()` / `categoryForLegacyKind()` mappers.
+- `lib/zod/schemas.ts` — `VideoCreateUpload.category` added as optional. When supplied it's authoritative; legacy callers still work.
+- `app/api/video/create-upload/route.ts` — `handleCommunity` now branches on `category` first, derives `kind` for the not-null column, and writes `category_needs_review = false` for fresh uploads. Cross-checks: `school_id` requires `school_run`; `poi_id` rejected for `school_run`.
+- `app/api/video/list/route.ts` + `app/dashboard/communities/[id]/videos/page.tsx` — select `category, category_needs_review` alongside existing fields.
+- `app/dashboard/communities/[id]/CommunityVideoPanel.tsx` — full rewrite of the picker. Two `<CategoryGroup>` sections (Bucket A header gold "Only on Vicinity", Bucket B header "Real look at the data"). Selected card lights gold; below it a callout shows the chosen category's label + blurb + hard-rule (`Must include: <rule>`). Hard rules are advisory text in V1 (no automated enforcement) but they're visible to agents at the moment of upload.
+- `components/dashboard/VideoUploader.tsx` — `CommunityTarget` gains optional `category`; passed through to the API when present.
+- "Already uploaded" list now shows the category label (falls back to `kind` for legacy rows) and a `needs review` yellow badge for backfilled rows.
+
+**Decisions / red lines**:
+- No automatic enforcement of "min 4/6 categories before listing publishes". Vivian: "1先不强求 2这个不block我们做开发". Schema reserves no blocking field.
+- No scoring / ranking / "best of" surface. Pure content-organization play. Reality Score is long-term vision; MVP is the content moat.
+- One category per video — multi-tagging deferred. If we need it later, a `community_video_categories` join table replaces the column. Cheap to retrofit.
+- `kind` stays in the schema. Drop it when we're confident no client / Edge function reads it.
+
+**Verification**: `npx tsc --noEmit` clean. `npm run build` green (all 30+ routes compile). Biome reports 6 pre-existing errors / 8 warnings, none from new files. SSH access to EC2 prod (44.251.84.79) currently unavailable (no key on this box), so prod kind-distribution check was skipped — `category_needs_review = true` on every backfilled row gives Vivian a queue to re-classify regardless of what the live distribution looks like.
+
+**Out of scope** (pending phases):
+- Public-facing community page with the 6+6 grid mockup `/tmp/vicinity-flow/community.html` previewed. Today the change ships agent-side only.
+- Hard-rule enforcement (silent-30s detection for Listen Here, dashcam timestamp OCR for Morning Rush, etc.).
+- Resident-uploader verification axis (schema field exists implicitly via `uploaded_by` → `agent` profile; no community-resident role yet).
+
+**Branch**: `phase22/community-video-categories`. PR pending.
+
+---
+
 ## 2026-06-14 19:00 UTC — photo cover selection: photo-only listings can pick a face
 
 **Objective**: Photo-only listings (no video uploaded) had no way to set a cover. `setListingCover` in `actions.ts` only accepted a `videoId` and wrote `thumbnailUrl(cf_video_id)` into `listings.cover_url`. Result: `cover_url = null` forever for photo-only listings, and the dashboard's fallback (first ready video) found nothing → blank thumbnails on `/dashboard` listing cards. User asked: "如果只有photos 也可以选择一个当作cover."

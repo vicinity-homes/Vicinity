@@ -5,6 +5,7 @@
  * of these schemas. TypeScript types are not runtime checks.
  */
 import { z } from 'zod';
+import { CommunityVideoCategory } from './community-video-categories';
 
 // ─── Listings ────────────────────────────────────────────────────
 export const ListingStatus = z.enum(['draft', 'published', 'archived']);
@@ -44,6 +45,12 @@ export const VideoCreateUpload = z.object({
   scope: z.enum(['listing', 'community']),
   parent_id: z.string().uuid(),
   kind: z.string().min(1).max(40),
+  // Phase 22 (2026-06-14) — community-scope only. New 12-category axis.
+  // When supplied, `category` is authoritative; the route handler will derive
+  // a legacy `kind` value from it for the (still-NOT-NULL) `kind` column.
+  // Old clients that only send `kind` keep working — the route handler maps
+  // them to a conservative default + `category_needs_review = true`.
+  category: CommunityVideoCategory.optional(),
   title: z.string().max(120).optional(),
   upload_length: z
     .number()

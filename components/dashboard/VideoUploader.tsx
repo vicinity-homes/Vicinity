@@ -1,5 +1,6 @@
 'use client';
 
+import type { CommunityVideoCategoryId } from '@/lib/zod/community-video-categories';
 import { useRef, useState } from 'react';
 /**
  * VideoUploader — Client Component (task 2.2; Phase 4.5 extends to community).
@@ -49,6 +50,11 @@ export type CommunityTarget = {
   scope: 'community';
   communityId: string;
   kind: CommunityKind;
+  // Phase 22 (2026-06-14) — preferred axis. When supplied, the server treats
+  // `category` as authoritative and derives `kind` from it. `kind` is still
+  // sent (and required by the wire schema) for backwards compat with the
+  // not-null `kind` column.
+  category?: CommunityVideoCategoryId;
   schoolId?: string;
   poiId?: string;
   // Phase 11 (2026-06-12) — geo for platform-wide nearby. Optional so
@@ -122,6 +128,7 @@ export function VideoUploader({ target, onUploaded }: Props) {
             kind: target.kind,
             upload_length: file.size,
             title: finalTitle,
+            ...(target.category ? { category: target.category } : {}),
             ...(target.schoolId ? { school_id: target.schoolId } : {}),
             ...(target.poiId ? { poi_id: target.poiId } : {}),
             ...(typeof target.lat === 'number' ? { lat: target.lat } : {}),

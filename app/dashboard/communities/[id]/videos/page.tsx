@@ -68,7 +68,9 @@ export default async function CommunityVideosPage({
     // biome-ignore lint/suspicious/noExplicitAny: stub generated types
     (supabase as any)
       .from('community_videos')
-      .select('id, cf_video_id, kind, school_id, poi_id, title, status, created_at')
+      .select(
+        'id, cf_video_id, kind, category, category_needs_review, school_id, poi_id, title, status, created_at',
+      )
       .eq('community_id', id)
       .order('created_at', { ascending: false }) as Promise<{
       data: CommunityVideoRow[] | null;

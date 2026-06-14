@@ -1,5 +1,10 @@
 import { createDirectUpload } from '@/lib/cloudflare/stream';
 import { createClient } from '@/lib/supabase/server';
+import {
+  type CommunityVideoCategoryId,
+  categoryForLegacyKind,
+  legacyKindForCategory,
+} from '@/lib/zod/community-video-categories';
 import { VideoCreateUpload } from '@/lib/zod/schemas';
 /**
  * POST /api/video/create-upload
@@ -113,23 +118,42 @@ async function handleListing(
   return NextResponse.json({ uploadUrl, videoId, rowId: row.id });
 }
 
-// ─── community scope (Phase 4.5) ─────────────────────────────────
+// ─── community scope (Phase 4.5; Phase 22 adds category) ─────────
 
-const COMMUNITY_KINDS = new Set(['school', 'poi', 'neighborhood']);
+const LEGACY_KINDS = new Set(['school', 'poi', 'neighborhood']);
 
 async function handleCommunity(
   supabase: Awaited<ReturnType<typeof createClient>>,
   input: VideoCreateUpload,
 ) {
-  if (!COMMUNITY_KINDS.has(input.kind)) {
-    return NextResponse.json({ error: 'invalid_kind' }, { status: 400 });
+  // Phase 22: callers should send `category` (12-value taxonomy). For
+  // backwards-compat we also accept the legacy 3-value `kind` and derive a
+  // conservative category from it.
+  let category: CommunityVideoCategoryId;
+  let legacyKind: 'school' | 'poi' | 'neighborhood';
+  let needsReview: boolean;
+
+  if (input.category) {
+    category = input.category;
+    legacyKind = legacyKindForCategory(category);
+    needsReview = false;
+  } else {
+    if (!LEGACY_KINDS.has(input.kind)) {
+      return NextResponse.json({ error: 'invalid_kind' }, { status: 400 });
+    }
+    legacyKind = input.kind as 'school' | 'poi' | 'neighborhood';
+    const mapped = categoryForLegacyKind(legacyKind);
+    category = mapped.category;
+    needsReview = mapped.needsReview;
   }
-  // Cross-check: school_id only valid with kind='school', poi_id with 'poi'.
-  if (input.school_id && input.kind !== 'school') {
-    return NextResponse.json({ error: 'school_id_requires_school_kind' }, { status: 400 });
+
+  // Cross-check: school_id only valid with school_run / legacy school,
+  // poi_id only with non-school categories.
+  if (input.school_id && category !== 'school_run') {
+    return NextResponse.json({ error: 'school_id_requires_school_category' }, { status: 400 });
   }
-  if (input.poi_id && input.kind !== 'poi') {
-    return NextResponse.json({ error: 'poi_id_requires_poi_kind' }, { status: 400 });
+  if (input.poi_id && category === 'school_run') {
+    return NextResponse.json({ error: 'poi_id_not_valid_with_school_category' }, { status: 400 });
   }
 
   // Verify the community exists. Communities are publicly readable (RLS),
@@ -187,7 +211,9 @@ async function handleCommunity(
   const insertPayload: any = {
     community_id: input.parent_id,
     cf_video_id: videoId,
-    kind: input.kind,
+    kind: legacyKind,
+    category,
+    category_needs_review: needsReview,
     school_id: input.school_id ?? null,
     poi_id: input.poi_id ?? null,
     title: input.title ?? null,

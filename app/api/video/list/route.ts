@@ -50,13 +50,17 @@ export async function GET(req: Request) {
   if (communityId) {
     const { data, error } = (await supabase
       .from('community_videos')
-      .select('id, cf_video_id, kind, school_id, poi_id, title, status, created_at')
+      .select(
+        'id, cf_video_id, kind, category, category_needs_review, school_id, poi_id, title, status, created_at',
+      )
       .eq('community_id', communityId)
       .order('created_at', { ascending: false })) as {
       data: Array<{
         id: string;
         cf_video_id: string;
         kind: string;
+        category: string | null;
+        category_needs_review: boolean | null;
         school_id: string | null;
         poi_id: string | null;
         title: string | null;

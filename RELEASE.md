@@ -5,6 +5,45 @@ Format matches the standard release template (Features / Improvements / Bug Fixe
 
 ---
 
+## Release Notes - v0.16.0
+
+**Release Date:** 2026-06-14
+
+When you upload a community video, you now choose from **twelve content categories** instead of three. We split them into two groups so you can see at a glance which kind of content you're contributing.
+
+### ✨ Features
+
+**Twelve categories, two buckets**
+
+We replaced the old "school / point of interest / neighborhood" picker with a richer taxonomy:
+
+- **"Only on Vicinity"** — six categories that capture what no other platform shows: a continuous block walk, a 30-second silent listen, the morning school-run traffic from the gate, what the area looks like after dark, a hidden spot tourists never find, and a personal-favorite local pick.
+- **"Real look at the data"** — six categories that put a human face on numbers buyers can already pull from Zillow / Google: school traffic, daily errands, parks, restaurants, gym & rec, and transit reality.
+
+When you pick a category, we show you in plain English what the video must include — for example, "Listen Here" requires you to keep the camera still and stay silent for at least thirty seconds, "Morning Rush" requires a dashcam-style timestamp, etc. Today these are guidelines you read; we don't auto-reject yet.
+
+**A category for every existing video**
+
+If you've already uploaded community videos, we mapped each one to a sensible default category and flagged it `needs review`. Open the community editor, find the yellow "needs review" badge next to any old video, and re-pick the right category. We didn't want to silently lose your old uploads while we change the menu.
+
+### 🛠 Improvements
+
+- The "already uploaded" list under the upload form now shows each video's category label (no more cryptic "neighborhood") and surfaces the `needs review` flag inline.
+- The school / point-of-interest link selector now appears only when the chosen category makes sense (school link for "School Run" only; point-of-interest link for the rest).
+
+### ⚠️ What's not in this release
+
+- This change ships in the **agent dashboard only**. The buyer-facing community page that shows all twelve tiles in a grid is the next deliverable.
+- No automatic content checks yet — we trust you to keep "Listen Here" actually silent and "Morning Rush" actually timestamped. Enforcement comes later.
+- No "you must fill at least N categories before this community goes live" gate. You decide when a community is ready.
+- No scoring, no ranking, no "best of" lists. We are building the content layer first; the rating layer is later.
+
+### 📊 What to expect operationally
+
+Existing community videos still play, still have thumbnails, still show up where they did before — they now also carry a category and a "needs review" flag so we can clean them up over time. New uploads land directly in the new categories.
+
+---
+
 ## Release Notes - v0.15.1
 
 **Release Date:** 2026-06-14
