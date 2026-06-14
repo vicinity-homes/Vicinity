@@ -3,6 +3,22 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.28.0 — 2026-06-14
+
+### 🚀 Features
+- **Browse feed redesigned for full-immersion viewing.** Like, Save, and Contact moved off the bottom bar and into the right side of the video, stacked vertically like the patterns you see on TikTok and Xiaohongshu. The bottom of the screen now belongs entirely to the listing — price, address, beds/baths/sqft, and the agent's description sit on a clean gradient that runs all the way to the edge.
+- **One Nearby button, twelve neighborhood stories.** The old triple set of buttons (Schools / Nearby / Area) is replaced by a single **Nearby** action. Tap it on any listing that has community videos, and the feed switches into a swipeable stream of those videos. Each one is tagged with one of the twelve neighborhood categories (School Run, Daily Errands, The Park, Eating Out, Get Active, Transit Reality, Walk the Block, Listen Here, Morning Rush, After Dark, Hidden Spot, Local Pick) and a short blurb explaining what the buyer is seeing — no more guessing whether the clip is about traffic, dinner, or a school drop-off.
+- **Photo listings have Nearby too.** Listings that haven't uploaded a hero video yet now get the same right-rail (Like / Save / Contact / Nearby) over the photo carousel, so buyers can still dive into community videos from a photo-only listing.
+
+### ✨ Improvements
+- **Listings with no community videos** show the Nearby button greyed out, so buyers know nothing's hiding behind the tap rather than seeing an empty page.
+- **Like turns rose-pink, Save turns gold** in the right rail — small visual cue so the two actions are distinguishable at a glance.
+
+### 🔧 Technical
+- Backward-compatible with pre-categorization community videos: legacy `SCHOOL` / `NEIGHBORHOOD` / `POI` rows are mapped to the closest of the twelve categories so nothing disappears from existing listings.
+
+---
+
 ## v0.27.1 — 2026-06-14
 
 ### ✨ Improvements

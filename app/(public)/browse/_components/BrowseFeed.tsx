@@ -12,6 +12,13 @@ export type BrowseSourceVideo = {
   cfVideoId: string;
   line1: string;
   line2?: string;
+  /**
+   * Phase 28 (2026-06-14): community-video category id (12-value enum
+   * from `lib/zod/community-video-categories.ts`). Set on cards in the
+   * single Nearby pool so the Card overlay can render the category
+   * label + blurb pill above the caption. `undefined` for hero pool.
+   */
+  category?: string;
 };
 
 export type BrowseCard = {
@@ -42,9 +49,18 @@ export type BrowseCard = {
    * `/browse` doesn't set this (single hero per card by design).
    */
   heroVideos?: BrowseSourceVideo[];
-  schoolVideos: BrowseSourceVideo[];
-  nearbyVideos: BrowseSourceVideo[];
-  communityVideos: BrowseSourceVideo[];
+  schoolVideos?: BrowseSourceVideo[];
+  nearbyVideos?: BrowseSourceVideo[];
+  communityVideos?: BrowseSourceVideo[];
+  /**
+   * Phase 28 (2026-06-14): single Nearby pool — replaces schools /
+   * pois / neighborhood splits with one feed of community videos, each
+   * carrying a 12-category id. The right rail has one "Nearby" entry;
+   * tapping it switches into this pool. The legacy three arrays above
+   * are kept on the type so existing callers compile, but the feed
+   * itself reads `categoryVideos` only.
+   */
+  categoryVideos: BrowseSourceVideo[];
   /**
    * Phase 20 (2026-06-13): plain-text schools / POIs for the photo branch
    * of the detail page (no community videos to switch to, so the right
@@ -84,7 +100,7 @@ export type BrowseCard = {
   };
 };
 
-type Source = 'hero' | 'schools' | 'nearby' | 'community';
+type Source = 'hero' | 'nearby';
 
 function HeartIcon({ filled }: { filled?: boolean }) {
   return (
@@ -102,14 +118,6 @@ function HeartIcon({ filled }: { filled?: boolean }) {
   );
 }
 
-function SchoolIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" width={22} height={22} fill="currentColor">
-      <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z" />
-    </svg>
-  );
-}
-
 function NearbyIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" width={22} height={22} fill="currentColor">
@@ -117,16 +125,6 @@ function NearbyIcon() {
     </svg>
   );
 }
-
-function CommunityIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" width={22} height={22} fill="currentColor">
-      <path d="M12 3l9 8h-3v9h-4v-6h-4v6H6v-9H3l9-8z" />
-    </svg>
-  );
-}
-
-// HomeIcon removed (2026-06-10) — rail "Home" button retired.
 
 function SoundOnIcon() {
   return (
@@ -246,6 +244,7 @@ function ActionButton({
   href,
   label,
   active,
+  activeColor,
   disabled,
   badge,
   children,
@@ -254,13 +253,23 @@ function ActionButton({
   href?: string;
   label: string;
   active?: boolean;
+  /**
+   * Phase 28: optional accent for the active state. 'gold' (default) is
+   * used by all info actions and Save; 'rose' is used by Like to match
+   * Xiaohongshu / TikTok convention.
+   */
+  activeColor?: 'gold' | 'rose';
   disabled?: boolean;
   badge?: string | number;
   children: ReactNode;
 }) {
+  const activeCls =
+    activeColor === 'rose'
+      ? 'border-rose-400/70 bg-rose-400/20 text-rose-400'
+      : 'border-gold/70 bg-gold/20 text-gold';
   const cls = `flex h-12 w-12 items-center justify-center rounded-full border backdrop-blur transition ${
     active
-      ? 'border-gold/70 bg-gold/20 text-gold'
+      ? activeCls
       : disabled
         ? 'border-cream/10 bg-ink/30 text-cream/30'
         : 'border-cream/20 bg-ink/40 text-cream hover:border-cream/50'
@@ -321,63 +330,20 @@ interface CardProps {
   onAutoplayBlocked?: () => void;
 }
 
-/**
- * Big, high-contrast button used in the bottom action bar (Like / Save /
- * Contact). Larger tap target than the right-rail ActionButton because
- * these are the primary CTAs in the new bottom-bar pattern.
- */
-function BottomBarButton({
-  onClick,
-  label,
-  active,
-  activeColor = 'text-gold',
-  children,
-}: {
-  onClick: () => void;
-  label: string;
-  active?: boolean;
-  /** Tailwind text class used when active=true (e.g. 'text-rose-400'). */
-  activeColor?: string;
-  children: ReactNode;
-}) {
-  const tone = active ? activeColor : 'text-cream';
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      aria-pressed={!!active}
-      className={`flex flex-col items-center gap-0.5 ${tone} transition-colors`}
-      style={{ touchAction: 'manipulation' }}
-    >
-      {children}
-      <span className="font-medium text-[10px] tracking-wide opacity-80">{label}</span>
-    </button>
-  );
-}
-
 function poolFor(card: BrowseCard, source: Source): number {
   if (card.mediaKind === 'photo') {
     // Photos: swipe horizontally through the photo[] carousel. Source rail
     // is hidden in the parent — `source` is always 'hero' here.
     return Math.max(1, card.photos?.length ?? 1);
   }
-  if (source === 'schools') return card.schoolVideos.length;
-  if (source === 'nearby') return card.nearbyVideos.length;
-  if (source === 'community') return card.communityVideos.length;
+  if (source === 'nearby') return card.categoryVideos.length;
   // hero: count heroVideos pool if provided, else 1 (single hero).
   return card.heroVideos && card.heroVideos.length > 0 ? card.heroVideos.length : 1;
 }
 
 function pickVideo(card: BrowseCard, source: Source, cycleIdx: number): BrowseSourceVideo {
-  if (source === 'schools' && card.schoolVideos.length > 0) {
-    return card.schoolVideos[cycleIdx % card.schoolVideos.length] as BrowseSourceVideo;
-  }
-  if (source === 'nearby' && card.nearbyVideos.length > 0) {
-    return card.nearbyVideos[cycleIdx % card.nearbyVideos.length] as BrowseSourceVideo;
-  }
-  if (source === 'community' && card.communityVideos.length > 0) {
-    return card.communityVideos[cycleIdx % card.communityVideos.length] as BrowseSourceVideo;
+  if (source === 'nearby' && card.categoryVideos.length > 0) {
+    return card.categoryVideos[cycleIdx % card.categoryVideos.length] as BrowseSourceVideo;
   }
   // hero: use heroVideos pool if provided, else fall back to single hero.
   if (card.heroVideos && card.heroVideos.length > 0) {
@@ -773,10 +739,27 @@ function Card({
         </div>
       )}
 
-      {/* Bottom caption block — Xiaohongshu/Douyin pattern. Sits above the
-       * action bar (BrowseFeed renders the action bar at the very bottom).
-       * Right-side rail is reserved for Schools/Nearby/Area/Sound. */}
-      <div className="absolute bottom-20 left-4 right-20 text-cream">
+      {/* Bottom caption block — Xiaohongshu/Douyin pattern. Phase 28
+       * (2026-06-14): the bottom action bar is gone, so the caption
+       * extends to the safe-area edge for an immersive look. The right
+       * rail (Like / Save / Contact / Nearby / Sound) lives over the
+       * gradient at right-3. */}
+      <div
+        className="absolute left-4 right-20 text-cream"
+        style={{ bottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+      >
+        {/* Phase 28: category pill — shows the 12-category label + blurb
+         * for community videos in the Nearby pool. Sits above price so
+         * users immediately know what they're looking at when the feed
+         * cycles through (e.g. "School Run · Morning departure timing"). */}
+        {source === 'nearby' && sel.category && (
+          <div className="mb-2 inline-flex max-w-full items-center gap-2 rounded-full border border-gold/40 bg-gold/15 px-3 py-1 backdrop-blur">
+            <span className="font-medium text-[11px] text-gold uppercase tracking-wider">
+              {sel.line1}
+            </span>
+            {sel.line2 && <span className="truncate text-[11px] text-cream/80">· {sel.line2}</span>}
+          </div>
+        )}
         <div className="font-serif text-2xl text-cream leading-tight tracking-tight drop-shadow">
           {formatPrice(card.listing.price)}
         </div>
@@ -1027,9 +1010,7 @@ export function BrowseFeed({
     }
   }, [active]);
 
-  const hasSchools = (active?.schoolVideos.length ?? 0) > 0;
-  const hasNearby = (active?.nearbyVideos.length ?? 0) > 0;
-  const hasCommunity = (active?.communityVideos.length ?? 0) > 0;
+  const hasNearby = (active?.categoryVideos.length ?? 0) > 0;
 
   // Keyboard: ←/→ cycle b-roll within current source, Esc returns to hero.
   useEffect(() => {
@@ -1128,40 +1109,44 @@ export function BrowseFeed({
         })}
       </div>
 
-      {/* Right rail — INFO actions only (Schools / Nearby / Area / Sound).
-       * Like / Save / Comment moved to the bottom action bar (Xiaohongshu
-       * pattern). Share moved to the top header. Hero-back lives top-left.
-       * Phase 20 (2026-06-13): photo cards hide the rail entirely — there's
-       * no source to switch to and no audio to mute. Schools/POIs surface
-       * as a plain text strip inside the PhotoCard caption block. */}
-      {active?.mediaKind !== 'photo' && (
-        <div className="absolute right-3 bottom-32 z-20 flex flex-col items-center gap-3">
-          <ActionButton
-            label="Schools"
-            onClick={() => switchSource('schools')}
-            active={activeSource === 'schools'}
-            disabled={!hasSchools}
-            badge={hasSchools && active ? active.schoolVideos.length : undefined}
-          >
-            <SchoolIcon />
+      {/* Right rail — Xiaohongshu / TikTok pattern (Phase 28, 2026-06-14).
+       * All primary CTAs live here for an immersive bottom-edge: Like /
+       * Save / Contact / Nearby (+ Sound for video). The bottom action
+       * bar is gone; the caption block below extends to the safe-area.
+       *
+       * Nearby: switches into the single 12-category community-video pool.
+       * Disabled (greyed) when the listing has no community videos. The
+       * Card overlay renders a per-video category pill (label + blurb)
+       * read from COMMUNITY_VIDEO_CATEGORIES on the client.
+       *
+       * Photo cards: same Like/Save/Contact/Nearby — only Sound is
+       * hidden because there's no <video> to mute. Schools/POIs strip
+       * inside PhotoCard caption is preserved (Phase 20). */}
+      <div
+        className="absolute right-3 z-20 flex flex-col items-center gap-3"
+        style={{ bottom: 'max(6rem, calc(env(safe-area-inset-bottom) + 5rem))' }}
+      >
+        <div key={likeAnimKey} className={likeAnimKey > 0 ? 'heart-pop' : ''}>
+          <ActionButton label="Like" onClick={toggleLike} active={isLiked} activeColor="rose">
+            <HeartIcon filled={isLiked} />
           </ActionButton>
-          <ActionButton
-            label="Nearby"
-            onClick={() => switchSource('nearby')}
-            active={activeSource === 'nearby'}
-            disabled={!hasNearby}
-            badge={hasNearby && active ? active.nearbyVideos.length : undefined}
-          >
-            <NearbyIcon />
-          </ActionButton>
-          <ActionButton
-            label="Area"
-            onClick={() => switchSource('community')}
-            active={activeSource === 'community'}
-            disabled={!hasCommunity}
-          >
-            <CommunityIcon />
-          </ActionButton>
+        </div>
+        <ActionButton label="Save" onClick={toggleSave} active={isSaved}>
+          <BookmarkIcon filled={isSaved} />
+        </ActionButton>
+        <ActionButton label="Contact" onClick={openContact}>
+          <CommentIcon />
+        </ActionButton>
+        <ActionButton
+          label="Nearby"
+          onClick={() => switchSource(activeSource === 'nearby' ? 'hero' : 'nearby')}
+          active={activeSource === 'nearby'}
+          disabled={!hasNearby}
+          badge={hasNearby && active ? active.categoryVideos.length : undefined}
+        >
+          <NearbyIcon />
+        </ActionButton>
+        {active?.mediaKind !== 'photo' && (
           <ActionButton
             label={muted ? 'Sound' : 'Mute'}
             onClick={() => setMuted((m) => !m)}
@@ -1169,15 +1154,17 @@ export function BrowseFeed({
           >
             {muted ? <SoundOffIcon /> : <SoundOnIcon />}
           </ActionButton>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Active source label — top center, informational only (no nav). */}
-      {activeSource !== 'hero' && (
+      {/* Active source label — top center. Phase 28: only one b-roll
+       * source remaining ("Nearby"), so the label is purely a hint that
+       * the user is viewing community videos rather than the listing
+       * hero. The category pill on each video carries the per-video
+       * detail. */}
+      {activeSource === 'nearby' && (
         <div className="-translate-x-1/2 absolute top-14 left-1/2 z-10 rounded-full border border-cream/20 bg-ink/60 px-3 py-1 backdrop-blur">
-          <span className="text-cream/80 text-xs uppercase tracking-wider">
-            {activeSource === 'schools' ? 'Schools' : activeSource === 'nearby' ? 'Nearby' : 'Area'}
-          </span>
+          <span className="text-cream/80 text-xs uppercase tracking-wider">Nearby</span>
         </div>
       )}
 
@@ -1223,30 +1210,9 @@ export function BrowseFeed({
         </div>
       </div>
 
-      {/* Bottom action bar — Like / Save / Comment (Xiaohongshu pattern).
-       * Comment opens the lead modal (closest existing pathway to a
-       * conversation; "comments" UI itself is V2). */}
-      <div
-        className="absolute inset-x-0 bottom-0 z-20 flex items-center justify-around border-cream/10 border-t bg-ink/70 px-4 pt-2 backdrop-blur-md"
-        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
-      >
-        <div key={likeAnimKey} className={likeAnimKey > 0 ? 'heart-pop' : ''}>
-          <BottomBarButton
-            label="Like"
-            onClick={toggleLike}
-            active={isLiked}
-            activeColor="text-rose-400"
-          >
-            <HeartIcon filled={isLiked} />
-          </BottomBarButton>
-        </div>
-        <BottomBarButton label="Save" onClick={toggleSave} active={isSaved} activeColor="text-gold">
-          <BookmarkIcon filled={isSaved} />
-        </BottomBarButton>
-        <BottomBarButton label="Contact" onClick={openContact}>
-          <CommentIcon />
-        </BottomBarButton>
-      </div>
+      {/* Phase 28 (2026-06-14): the bottom Like/Save/Contact bar moved
+       * into the right rail above. The caption block on the Card now
+       * extends to the safe-area, giving an immersive bottom edge. */}
 
       {activeIndex === 0 && activeSource === 'hero' && (
         <div className="pointer-events-none absolute inset-x-0 bottom-20 z-10 text-center">

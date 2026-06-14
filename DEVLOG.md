@@ -2,6 +2,24 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-14 — Phase 28: immersive right rail + single Nearby pool (12 categories)
+
+**Objective**: Move Like / Save / Contact off the bottom action bar and onto the right rail (Xiaohongshu / TikTok pattern) for an immersive bottom edge. Replace the legacy three-rail (`Schools` / `Nearby` / `Area`) with a single `Nearby` entry that flows users into the 12-category community-video pool, surfacing the per-video category as a label + blurb pill on the Card overlay. Photo cards get the same right rail (Like / Save / Contact / Nearby).
+
+**Actions**:
+- `app/(public)/browse/_components/BrowseFeed.tsx` — right rail now: `Like / Save / Contact / Nearby [+ Sound for video]`. Bottom action bar deleted; caption block extended to safe-area. `Source` type narrowed `'hero' | 'schools' | 'nearby' | 'community'` → `'hero' | 'nearby'`. `BrowseSourceVideo` gained an optional `category: CommunityVideoCategoryId`. New category pill renders above the price block when source==='nearby' and a category is set (label uppercase + blurb truncated). `ActionButton` gained `activeColor: 'gold' | 'rose'` so Like can use rose-400 inside the rail. Dropped `BottomBarButton` / `SchoolIcon` / `CommunityIcon`.
+- `lib/feed/browse-cards.ts` — replaced `schoolVideos` / `nearbyVideos` / `communityVideos` triple-pool with a single `categoryVideos[]` keyed by 12-category SSOT (`COMMUNITY_VIDEO_CATEGORIES`). Legacy `kind` rows fall back to a sensible category (`SCHOOL → school_run`, `NEIGHBORHOOD → walk_the_block`, else `eating_out`) so pre-Phase-22 community videos still render. Selected `category` column from `community_videos` (Phase 22 enum migration `0017`).
+- `app/(public)/v/[agentSlug]/[listingSlug]/page.tsx` — same single-pool transform mirrored on the per-listing video page; photo branch sets `categoryVideos: []` (no community videos when no hero video).
+
+**Decisions**:
+- **Single right rail across video AND photo** — photo cards no longer hide the rail. They get Like/Save/Contact/Nearby; only Sound is suppressed (no `<video>`).
+- **Nearby disabled (greyed) when listing has no community videos** — Phase 28 keeps the existing `disabled` styling on `ActionButton` (cream/30 text, no hover). No empty-state sheet.
+- **No standalone sheet for Nearby** — clicking Nearby switches the in-place feed to the community-video pool; users swipe through with the same gesture they already know. Tapping Nearby again cycles back to hero.
+- **Category pill on Card, not on rail** — rail is purely action; per-video metadata (label + blurb) lives over the gradient at the bottom-left so the user reads it while watching.
+- **Rose accent for Like** — matches Xiaohongshu/Douyin convention; gold reserved for Save / info-toggle.
+
+**Issues**: none. tsc clean. `next build` green. Biome happy.
+
 ## 2026-06-14 — Nearby radius: select → drag slider (1–100 mi)
 
 **Objective**: Replace the 5-bucket select on `/profile` Preferences with a draggable slider covering the full API range (1–100 mi).

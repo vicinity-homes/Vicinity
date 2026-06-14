@@ -19,6 +19,10 @@
 import type { BrowseCard } from '@/app/(public)/browse/_components/BrowseFeed';
 import { haversineMiles, latLngBoundingBox } from '@/lib/geo/distance';
 import { createClient } from '@/lib/supabase/server';
+import {
+  COMMUNITY_VIDEO_CATEGORIES,
+  type CommunityVideoCategoryId,
+} from '@/lib/zod/community-video-categories';
 
 const FEED_LIMIT = 30;
 const NEARBY_MAX_ROWS = 200;
@@ -67,6 +71,7 @@ type CommunityVideoRow = {
   cf_video_id: string;
   title: string | null;
   kind: string;
+  category: string | null;
   school_id: string | null;
   poi_id: string | null;
 };
@@ -144,7 +149,7 @@ async function assembleCards(
     communityIds.length > 0
       ? supabase
           .from('community_videos')
-          .select('community_id, cf_video_id, title, kind, school_id, poi_id')
+          .select('community_id, cf_video_id, title, kind, category, school_id, poi_id')
           .in('community_id', communityIds)
           .eq('status', 'ready')
       : Promise.resolve({ data: [] }),
@@ -183,8 +188,8 @@ async function assembleCards(
   }
   const agentsById = new Map(agents.map((a) => [a.id, a] as const));
   const communitiesById = new Map(communities.map((c) => [c.id, c] as const));
-  const schoolsById = new Map(schools.map((s) => [s.id, s] as const));
-  const poisById = new Map(pois.map((p) => [p.id, p] as const));
+  const _schoolsById = new Map(schools.map((s) => [s.id, s] as const));
+  const _poisById = new Map(pois.map((p) => [p.id, p] as const));
 
   const commVidsByCommunity = new Map<string, CommunityVideoRow[]>();
   for (const v of commVideos) {
@@ -203,51 +208,59 @@ async function assembleCards(
     if (!agent) continue;
     if (!hero && !heroPhoto) continue;
 
-    const community = l.community_id ? (communitiesById.get(l.community_id) ?? null) : null;
+    const _community = l.community_id ? (communitiesById.get(l.community_id) ?? null) : null;
     const cVids = l.community_id ? (commVidsByCommunity.get(l.community_id) ?? []) : [];
 
-    const schoolVideos = cVids
-      .filter((v) => v.kind.toUpperCase() === 'SCHOOL')
-      .map((v) => {
-        const s = v.school_id ? schoolsById.get(v.school_id) : undefined;
-        return {
-          cfVideoId: v.cf_video_id,
-          line1: s ? `${s.name}${s.grades ? ` ${s.grades}` : ''}` : (v.title ?? 'School'),
-          line2: s?.rating != null ? `${s.rating}/10` : undefined,
-        };
-      });
+    const categoryMetaById = new Map(COMMUNITY_VIDEO_CATEGORIES.map((m) => [m.id, m] as const));
 
-    const nearbyVideos = cVids
-      .filter((v) => v.kind.toUpperCase() === 'POI')
-      .map((v) => {
-        const p = v.poi_id ? poisById.get(v.poi_id) : undefined;
-        return {
-          cfVideoId: v.cf_video_id,
-          line1: p?.name ?? v.title ?? 'Nearby',
-          line2: p?.distance_text ?? undefined,
-        };
-      });
-
-    const communityVideos = cVids
-      .filter((v) => v.kind.toUpperCase() === 'NEIGHBORHOOD')
-      .map((v) => ({
+    /**
+     * Phase 28 (2026-06-14): single Nearby pool. Merges the old
+     * schools / pois / neighborhood splits into one feed of community
+     * videos, each tagged with its 12-category metadata. The right rail
+     * has a single "Nearby" entry; tapping it enters this pool, and
+     * each video's category label + blurb is shown as a pill above the
+     * caption (read on the client from COMMUNITY_VIDEO_CATEGORIES).
+     *
+     * Backward-compat: if a row has no `category` (pre-Phase 22 data),
+     * we synthesise one from the legacy `kind` so the pool stays
+     * non-empty for older listings.
+     */
+    const categoryVideos = cVids.map((v) => {
+      let categoryId: CommunityVideoCategoryId | null = null;
+      if (v.category && categoryMetaById.has(v.category as CommunityVideoCategoryId)) {
+        categoryId = v.category as CommunityVideoCategoryId;
+      } else {
+        // Legacy fallback — mirrors categoryForLegacyKind(): never null.
+        switch (v.kind.toUpperCase()) {
+          case 'SCHOOL':
+            categoryId = 'school_run';
+            break;
+          case 'NEIGHBORHOOD':
+            categoryId = 'walk_the_block';
+            break;
+          default:
+            categoryId = 'eating_out';
+        }
+      }
+      const meta = categoryMetaById.get(categoryId);
+      // line1 = category label (e.g. "School Run"), line2 = blurb. The
+      // overlay-pill on the client reads category from the meta lookup
+      // again so it can render a different shape if we want — line1/2
+      // also keep the existing source-overlay code path working.
+      return {
         cfVideoId: v.cf_video_id,
-        line1: community?.name ?? v.title ?? 'Neighborhood',
-        line2: community?.description
-          ? community.description.length > 80
-            ? `${community.description.slice(0, 79)}…`
-            : community.description
-          : undefined,
-      }));
+        line1: meta?.label ?? v.title ?? 'Nearby',
+        line2: meta?.blurb,
+        category: categoryId,
+      };
+    });
 
     const card: BrowseCard = {
       id: hero ? hero.cf_video_id : `photo:${l.id}`,
       mediaKind: hero ? 'video' : 'photo',
       hero: { cfVideoId: hero?.cf_video_id ?? '' },
       heroPhotoUrl: hero ? undefined : photoPublicUrl((heroPhoto as ListingPhotoRow).storage_path),
-      schoolVideos,
-      nearbyVideos,
-      communityVideos,
+      categoryVideos,
       listing: {
         id: l.id,
         slug: l.slug,
