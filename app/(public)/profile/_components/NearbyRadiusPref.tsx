@@ -6,19 +6,23 @@
  * Buyers are anonymous in V1 — there's no `user_preferences` table to
  * persist this server-side. We store a single integer in `localStorage`
  * under `vicinity:nearby_radius` and `/nearby` reads it on mount. If the
- * key is missing or invalid, the default is 10 mi (matches the original
- * /nearby slider default).
+ * key is missing or invalid, the default is 10 mi.
  *
- * Allowed values: 1 / 5 / 10 / 25 / 50 mi. The API caps at 100 mi but a
- * select with 5 buckets covers 95% of buyer searches and avoids the
- * fiddly slider that lived on /nearby pre-Phase 14.
+ * 2026-06-14: Replaced 5-bucket select with a drag slider, range 1–100 mi
+ * (matches the API cap at MAX_RADIUS_MI = 100).
  */
 
 import { useEffect, useState } from 'react';
 
 const STORAGE_KEY = 'vicinity:nearby_radius';
 const DEFAULT_RADIUS = 10;
-const OPTIONS = [1, 5, 10, 25, 50] as const;
+const MIN_RADIUS = 1;
+const MAX_RADIUS = 100;
+
+function clamp(n: number) {
+  if (!Number.isFinite(n)) return DEFAULT_RADIUS;
+  return Math.min(MAX_RADIUS, Math.max(MIN_RADIUS, Math.round(n)));
+}
 
 export function NearbyRadiusPref() {
   const [radius, setRadius] = useState<number>(DEFAULT_RADIUS);
@@ -27,14 +31,13 @@ export function NearbyRadiusPref() {
   useEffect(() => {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     const n = raw ? Number(raw) : DEFAULT_RADIUS;
-    setRadius(
-      Number.isFinite(n) && OPTIONS.includes(n as (typeof OPTIONS)[number]) ? n : DEFAULT_RADIUS,
-    );
+    setRadius(clamp(n));
   }, []);
 
   function update(next: number) {
-    setRadius(next);
-    window.localStorage.setItem(STORAGE_KEY, String(next));
+    const v = clamp(next);
+    setRadius(v);
+    window.localStorage.setItem(STORAGE_KEY, String(v));
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1500);
   }
@@ -46,18 +49,21 @@ export function NearbyRadiusPref() {
         <label htmlFor="nearby-radius" className="text-cream/70 text-sm">
           Nearby search radius
         </label>
-        <select
-          id="nearby-radius"
-          value={radius}
-          onChange={(e) => update(Number(e.target.value))}
-          className="rounded border border-bronze/30 bg-ink px-3 py-1 text-cream text-sm focus:border-gold focus:outline-none"
-        >
-          {OPTIONS.map((n) => (
-            <option key={n} value={n}>
-              {n} mi
-            </option>
-          ))}
-        </select>
+        <span className="font-medium text-cream text-sm tabular-nums">{radius} mi</span>
+      </div>
+      <input
+        id="nearby-radius"
+        type="range"
+        min={MIN_RADIUS}
+        max={MAX_RADIUS}
+        step={1}
+        value={radius}
+        onChange={(e) => update(Number(e.target.value))}
+        className="mt-3 w-full accent-gold"
+      />
+      <div className="mt-1 flex justify-between text-cream/40 text-[10px]">
+        <span>{MIN_RADIUS} mi</span>
+        <span>{MAX_RADIUS} mi</span>
       </div>
       <p className="mt-2 text-cream/50 text-xs">
         Used by <span className="text-cream/70">Nearby</span> to decide which listings to show

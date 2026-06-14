@@ -2,6 +2,15 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-14 — Nearby radius: select → drag slider (1–100 mi)
+
+**Objective**: Replace the 5-bucket select on `/profile` Preferences with a draggable slider covering the full API range (1–100 mi).
+**Actions**: `app/(public)/profile/_components/NearbyRadiusPref.tsx` — dropped `OPTIONS = [1,5,10,25,50]`, replaced with `<input type="range" min=1 max=100 step=1>` + live "{n} mi" readout + min/max scale labels. `clamp()` rounds and bounds stored values; existing localStorage entries (5/10/25/50) all stay valid since `NearbyClient.readStoredRadius` already accepts 1–100.
+**Decisions**: kept localStorage key + default (10 mi) untouched — pure UI swap, no data migration. `accent-gold` for thumb tint to match brand.
+**Issues**: none. tsc clean.
+**Verification**: `npx tsc --noEmit` exits 0.
+**Next steps**: rely on Vercel preview to confirm slider renders in the gold theme on mobile + desktop.
+
 ## 2026-06-14 — Phase 27.1: Trim presets to 3 (1/2/3 houses)
 
 **Objective**: User feedback — six presets was too many; cleaner to offer one house, two houses, three houses, and let the letter-initial fallback be the implicit fourth option for users who pick nothing.

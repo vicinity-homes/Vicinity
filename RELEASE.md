@@ -3,6 +3,11 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.27.1 — 2026-06-14
+
+### ✨ Improvements
+- **Nearby search radius is now a slider.** On your profile, the "Nearby search radius" preference is a draggable bar instead of a dropdown — pick any value from 1 to 100 miles, with the current pick shown live next to the label. Your previous setting carries over.
+
 ## v0.27.0 — 2026-06-14
 
 ### 🚀 Features
