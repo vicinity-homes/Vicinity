@@ -5,6 +5,24 @@ Format matches the standard release template (Features / Improvements / Bug Fixe
 
 ---
 
+## Release Notes - v0.18.0
+
+**Release Date:** 2026-06-14
+
+### Improvements
+
+- **Photos now get a category, just like videos.** When an agent adds photos to a community's private library, they pick one of the same 12 categories the video uploader uses ("Walk the Block", "School Run", "After Dark", and so on) before dropping the files. Pick once, drop a stack, all of those photos are tagged. The picker stays put so you can switch categories and drop another stack. Each photo shows its category as a small label on the thumbnail, and the upload button updates to read "Add photos as <Category>" so the current selection is impossible to miss. Existing photos in the library are migrated automatically to a sensible default and can be deleted/re-added if the agent wants a more specific tag.
+
+### Why
+
+Photos in this library aren't shown to buyers — they're raw material the platform can use to assemble community videos later. Tagging them at upload time means we don't have to look at the pixels later to figure out what they show. It's the same reasoning behind the 12-category video picker we shipped earlier this week, just applied to the photo side.
+
+### Known Issues
+
+- The video uploader and the photo library still each have their own category selector. If you upload both a video and a stack of photos for the same place in one sitting, you'll pick the category twice. We may merge them into a single shared selector at the top of the upload page later.
+
+---
+
 ## Release Notes - v0.17.0
 
 **Release Date:** 2026-06-14

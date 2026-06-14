@@ -2,13 +2,18 @@
 
 /**
  * CommunityPhotoPanel — Phase 20.2 (2026-06-13);
- * Phase 23 (2026-06-14) trimmed school/POI categorization.
+ *   Phase 23 (2026-06-14): trimmed school/POI categorization.
+ *   Phase 24 (2026-06-14): added 12-category picker (batch mode).
  *
  * Lets an authenticated agent upload photos to a community's private
  * photo library. Photos are NOT visible to buyers — they're raw material
- * for future AI video generation. Phase 23 dropped the school/poi/kind
- * picker because we no longer surface schools/POIs in the editor; every
- * photo is now stored as `kind='neighborhood'` server-side.
+ * for future AI video generation. Tagging by category at upload time
+ * means future AI assembly can group images by category without having
+ * to infer it from pixels.
+ *
+ * UX (batch mode): pick one category, drop a stack of files; everything
+ * in the stack gets that category. Switch category, drop another stack.
+ * The picker stays sticky between uploads.
  */
 
 import {
@@ -17,6 +22,12 @@ import {
 } from '@/app/dashboard/communities/[id]/photo-actions';
 import { createClient } from '@/lib/supabase/client';
 import { COMMUNITY_PHOTOS_BUCKET, nextCommunityPhotoStoragePath } from '@/lib/supabase/storage';
+import {
+  COMMUNITY_VIDEO_CATEGORIES,
+  type CommunityVideoCategoryId,
+  getCategoryMeta,
+  legacyKindForCategory,
+} from '@/lib/zod/community-video-categories';
 import { Trash2, Upload } from 'lucide-react';
 import { useCallback, useRef, useState, useTransition } from 'react';
 
@@ -25,6 +36,7 @@ export interface CommunityPhotoRow {
   storage_path: string;
   signed_url: string | null;
   kind: 'school' | 'poi' | 'neighborhood' | string;
+  category?: string | null;
   school_id: string | null;
   poi_id: string | null;
   alt_text: string | null;
@@ -48,17 +60,24 @@ interface PendingItem {
   error?: string;
 }
 
+const BUCKET_A = COMMUNITY_VIDEO_CATEGORIES.filter((c) => c.bucket === 'a');
+const BUCKET_B = COMMUNITY_VIDEO_CATEGORIES.filter((c) => c.bucket === 'b');
+
 export function CommunityPhotoPanel({ communityId, initialPhotos }: Props) {
   const [photos, setPhotos] = useState<CommunityPhotoRow[]>(initialPhotos);
   const [pending, setPending] = useState<PendingItem[]>([]);
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [category, setCategory] = useState<CommunityVideoCategoryId>('walk_the_block');
   const [_, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const meta = getCategoryMeta(category);
 
   const handleFiles = useCallback(
     async (files: FileList) => {
       setGlobalError(null);
       const supabase = createClient();
+      const kind = legacyKindForCategory(category);
 
       for (const file of Array.from(files)) {
         const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -93,7 +112,8 @@ export function CommunityPhotoPanel({ communityId, initialPhotos }: Props) {
         const result = await recordCommunityPhoto({
           communityId,
           storagePath: path,
-          kind: 'neighborhood',
+          kind,
+          category,
           schoolId: null,
           poiId: null,
           lat: null,
@@ -118,7 +138,8 @@ export function CommunityPhotoPanel({ communityId, initialPhotos }: Props) {
             id: result.id,
             storage_path: path,
             signed_url: preview,
-            kind: 'neighborhood',
+            kind,
+            category,
             school_id: null,
             poi_id: null,
             alt_text: null,
@@ -129,7 +150,7 @@ export function CommunityPhotoPanel({ communityId, initialPhotos }: Props) {
         ]);
       }
     },
-    [communityId],
+    [communityId, category],
   );
 
   const handleDelete = useCallback(
@@ -159,6 +180,38 @@ export function CommunityPhotoPanel({ communityId, initialPhotos }: Props) {
         10 MB each.
       </p>
 
+      {/* ── Category picker (Phase 24) ──────────────────────────── */}
+      <div className="mb-4 space-y-2">
+        <label htmlFor="cp-category" className="block text-xs font-medium text-cream/70">
+          Category for the next batch
+        </label>
+        <select
+          id="cp-category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value as CommunityVideoCategoryId)}
+          className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+        >
+          <optgroup label="Only on Vicinity">
+            {BUCKET_A.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label} — {c.blurb}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="Real look at the data">
+            {BUCKET_B.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label} — {c.blurb}
+              </option>
+            ))}
+          </optgroup>
+        </select>
+        <div className="rounded border border-gold/30 bg-gold/5 px-3 py-2 text-xs text-cream/80">
+          <span className="font-medium text-gold">{meta.label}</span>
+          <span className="text-cream/60"> — {meta.blurb}.</span>
+        </div>
+      </div>
+
       {globalError ? (
         <div className="mb-3 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-red-200 text-xs">
           {globalError}
@@ -166,33 +219,43 @@ export function CommunityPhotoPanel({ communityId, initialPhotos }: Props) {
       ) : null}
 
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-        {photos.map((photo) => (
-          <div
-            key={photo.id}
-            className="group relative aspect-[4/3] overflow-hidden rounded border border-bronze/20 bg-ink"
-          >
-            {photo.signed_url ? (
-              <img
-                src={photo.signed_url}
-                alt={photo.alt_text ?? ''}
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-cream/40 text-xs">
-                (preview unavailable)
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => handleDelete(photo.id)}
-              aria-label="Delete photo"
-              className="absolute top-1.5 right-1.5 hidden rounded bg-ink/80 p-1.5 text-cream/80 hover:text-red-300 group-hover:block"
+        {photos.map((photo) => {
+          const catLabel = photo.category
+            ? (COMMUNITY_VIDEO_CATEGORIES.find((c) => c.id === photo.category)?.label ?? null)
+            : null;
+          return (
+            <div
+              key={photo.id}
+              className="group relative aspect-[4/3] overflow-hidden rounded border border-bronze/20 bg-ink"
             >
-              <Trash2 size={14} aria-hidden="true" />
-            </button>
-          </div>
-        ))}
+              {photo.signed_url ? (
+                <img
+                  src={photo.signed_url}
+                  alt={photo.alt_text ?? ''}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-cream/40 text-xs">
+                  (preview unavailable)
+                </div>
+              )}
+              {catLabel ? (
+                <span className="absolute bottom-1 left-1 rounded bg-ink/80 px-1.5 py-0.5 text-[10px] text-cream/80">
+                  {catLabel}
+                </span>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => handleDelete(photo.id)}
+                aria-label="Delete photo"
+                className="absolute top-1.5 right-1.5 hidden rounded bg-ink/80 p-1.5 text-cream/80 hover:text-red-300 group-hover:block"
+              >
+                <Trash2 size={14} aria-hidden="true" />
+              </button>
+            </div>
+          );
+        })}
 
         {pending.map((p) => (
           <div
@@ -227,7 +290,7 @@ export function CommunityPhotoPanel({ communityId, initialPhotos }: Props) {
           className="inline-flex items-center gap-2 rounded-md border border-bronze/40 bg-ink/40 px-4 py-2 text-cream/90 text-sm hover:border-bronze hover:text-cream"
         >
           <Upload size={16} aria-hidden="true" />
-          Add photos
+          Add photos as “{meta.label}”
         </button>
       </div>
     </section>

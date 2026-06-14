@@ -16,6 +16,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { CommunityVideoCategory } from '@/lib/zod/community-video-categories';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -25,6 +26,10 @@ const RecordPhotoInput = z.object({
   communityId: z.string().uuid(),
   storagePath: z.string().min(1).max(512),
   kind: z.enum(['school', 'poi', 'neighborhood']).default('neighborhood'),
+  // Phase 24 (2026-06-14): photos now carry the same 12-category axis as
+  // videos. Optional for backwards compat; existing legacy callers without
+  // a category just get NULL in the column and the UI falls back to `kind`.
+  category: CommunityVideoCategory.optional(),
   schoolId: z.string().uuid().nullable(),
   poiId: z.string().uuid().nullable(),
   lat: z.number().finite().min(-90).max(90).nullable(),
@@ -44,8 +49,19 @@ export async function recordCommunityPhoto(
   const parsed = RecordPhotoInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'invalid_input' };
 
-  const { communityId, storagePath, kind, schoolId, poiId, lat, lng, width, height, altText } =
-    parsed.data;
+  const {
+    communityId,
+    storagePath,
+    kind,
+    category,
+    schoolId,
+    poiId,
+    lat,
+    lng,
+    width,
+    height,
+    altText,
+  } = parsed.data;
 
   if (!storagePath.startsWith(`${communityId}/`)) {
     return { ok: false, error: 'invalid_storage_path' };
@@ -85,6 +101,7 @@ export async function recordCommunityPhoto(
       community_id: communityId,
       storage_path: storagePath,
       kind,
+      category: category ?? null,
       school_id: schoolId,
       poi_id: poiId,
       lat,

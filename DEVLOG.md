@@ -6,6 +6,79 @@ Institutional memory for the project. Updated incrementally, not at session end.
 
 ---
 
+## 2026-06-14 — Phase 24 — Photos get the same 12-category axis
+
+**Objective.** Phase 22 gave videos a 12-category taxonomy and Phase 23
+deleted the per-photo school/POI picker, leaving every photo hard-coded
+to `kind='neighborhood'`. That was a deliberate compromise — photos
+aren't buyer-visible, they're raw material for AI video generation, so a
+flat tag pool was tolerable. But the moment the AI assembly step exists,
+"give me all the `walk_the_block` photos for this community" is the
+query we'll want, and inferring category from pixels is wasted work
+when the agent already knows it at upload time. Phase 24 fixes that
+hole now while it's a one-line schema change instead of a backfill job
+later.
+
+**Schema (migration `0019_community_photo_category.sql`).**
+
+- Adds `community_photos.category text` (nullable, no CHECK — values
+  policed by the zod schema and the picker UI; kept loose at the DB
+  layer because the column is private and the cost of a bad value is
+  zero buyer impact).
+- Backfills existing rows from `kind`:
+  `school → school_run`, `poi → walk_the_block`, `neighborhood → neighborhood_walk`.
+- Idempotent; safe to re-run.
+
+**Server (`photo-actions.ts`).**
+
+- `RecordPhotoInput` accepts an optional `category` field validated
+  against `CommunityVideoCategory` (the zod enum that videos already use).
+- `recordCommunityPhoto` writes `category` to the new column. Old
+  callers that don't pass it just get NULL — no breakage.
+
+**UI (`CommunityPhotoPanel.tsx`).**
+
+- New compact picker at the top of the photo library: a `<select>`
+  grouped into Bucket A ("Only on Vicinity") / Bucket B ("Real look at
+  the data"). Compact dropdown rather than mirroring the video panel's
+  12-tile grid because the photo panel sits inside a `<details>` and
+  should stay scannable.
+- "Batch mode" UX: pick category once, drop a stack of files, all of
+  them get tagged. The CTA reads `Add photos as "<Category>"` so the
+  current selection is impossible to miss.
+- Existing photos display a small label tag in the corner of the
+  thumbnail.
+
+**Page wiring (`upload/page.tsx`).**
+
+- Adds `category` to the `community_photos` SELECT and the
+  `CommunityPhotoRow` shape.
+
+**Files touched.** 4 (1 migration, 1 server action, 2 client/page).
+
+**Verification.**
+
+- `npx tsc --noEmit` — clean.
+- `npm run build` — all routes built; `/dashboard/communities/[id]/upload` size unchanged.
+- `npx biome check --write` — clean.
+
+**Risk and known gaps.**
+
+- Migration 0019 must be run on prod Supabase before the next deploy
+  or the `community_photos` SELECT in `upload/page.tsx` will 500
+  (column doesn't exist).
+- The DB column has no CHECK — a buggy/older client could insert a
+  category string that's not in the canonical 12. Mitigated by the
+  zod enum on the action; if we ever surface photos to buyers we
+  should add a CHECK or a domain.
+- The video panel and photo panel each have their own category state.
+  In practice an agent uploading a 3-min walk video and a stack of
+  walk photos has to pick the same category twice. Acceptable cost
+  for now; if it gets annoying, lift state to `upload/page.tsx`
+  (client wrapper) in a follow-up.
+
+---
+
 ## 2026-06-14 — Phase 23 — Upload page consolidation + UI cleanup
 
 **Objective.** Trim the agent-side community editor to the minimum the

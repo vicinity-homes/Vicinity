@@ -29,6 +29,7 @@ interface CommunityPhotoDbRow {
   id: string;
   storage_path: string;
   kind: string;
+  category: string | null;
   school_id: string | null;
   poi_id: string | null;
   alt_text: string | null;
@@ -78,7 +79,9 @@ export default async function CommunityUploadPage({
     // biome-ignore lint/suspicious/noExplicitAny: stub generated types
     (supabase as any)
       .from('community_photos')
-      .select('id, storage_path, kind, school_id, poi_id, alt_text, width, height, sort_order')
+      .select(
+        'id, storage_path, kind, category, school_id, poi_id, alt_text, width, height, sort_order',
+      )
       .eq('community_id', id)
       .order('sort_order', { ascending: true }) as Promise<{
       data: CommunityPhotoDbRow[] | null;
@@ -93,6 +96,7 @@ export default async function CommunityUploadPage({
     storage_path: p.storage_path,
     signed_url: urlByPath.get(p.storage_path) ?? null,
     kind: p.kind,
+    category: p.category,
     school_id: p.school_id,
     poi_id: p.poi_id,
     alt_text: p.alt_text,
