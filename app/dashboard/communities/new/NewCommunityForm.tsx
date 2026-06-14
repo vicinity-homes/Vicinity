@@ -6,25 +6,46 @@
  * The slug used to be user-editable here. Per product direction, agents
  * should never type slugs — they're URL plumbing. Server now derives the
  * slug from the name and handles collisions itself.
+ *
+ * 2026-06-14: errors now render inline under the offending input and the
+ * input border turns red, so agents can see *which* field is wrong instead
+ * of getting an opaque `invalid_input` next to the submit button.
  */
 
 import { createCommunity } from '@/app/dashboard/communities/actions';
 import { useState, useTransition } from 'react';
 
-const INPUT_CLASS =
-  'w-full rounded border border-bronze/30 bg-ink2 px-3 py-2 text-sm text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold';
+const INPUT_BASE =
+  'w-full rounded border bg-ink2 px-3 py-2 text-sm text-cream placeholder:text-cream/40 focus:outline-none focus:ring-1';
+const INPUT_OK = 'border-bronze/30 focus:border-gold focus:ring-gold';
+const INPUT_ERR = 'border-red-500/70 focus:border-red-400 focus:ring-red-400';
+
+function inputCls(hasError: boolean) {
+  return `${INPUT_BASE} ${hasError ? INPUT_ERR : INPUT_OK}`;
+}
 
 export function NewCommunityForm() {
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('GA');
   const [description, setDescription] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  function clearFieldError(field: string) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError(null);
+    setFieldErrors({});
+    setFormError(null);
     startTransition(async () => {
       const result = await createCommunity({
         name: name.trim(),
@@ -33,52 +54,74 @@ export function NewCommunityForm() {
         description: description.trim() === '' ? null : description.trim(),
       });
       // On success, server action redirects — we never get here.
-      if (!result.ok) setError(result.error);
+      if (!result.ok) {
+        if (result.fieldErrors) setFieldErrors(result.fieldErrors);
+        // Only show the top-level error if it's NOT a per-field validation
+        // failure — those already render under the inputs.
+        if (!result.fieldErrors || Object.keys(result.fieldErrors).length === 0) {
+          setFormError(result.error);
+        }
+      }
     });
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <Field label="Name" required>
+    <form onSubmit={onSubmit} className="space-y-4" noValidate>
+      <Field label="Name" required error={fieldErrors.name} hint="2–120 characters">
         <input
           type="text"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            clearFieldError('name');
+          }}
           placeholder="Buckhead"
-          required
           maxLength={120}
-          className={INPUT_CLASS}
+          aria-invalid={!!fieldErrors.name}
+          className={inputCls(!!fieldErrors.name)}
         />
       </Field>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_5rem]">
-        <Field label="City">
+        <Field label="City" error={fieldErrors.city}>
           <input
             type="text"
             value={city}
-            onChange={(e) => setCity(e.target.value)}
+            onChange={(e) => {
+              setCity(e.target.value);
+              clearFieldError('city');
+            }}
             placeholder="Atlanta"
             maxLength={80}
-            className={INPUT_CLASS}
+            aria-invalid={!!fieldErrors.city}
+            className={inputCls(!!fieldErrors.city)}
           />
         </Field>
-        <Field label="State">
+        <Field label="State" error={fieldErrors.state}>
           <input
             type="text"
             value={state}
-            onChange={(e) => setState(e.target.value.toUpperCase())}
+            onChange={(e) => {
+              setState(e.target.value.toUpperCase());
+              clearFieldError('state');
+            }}
             maxLength={2}
-            className={INPUT_CLASS}
+            aria-invalid={!!fieldErrors.state}
+            className={inputCls(!!fieldErrors.state)}
           />
         </Field>
       </div>
-      <Field label="Description">
+      <Field label="Description" error={fieldErrors.description}>
         <textarea
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e) => {
+            setDescription(e.target.value);
+            clearFieldError('description');
+          }}
           rows={4}
           placeholder="Short blurb shown on the public community page."
           maxLength={2000}
-          className={`${INPUT_CLASS} resize-y`}
+          aria-invalid={!!fieldErrors.description}
+          className={`${inputCls(!!fieldErrors.description)} resize-y`}
         />
       </Field>
 
@@ -90,7 +133,7 @@ export function NewCommunityForm() {
         >
           {isPending ? 'Creating…' : 'Create community'}
         </button>
-        {error && <span className="text-sm text-red-400">Error: {error}</span>}
+        {formError && <span className="text-sm text-red-400">Error: {formError}</span>}
       </div>
     </form>
   );
@@ -100,11 +143,13 @@ function Field({
   label,
   hint,
   required,
+  error,
   children,
 }: {
   label: string;
   hint?: string;
   required?: boolean;
+  error?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -114,7 +159,11 @@ function Field({
         {required ? <span className="text-gold"> *</span> : null}
       </span>
       {children}
-      {hint ? <span className="mt-1 block text-xs text-cream/40">{hint}</span> : null}
+      {error ? (
+        <span className="mt-1 block text-xs text-red-400">{error}</span>
+      ) : hint ? (
+        <span className="mt-1 block text-xs text-cream/40">{hint}</span>
+      ) : null}
     </div>
   );
 }

@@ -2,6 +2,55 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-14 — Community form: inline per-field validation errors
+
+**Objective**: When a community-create / -update server action fails zod
+validation (e.g. `name` was a single character "Q"), the form previously
+showed a single opaque `Error: invalid_input` next to the submit button.
+Vivian / agents had no idea *which* field was wrong, so they re-submitted the
+same broken input. Surface the rule, highlight the field.
+
+**Actions**:
+- `lib/zod/community.ts` — replaced anonymous min/max/length validators with
+  human-readable messages on `CreateCommunityInput` + `UpdateCommunityInput`
+  (e.g. `"Name must be at least 2 characters"`). Same messages on both
+  schemas so the New and Edit forms read identically.
+- `app/dashboard/communities/actions.ts` — added `FieldErrors` type +
+  `zodToFieldErrors()` helper that flattens `parsed.error.issues` into a
+  `{ field: firstMessage }` map. `createCommunity` and `updateCommunity` now
+  return `{ ok: false, error: 'invalid_input', fieldErrors }` on
+  zod-validation failures; downstream errors (`unauthorized`, `not_found`,
+  `forbidden`, `slug_taken`, `insert_failed`, `update_failed`) still surface
+  as the top-level form error.
+- `app/dashboard/communities/new/NewCommunityForm.tsx` — generalised the
+  `Field` component to render `error` (red) or `hint` (muted) under the
+  input. Inputs swap to a red border via `inputCls(hasError)`. Typing in a
+  field clears its error so users see immediate feedback. Form-level error
+  only renders when there are no per-field errors (server / RLS failures).
+  `Name` field now shows `2–120 characters` as a hint pre-submit.
+- `app/dashboard/communities/[id]/CommunityEditor.tsx` — same pattern
+  applied to the edit form.
+
+**Decisions**:
+- **One message per field** — zod can produce multiple issues per field
+  (e.g. min + regex). UI only has room for one; we collapse to the first
+  issue per path.
+- **Hint pre-submit, error post-submit** — same slot. We don't show the
+  hint *and* the error; the error replaces the hint when the field is
+  invalid. Keeps vertical rhythm consistent.
+- **Don't double-render the error** — if `fieldErrors` is non-empty, the
+  generic `Error: invalid_input` next to the submit button is suppressed.
+  Otherwise users see the same problem twice.
+- **Kept `min(2)` on name** — single-character community names are a
+  terrible URL slug and almost always a placeholder ("Q"). The fix is the
+  message, not the rule.
+
+**Issues**: none. tsc clean.
+
+**Next steps**: same pattern is missing on the listing editor
+(`app/dashboard/listings/[id]/edit/actions.ts` — eight `'invalid_input'`
+returns) and on the photo actions; do those next time the user hits one.
+
 ## 2026-06-14 — Phase 28: immersive right rail + single Nearby pool (12 categories)
 
 **Objective**: Move Like / Save / Contact off the bottom action bar and onto the right rail (Xiaohongshu / TikTok pattern) for an immersive bottom edge. Replace the legacy three-rail (`Schools` / `Nearby` / `Area`) with a single `Nearby` entry that flows users into the 12-category community-video pool, surfacing the per-video category as a label + blurb pill on the Card overlay. Photo cards get the same right rail (Like / Save / Contact / Nearby).

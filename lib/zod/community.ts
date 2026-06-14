@@ -10,18 +10,28 @@
 import { z } from 'zod';
 
 export const CreateCommunityInput = z.object({
-  name: z.string().min(2).max(120),
-  city: z.string().max(80).optional().nullable(),
-  state: z.string().length(2).default('GA'),
-  description: z.string().max(2000).optional().nullable(),
+  name: z
+    .string()
+    .min(2, 'Name must be at least 2 characters')
+    .max(120, 'Name must be 120 characters or fewer'),
+  city: z.string().max(80, 'City must be 80 characters or fewer').optional().nullable(),
+  state: z.string().length(2, 'State must be a 2-letter code (e.g. GA)').default('GA'),
+  description: z
+    .string()
+    .max(2000, 'Description must be 2000 characters or fewer')
+    .optional()
+    .nullable(),
 });
 export type CreateCommunityInput = z.infer<typeof CreateCommunityInput>;
 
 export const UpdateCommunityInput = z.object({
-  name: z.string().min(2).max(120),
-  city: z.string().max(80).nullable(),
-  state: z.string().length(2),
-  description: z.string().max(2000).nullable(),
+  name: z
+    .string()
+    .min(2, 'Name must be at least 2 characters')
+    .max(120, 'Name must be 120 characters or fewer'),
+  city: z.string().max(80, 'City must be 80 characters or fewer').nullable(),
+  state: z.string().length(2, 'State must be a 2-letter code (e.g. GA)'),
+  description: z.string().max(2000, 'Description must be 2000 characters or fewer').nullable(),
 });
 export type UpdateCommunityInput = z.infer<typeof UpdateCommunityInput>;
 

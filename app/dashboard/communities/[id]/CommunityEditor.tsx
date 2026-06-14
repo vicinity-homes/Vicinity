@@ -7,14 +7,23 @@
  * removed schools/POIs from the UI; only the metadata form lives here now.
  * If we want to bring per-community schools/POIs back later, recover the
  * SchoolsSection / PoisSection from git history.
+ *
+ * 2026-06-14: validation errors now render inline under the offending input
+ * with the input border turning red — same pattern as NewCommunityForm.
  */
 
 import { updateCommunity } from '@/app/dashboard/communities/actions';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
-const INPUT_CLASS =
-  'w-full rounded border border-bronze/30 bg-ink2 px-3 py-2 text-sm text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold';
+const INPUT_BASE =
+  'w-full rounded border bg-ink2 px-3 py-2 text-sm text-cream placeholder:text-cream/40 focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:opacity-60';
+const INPUT_OK = 'border-bronze/30 focus:border-gold focus:ring-gold';
+const INPUT_ERR = 'border-red-500/70 focus:border-red-400 focus:ring-red-400';
+
+function inputCls(hasError: boolean) {
+  return `${INPUT_BASE} ${hasError ? INPUT_ERR : INPUT_OK}`;
+}
 
 interface CommunityRow {
   id: string;
@@ -51,14 +60,25 @@ function MetadataSection({
   const [state, setState] = useState(community.state);
   const [description, setDescription] = useState(community.description ?? '');
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  function clearFieldError(field: string) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!canEdit) return;
     setSaveState('saving');
-    setError(null);
+    setFieldErrors({});
+    setFormError(null);
     startTransition(async () => {
       const result = await updateCommunity(community.id, {
         name: name.trim(),
@@ -72,7 +92,10 @@ function MetadataSection({
         router.refresh();
       } else {
         setSaveState('error');
-        setError(result.error);
+        if (result.fieldErrors) setFieldErrors(result.fieldErrors);
+        if (!result.fieldErrors || Object.keys(result.fieldErrors).length === 0) {
+          setFormError(result.error);
+        }
       }
     });
   }
@@ -93,49 +116,63 @@ function MetadataSection({
           and photos.
         </p>
       )}
-      <form onSubmit={onSubmit} className="space-y-4">
-        <Field label="Name" required>
+      <form onSubmit={onSubmit} className="space-y-4" noValidate>
+        <Field label="Name" required error={fieldErrors.name} hint="2–120 characters">
           <input
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
+            onChange={(e) => {
+              setName(e.target.value);
+              clearFieldError('name');
+            }}
             maxLength={120}
             disabled={!canEdit}
-            className={`${INPUT_CLASS} disabled:cursor-not-allowed disabled:opacity-60`}
+            aria-invalid={!!fieldErrors.name}
+            className={inputCls(!!fieldErrors.name)}
           />
         </Field>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_5rem]">
-          <Field label="City">
+          <Field label="City" error={fieldErrors.city}>
             <input
               type="text"
               value={city}
-              onChange={(e) => setCity(e.target.value)}
+              onChange={(e) => {
+                setCity(e.target.value);
+                clearFieldError('city');
+              }}
               maxLength={80}
               disabled={!canEdit}
-              className={`${INPUT_CLASS} disabled:cursor-not-allowed disabled:opacity-60`}
+              aria-invalid={!!fieldErrors.city}
+              className={inputCls(!!fieldErrors.city)}
             />
           </Field>
-          <Field label="State" required>
+          <Field label="State" required error={fieldErrors.state}>
             <input
               type="text"
               value={state}
-              onChange={(e) => setState(e.target.value.toUpperCase())}
-              required
+              onChange={(e) => {
+                setState(e.target.value.toUpperCase());
+                clearFieldError('state');
+              }}
               maxLength={2}
               disabled={!canEdit}
-              className={`${INPUT_CLASS} disabled:cursor-not-allowed disabled:opacity-60`}
+              aria-invalid={!!fieldErrors.state}
+              className={inputCls(!!fieldErrors.state)}
             />
           </Field>
         </div>
-        <Field label="Description">
+        <Field label="Description" error={fieldErrors.description}>
           <textarea
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              clearFieldError('description');
+            }}
             rows={4}
             maxLength={2000}
             disabled={!canEdit}
-            className={`${INPUT_CLASS} resize-y disabled:cursor-not-allowed disabled:opacity-60`}
+            aria-invalid={!!fieldErrors.description}
+            className={`${inputCls(!!fieldErrors.description)} resize-y`}
           />
         </Field>
         {canEdit && (
@@ -148,8 +185,8 @@ function MetadataSection({
               {saveState === 'saving' ? 'Saving…' : 'Save changes'}
             </button>
             {saveState === 'saved' && <span className="text-sm text-emerald-400">✓ Saved</span>}
-            {saveState === 'error' && (
-              <span className="text-sm text-red-400">Error: {error ?? 'unknown'}</span>
+            {saveState === 'error' && formError && (
+              <span className="text-sm text-red-400">Error: {formError}</span>
             )}
           </div>
         )}
@@ -162,11 +199,13 @@ function Field({
   label,
   required,
   hint,
+  error,
   children,
 }: {
   label: string;
   required?: boolean;
   hint?: string;
+  error?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -176,7 +215,11 @@ function Field({
         {required && <span className="ml-0.5 text-gold">*</span>}
       </span>
       {children}
-      {hint && <span className="mt-1 block text-[11px] text-cream/40">{hint}</span>}
+      {error ? (
+        <span className="mt-1 block text-[11px] text-red-400">{error}</span>
+      ) : hint ? (
+        <span className="mt-1 block text-[11px] text-cream/40">{hint}</span>
+      ) : null}
     </div>
   );
 }

@@ -3,6 +3,15 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.28.1 — 2026-06-14
+
+### 🐛 Bug Fixes
+- **Community form now tells you which field is wrong.** Previously, if you typed a 1-character community name (or anything else that failed validation), the form just said "Error: invalid_input" next to the submit button — no hint as to which field, no rule. Now the offending field gets a red border and an inline message like "Name must be at least 2 characters" right below the input. The same pattern applies to City, State, and Description on both the New Community page and the Edit Community page.
+
+### ✨ Improvements
+- **Helpful hints under inputs.** The Name field now shows "2–120 characters" as a quiet hint before you type, so you know the rule before submitting.
+- **Errors clear as you fix them.** Typing in a field that was flagged as invalid removes the error immediately — no need to wait for another submit to confirm you've fixed it.
+
 ## v0.28.0 — 2026-06-14
 
 ### 🚀 Features
