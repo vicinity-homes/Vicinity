@@ -150,7 +150,7 @@ export default async function DashboardHomePage({ searchParams }: PageProps) {
           with state worth seeing.
       */}
       {rows.length === 0 && !showArchived ? (
-        <section className="mb-10 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-5">
+        <section className="mb-10 grid grid-cols-3 gap-2 sm:gap-5">
           <Link
             href="/dashboard/listings/new"
             className="group flex items-center justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-5 transition hover:border-gold/40"

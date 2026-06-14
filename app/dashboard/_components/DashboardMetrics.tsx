@@ -193,48 +193,48 @@ export async function DashboardMetrics({ agentId }: { agentId: string }) {
   const totalThisWeek = m.thisWeek.views + m.thisWeek.saves + m.thisWeek.leads;
 
   return (
-    <section className="mb-10 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-5">
+    <section className="mb-10 grid grid-cols-3 gap-2 sm:gap-5">
       {/* New leads (24h) */}
       <Link
         href="/dashboard/leads"
-        className="group flex items-center justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-5 transition hover:border-gold/40"
+        className="group flex flex-col justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-3 transition hover:border-gold/40 sm:p-5"
       >
-        <div className="min-w-0">
-          <div className="text-[11px] uppercase tracking-widest text-gold">
-            {m.newLeads24h > 0 ? `🔥 ${m.newLeads24h} new leads · 24h` : 'Leads · 24h'}
-          </div>
-          <div className="mt-2 truncate font-serif text-2xl text-cream">
-            {m.latestLead
-              ? m.latestLead.name
-              : m.newLeads24h > 0
-                ? 'View leads →'
-                : 'No new leads yet'}
-          </div>
-          {m.latestLead && (
-            <div className="mt-0.5 text-[11px] text-cream/50">
-              {relTime(m.latestLead.created_at)}
-            </div>
-          )}
+        <div className="text-[9px] uppercase tracking-widest text-gold sm:text-[11px]">
+          {m.newLeads24h > 0 ? `🔥 ${m.newLeads24h} new · 24h` : 'Leads · 24h'}
         </div>
+        <div className="mt-2 truncate font-serif text-base text-cream sm:text-2xl">
+          {m.latestLead ? m.latestLead.name : m.newLeads24h > 0 ? 'View →' : 'No new leads'}
+        </div>
+        {m.latestLead && (
+          <div className="mt-0.5 text-[10px] text-cream/50 sm:text-[11px]">
+            {relTime(m.latestLead.created_at)}
+          </div>
+        )}
       </Link>
 
       {/* This week */}
-      <div className="rounded-2xl border border-cream/5 bg-ink2/60 p-5">
-        <div className="text-[11px] uppercase tracking-widest text-gold">This week</div>
+      <div className="flex flex-col justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-3 sm:p-5">
+        <div className="text-[9px] uppercase tracking-widest text-gold sm:text-[11px]">
+          This week
+        </div>
         {totalThisWeek === 0 ? (
-          <div className="mt-2 font-serif text-cream/60 text-base">Waiting for first views…</div>
+          <div className="mt-2 font-serif text-cream/60 text-xs sm:text-base">
+            Waiting for views…
+          </div>
         ) : (
           <>
-            <div className="mt-2 flex items-baseline gap-3 font-serif text-cream">
-              <span className="text-2xl">{m.thisWeek.views.toLocaleString()}</span>
-              <span className="text-cream/50 text-xs uppercase tracking-wider">views</span>
+            <div className="mt-2 flex items-baseline gap-1.5 font-serif text-cream sm:gap-3">
+              <span className="text-base sm:text-2xl">{m.thisWeek.views.toLocaleString()}</span>
+              <span className="text-[9px] text-cream/50 uppercase tracking-wider sm:text-xs">
+                views
+              </span>
             </div>
-            <div className="mt-1 text-cream/60 text-xs">
-              {m.thisWeek.saves} saves · {m.thisWeek.leads} leads
+            <div className="mt-1 text-[10px] text-cream/60 sm:text-xs">
+              {m.thisWeek.saves}s · {m.thisWeek.leads}l
               {wowViews && (
                 <span className={wowViews.up ? ' text-gold' : ' text-bronze'}>
                   {' '}
-                  · {wowViews.txt} vs last week
+                  · {wowViews.txt}
                 </span>
               )}
             </div>
@@ -246,22 +246,24 @@ export async function DashboardMetrics({ agentId }: { agentId: string }) {
       {m.topListing ? (
         <Link
           href={`/dashboard/listings/${m.topListing.id}/analytics`}
-          className="group flex items-center justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-5 transition hover:border-gold/40"
+          className="group flex flex-col justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-3 transition hover:border-gold/40 sm:p-5"
         >
-          <div className="min-w-0">
-            <div className="text-[11px] uppercase tracking-widest text-gold">🏆 Top listing</div>
-            <div className="mt-2 truncate font-serif text-cream text-xl">
-              {m.topListing.address ?? '(no address)'}
-            </div>
-            <div className="mt-0.5 text-cream/60 text-xs">
-              {m.topListing.views} views · {m.topListing.leads} leads
-            </div>
+          <div className="text-[9px] uppercase tracking-widest text-gold sm:text-[11px]">
+            🏆 Top listing
+          </div>
+          <div className="mt-2 truncate font-serif text-cream text-sm sm:text-xl">
+            {m.topListing.address ?? '(no address)'}
+          </div>
+          <div className="mt-0.5 text-[10px] text-cream/60 sm:text-xs">
+            {m.topListing.views}v · {m.topListing.leads}l
           </div>
         </Link>
       ) : (
-        <div className="rounded-2xl border border-cream/5 bg-ink2/60 p-5">
-          <div className="text-[11px] uppercase tracking-widest text-gold">Top listing</div>
-          <div className="mt-2 font-serif text-base text-cream/60">No views this week yet</div>
+        <div className="flex flex-col justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-3 sm:p-5">
+          <div className="text-[9px] uppercase tracking-widest text-gold sm:text-[11px]">
+            Top listing
+          </div>
+          <div className="mt-2 font-serif text-cream/60 text-xs sm:text-base">No views yet</div>
         </div>
       )}
     </section>
