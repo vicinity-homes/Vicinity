@@ -162,7 +162,7 @@ export default async function EditListingPage({
           ) : null}
           <a
             href={`/dashboard/listings/${listing.id}/analytics`}
-            className="text-xs text-gold hover:underline"
+            className="inline-flex max-w-full items-center gap-2 rounded-full border border-bronze/30 bg-ink px-3 py-1.5 text-xs text-cream/80 transition hover:border-gold hover:text-gold"
           >
             View analytics →
           </a>

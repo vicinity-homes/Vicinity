@@ -136,7 +136,7 @@ export function PublishPanel({ listingId, status }: Props) {
         <div className="text-sm">
           <span className="text-cream/60">Status: </span>
           <span
-            className={`font-medium ${
+            className={`font-semibold uppercase tracking-wide ${
               isPublished ? 'text-gold' : isArchived ? 'text-cream/40' : 'text-cream/80'
             }`}
           >
