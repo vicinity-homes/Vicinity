@@ -2,6 +2,59 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-17 — Phase 27.7: community video swipe feed + community save
+
+**Objective**: two buyer bugs reported after Path-3 demo.
+1. Tapping a tile in the `/c/<slug>` videos grid jumped to the **listings**
+   swipe feed scoped to that community (wrong surface — buyer wanted to
+   swipe through that community's videos, not its listings).
+2. The back arrow inside `BrowseFeed` always returned to `/browse`,
+   even when the buyer entered the feed from a community page, breaking
+   the back-navigation contract.
+
+Product addition (Vivian + me): community needs to be **saveable** as
+a first-class entity — a buyer should be able to bookmark a
+neighborhood as their entry point and only later look for homes inside
+it. Like is in-memory only (matches V1 listing-like behavior).
+
+**Approach**: new dedicated surface, not a BrowseFeed reuse. BrowseFeed
+is built around `BrowseCard` (listing + agent + nearby pool + lead
+modal); none of that applies to pure community videos. A focused
+component keeps the gesture model obvious (vertical-only swipe, like
+Reels) and avoids polluting BrowseFeed with `if-community` branches.
+
+**Changes**:
+- `supabase/migrations/0024_saved_communities.sql` — `saved_communities`
+  table mirroring `saved_listings`. RLS deny-all; access via service-role
+  through server actions. Device-id keyed; `user_id` reserved for buyer
+  auth later.
+- `app/_actions/saved-communities.ts` — `saveCommunity` /
+  `unsaveCommunity` / `listSavedCommunityIds` server actions.
+- `app/(public)/c/[slug]/feed/page.tsx` — RSC entry. Pulls videos
+  from the existing `community_video_membership` view (primary +
+  secondary memberships, Phase 27 plumbing). `?start=<videoId>` jumps
+  to a specific tile.
+- `app/(public)/c/[slug]/feed/CommunityVideoFeed.tsx` — focused client
+  feed: HLS attach/detach per card, intersection-observer activation,
+  TikTok-style first-interaction unmute, save/like/share rail. Save
+  hydrates from device-id on mount (localStorage is client-only — no
+  meaningful SSR initial state). Back button always routes to
+  `/c/<slug>` (no `?from=` query needed because the entry path is
+  fixed by the route).
+- `app/(public)/c/[slug]/page.tsx` — grid tile link changed from
+  `/browse/feed?community=<slug>` to `/c/<slug>/feed?start=<videoId>`.
+
+**BrowseFeed left untouched** for this fix: the only reason to add a
+`?from=` query was to make the listings feed back-button context-aware,
+but the bug was actually that the `/c/<slug>` tiles were pointing at
+the wrong feed. With tiles now landing on `/c/<slug>/feed`, the
+listings BrowseFeed back button is correct again. Skip the speculative
+abstraction.
+
+**Verification**: `tsc --noEmit` clean, `next build` green
+(`/c/[slug]/feed` registered at 5.23 kB / 269 kB First Load JS).
+Migration `0024_saved_communities.sql` applied to Supabase.
+
 ## 2026-06-16 — Phase 27.6: rural-address fix on /dashboard/listings/new
 
 **Objective**: agent reported a New-listing screen that came up red with

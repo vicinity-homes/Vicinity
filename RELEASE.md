@@ -3,6 +3,16 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.31.0 — 2026-06-17
+
+### ✨ Features
+- **Save a community as your starting point.** Tap the bookmark on any community's swipe feed to save the whole neighborhood — not a single house, the area itself. The idea: you fall in love with a place first (the schools, the walks, the food), then look for homes inside it later. Saved communities live alongside saved listings and persist across visits on the same device.
+- **Swipe a community's videos.** Tapping a tile in a community's video grid now drops you straight into a vertical, full-screen swipe feed of just that community's videos — schools, walk-the-block tours, eating-out spots — back-to-back like a Reels feed. Hit back to return to the community page where you came from.
+
+### 🐛 Bug Fixes
+- **Tile-tap on a community page used to land you in the listings feed.** That was wrong — you tapped a community video, you should swipe community videos. Fixed: it now opens the community video feed at the exact video you tapped.
+- **Back arrow inside the community swipe feed used to send you to the global Explore page.** Now it returns to the community page that launched you.
+
 ## v0.30.2 — 2026-06-16
 
 ### 🐛 Bug Fixes
