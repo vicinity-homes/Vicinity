@@ -3,16 +3,20 @@
 /**
  * BottomNav — mobile-only fixed bottom tab bar.
  *
- * Phase 19 (2026-06-13). 5-slot layout, role-aware middle slot:
- *   - anon / buyer  → Home · Explore · Saved · Nearby · Me
- *   - agent         → Home · Dashboard · ⊕ New (FAB) · Leads · Me
+ * 5-slot layout, role-aware middle slot:
+ *   - anon / buyer  → Community · Nearby · ▶ Explore (FAB) · Saved · Me
+ *   - agent         → Dashboard · Community · ⊕ New (FAB) · Leads · Me
  *
- * The agent middle slot is a circular gold FAB that opens an action sheet
- * with "+ New Listing" / "+ New Community". Same visual skeleton as the
- * buyer view; only the middle three slots' content changes by role.
+ * Both roles get a raised gold FAB in the middle slot:
+ *   - Buyer: Explore — direct link to /browse (swipe feed entry).
+ *   - Agent: + New — opens an action sheet (List a Property / Community Video).
  *
+ * Phase 19 (2026-06-13): introduced 5-slot mobile nav.
  * Phase 26 (2026-06-14): tab definitions moved to `nav-config.ts` so the
  * desktop <SiteHeader> uses the exact same set without drift.
+ * Phase 27 (2026-06-16): dropped "Home" tab. Buyer middle slot is now an
+ * emphasized Explore FAB (centerEmphasis flag in nav-config). Community
+ * promoted to leftmost slot for both roles.
  *
  * Hides itself on:
  *   - `md:` and up (desktop uses SiteHeader)
@@ -189,11 +193,25 @@ export function BottomNav({ role }: { role: ViewerRole }) {
               ))}
             </>
           ) : (
-            BUYER_TABS.map((tab) => (
-              <li key={tab.href} className="flex-1">
-                <TabButton tab={tab} active={isTabActive(pathname, tab)} />
-              </li>
-            ))
+            BUYER_TABS.map((tab) =>
+              tab.centerEmphasis === true ? (
+                <li key={tab.href} className="flex flex-1 items-center justify-center">
+                  <Link
+                    href={tab.href}
+                    prefetch={false}
+                    aria-label={tab.label}
+                    aria-current={isTabActive(pathname, tab) ? 'page' : undefined}
+                    className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-gold text-ink shadow-gold/20 shadow-lg transition active:scale-95"
+                  >
+                    <tab.icon size={24} strokeWidth={2.25} aria-hidden="true" />
+                  </Link>
+                </li>
+              ) : (
+                <li key={tab.href} className="flex-1">
+                  <TabButton tab={tab} active={isTabActive(pathname, tab)} />
+                </li>
+              ),
+            )
           )}
         </ul>
       </nav>
