@@ -2,6 +2,53 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-17 — Phase 28.3: Nearby vertical swipe leaked to next listing on iOS
+
+**Objective**: Fix a bug surfaced by the owner from Vivian's testing — on the
+public listing page (`/v/[agentSlug]/[listingSlug]`) once the user tapped
+Nearby and entered the community-video pool, an upward swipe correctly cycled
+within the pool but a downward swipe jumped to the next listing instead of
+looping inside the pool. The expectation (and the Phase 28.1 commit's stated
+intent) is that Nearby vertical swipes loop within the community-video pool
+only.
+
+**Root cause**: Phase 28.1 placed `touch-action: none` on the inner overlay
+div that wraps the `<video>` and gradient overlays. CSS `touch-action` is NOT
+inherited — each element resolves it independently. The `<video>` child kept
+its default `touch-action: auto`, so any touch that landed on the video
+element (~all of them) gave Mobile Safari permission to consume the vertical
+pan natively. Native scroll-snap on the outer listing scroller fired before
+the React `onTouchEnd` handler could `preventDefault()`. The asymmetry the
+owner observed (up loops, down skips) was statistical: when fingers happened
+to land on the bottom caption block (which had no `touch-none`) the JS
+handler took over and looked correct on one direction.
+
+**Actions**:
+- `app/(public)/browse/_components/BrowseFeed.tsx`: hoisted `touch-none` from
+  the inner div to the `<section>` root in Nearby mode. The whole card subtree
+  (video, poster img, overlays, gradients) now opts out of native scrolling
+  while Nearby is active, leaving the JS swipe handler uncontested.
+- Hero mode unchanged: `touch-pan-y` stays on the inner div so vertical pans
+  fall through to the outer snap scroller for next-listing.
+- Added a code comment explaining the inheritance pitfall so the next person
+  who touches this file doesn't repeat the 28.1 mistake.
+
+**Verification**: tsc green, biome green. 1-file change, +14/-7 lines net.
+
+**Learnings**: `touch-action` must live on the deepest common ancestor of all
+touch-target descendants you want to opt out — typically the `<section>` /
+card root, not an inner overlay. If a `<video>` / `<img>` child has its own
+`touch-action: auto` (default), it wins for touches that hit it. JS
+`preventDefault()` in `onTouchEnd` cannot reverse a native scroll that already
+happened during `touchmove`. Pinned to `vicinity` skill via mobile-first-ux
+audit references for future feed-shape work.
+
+**Next steps**: Owner verifies on the same `/v/<agent>/<listing>` page in
+Vivian's Nearby pool — both up and down swipes should now stay inside the
+community-video pool until Nearby is tapped off.
+
+---
+
 ## 2026-06-17 — Phase 28.x: dashboard 'View ↗' Back returns to dashboard
 
 **Objective**: Agent on `/dashboard` taps "View ↗" on a published listing

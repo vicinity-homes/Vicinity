@@ -3,6 +3,16 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.32.3 — 2026-06-17
+
+### 🐛 Bug Fixes
+- **Nearby video swipes now stay inside the community pool.** On a listing
+  page, once you tapped Nearby and started watching the neighborhood's
+  videos, swiping down would skip you out to the next listing instead of
+  cycling within that community's videos. Now both up and down swipes loop
+  inside the Nearby pool until you tap out — matching how the upward swipe
+  already behaved.
+
 ## v0.32.2 — 2026-06-17
 
 ### 🐛 Bug Fixes

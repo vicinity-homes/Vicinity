@@ -661,17 +661,25 @@ function Card({
   return (
     <section
       ref={(el) => cardRef(el)}
-      className="relative h-screen w-full snap-start snap-always overflow-hidden bg-black"
+      // Phase 28.3 (2026-06-16): hoist `touch-none` from the inner div to the
+      // <section> root in Nearby mode. `touch-action` is NOT inherited — it's
+      // resolved per-element by the browser. With it only on the inner div,
+      // touches that landed on the <video> element (its default
+      // `touch-action: auto` wins) leaked vertical pans to the outer snap-y
+      // scroller and skipped to the next listing — exactly the bug the
+      // 28.1 commit thought it had fixed. Putting it on the section means
+      // the entire subtree (video + img poster + overlays) opts out of
+      // native scrolling while in Nearby mode, so the JS swipe handler
+      // owns vertical gestures uncontested.
+      className={`relative h-screen w-full snap-start snap-always overflow-hidden bg-black ${source === 'nearby' ? 'touch-none' : ''}`}
     >
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: tap-to-play */}
       <div
-        // Phase 28.1 (2026-06-15): in Nearby mode the inner div owns the
-        // vertical gesture — `touch-none` blocks the browser's native pan so
-        // swipes never reach the outer listing-feed scroller. In hero mode we
-        // keep `touch-pan-y` so vertical pans pass through to the snap-y
-        // listing scroller as before, and only horizontal swipes (heroVideos
-        // pool) are intercepted here.
-        className={`absolute inset-0 ${source === 'nearby' ? 'touch-none' : 'touch-pan-y'}`}
+        // Hero mode keeps `touch-pan-y` so vertical pans pass through to the
+        // snap-y listing scroller, and only horizontal swipes (heroVideos
+        // pool) are intercepted here. Nearby's `touch-none` lives on the
+        // section above (see comment).
+        className={`absolute inset-0 ${source === 'nearby' ? '' : 'touch-pan-y'}`}
         onClick={onTap}
         onTouchStart={(e) => {
           if (e.touches.length !== 1) return;
