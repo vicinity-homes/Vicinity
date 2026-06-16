@@ -2,6 +2,81 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-16 — Phase 27.3: preview-as-buyer (cookie-based view-switch for agents)
+
+**Objective**: Owner asked for a way for agents to see the buyer surface
+without signing out. Login churn was the friction — Vivian (and any
+agent) needs to QA the buyer journey on the same browser session
+they're logged into to manage listings. Owner explicitly rejected
+adding a naked "buyer view" link to nav.
+
+**Decision (方案 A — render-only override)**: a httpOnly cookie
+`vicinity_preview_as_buyer=1` flips the role wrappers from `agent` to
+`buyer` for the duration of preview. The Supabase session is
+**unchanged** — server actions still run with the agent's `auth.uid()`.
+This keeps RLS, audit trails, and write paths honest. Considered the
+heavier alternative (middleware role spoofing + session swap) and
+rejected it: too easy to leak agent writes done "as buyer", much
+larger blast radius if the cookie ever leaked, and harder to reason
+about than a pure rendering flag.
+
+**Why httpOnly + server action toggle**: client JS can't flip the
+cookie, so a buyer who somehow grabs an agent session can't quietly
+enter "preview" to see admin chrome — entry goes through a server
+action that re-checks `agents` table membership.
+
+**Why dashboard layout redirects out**: preview only flips chrome, not
+routing. Without the redirect, an agent in preview clicking a stale
+"/dashboard" bookmark would land on admin pages with buyer chrome —
+confusing and a phantom-write footgun. Layout-level `redirect()` to
+`/communities` makes "in preview ⇒ no admin pages" a single invariant.
+
+**Actions**:
+- `lib/auth/preview.ts` — `PREVIEW_COOKIE` + `isPreviewingAsBuyer()`
+  helper. Server-only, reads from `next/headers` cookies.
+- `app/_actions/preview.ts` — `enableBuyerPreview()` (re-validates
+  agent row before setting cookie, redirects to `/communities`) and
+  `disableBuyerPreview()` (idempotent, redirects back to `/dashboard`).
+- `app/_components/PreviewBanner.tsx` — sticky top banner ("Previewing
+  as buyer · Exit preview"). Only renders when cookie is set AND user
+  has an agents row. Mounted once in root layout.
+- `app/_components/BottomNavWrapper.tsx` — after resolving role, if
+  `agent` + preview cookie ⇒ flip to `buyer` so buyer's 5-tab nav
+  (Community / Nearby / ▶Explore / Saved / Me) replaces the agent's.
+- `app/_components/SiteHeaderWrapper.tsx` — same flip for desktop
+  chrome. Brokerage hidden during preview so the buyer header doesn't
+  leak agent-context branding.
+- `app/dashboard/layout.tsx` — guards `/dashboard/*` with
+  `redirect('/communities')` when preview cookie is set.
+- `app/(public)/profile/page.tsx` — adds "Preview as buyer" submit
+  button under "View public profile" in the agent profile block. Form
+  posts to `enableBuyerPreview` server action.
+- `app/layout.tsx` — mounts `<PreviewBanner />` above `<SiteHeaderWrapper />`.
+
+**Verification**:
+- `npx tsc --noEmit` clean.
+- `npx next build` green; `/communities` and `/c/[slug]` both build as
+  dynamic routes (expected — they're authed via root layout chrome).
+- Manual flow path: agent → /profile → "Preview as buyer" → cookie set
+  → redirected to /communities → BottomNav shows buyer tabs, banner
+  visible → click "Exit preview" → cookie cleared → redirected to
+  /dashboard.
+
+**Why no buyer-specific write guards in V1**: agents in preview can't
+reach upload / edit / new-listing UI because the dashboard layout
+bounces them out before render. Buyer surfaces (`/communities`,
+`/c/[slug]`, `/browse`, `/saved`, `/profile`) don't expose agent-write
+buttons. Re-evaluate if a buyer page ever sprouts an agent-context
+button (V2).
+
+**Out of scope (deferred)**:
+- Community-scoped swipe filter (clicking a tile on `/c/[slug]` lands
+  on `/browse/feed?community=...&video=...` but those query params
+  aren't consumed yet — phase 27.4).
+- Multi-community upload UI (currently videos are 1:1 to a community
+  via `community_videos.community_id`; the `community_video_extra_links`
+  N:N table is in place but no UI writes to it yet).
+
 ## 2026-06-16 02:27 UTC — Listing edit page: header utility links + status row + form chrome cleanup
 
 **Objective**: Owner flagged the listing edit page top section as cluttered.

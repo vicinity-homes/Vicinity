@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { isPreviewingAsBuyer } from '@/lib/auth/preview';
 /**
  * Dashboard layout — gates all /dashboard/* routes behind auth.
  *
@@ -18,6 +19,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   if (!user) {
     redirect('/login?redirect=%2Fdashboard');
+  }
+
+  // Phase 27.3: while previewing as buyer, /dashboard/* should bounce
+  // back to the buyer surface — so an agent in preview mode can't
+  // accidentally land on admin pages by clicking a stale link.
+  if (await isPreviewingAsBuyer()) {
+    redirect('/communities');
   }
 
   return (

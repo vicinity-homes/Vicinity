@@ -15,6 +15,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { isPreviewingAsBuyer } from '@/lib/auth/preview';
 import { BottomNav, type ViewerRole } from './BottomNav';
 
 export async function BottomNavWrapper() {
@@ -32,6 +33,11 @@ export async function BottomNavWrapper() {
       .eq('user_id', user.id)
       .maybeSingle()) as { data: { id: string } | null };
     role = agent ? 'agent' : 'buyer';
+  }
+
+  // Phase 27.3: agents previewing as buyer see the buyer nav.
+  if (role === 'agent' && (await isPreviewingAsBuyer())) {
+    role = 'buyer';
   }
 
   return <BottomNav role={role} />;

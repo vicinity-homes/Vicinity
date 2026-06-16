@@ -3,6 +3,21 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.29.0 — 2026-06-16
+
+### ✨ Features
+- **Community is now the front door.** The buyer's bottom navigation has been redesigned around what people actually come to Vicinity for. The leftmost tab is now **Community** — a grid of every neighborhood we cover, each opening into a landing page with all the videos for that area and a one-tap shortcut to "see active listings here." This is your storefront for an area, not just a side feature.
+- **A tappable Explore button in the middle of the nav.** The center of the buyer's bottom nav is now a raised gold action button that goes straight into the swipe feed — the way Instagram puts the "create" button in the middle. Browsing listings is what buyers come to do, so it gets the most prominent spot.
+- **Agents have a Community tab too.** Your bottom nav now shows: Dashboard · **Community** · ＋New · Leads · Me. The new Community tab opens your community management page (the same one you use today for uploading neighborhood videos), so it's one tap instead of two.
+- **Preview as buyer — without signing out.** Open your profile page and tap **Preview as buyer**. The whole site flips to the buyer view (community-first nav, no dashboard chrome) so you can see exactly what your clients see. A gold banner across the top reminds you that you're previewing; tap **Exit preview** any time to return to your dashboard. Your account, listings, and login session are untouched — this only changes what you're looking at.
+
+### 🛠 Improvements
+- **The "Home" tab is gone, replaced by Community.** Home was just the listing browser; now the listing browser lives behind the new center button, and the leftmost tab is the more meaningful Community.
+
+### 📋 Known Issues
+- Tapping a video on a community page opens the general swipe feed (it doesn't yet filter to that one community's videos). This is the next change.
+- A video is currently tied to one community at upload time. Soon you'll be able to tag a video to multiple communities (e.g. a school-run video that belongs to two adjacent neighborhoods).
+
 ## v0.28.6 — 2026-06-16
 
 ### ✨ Improvements

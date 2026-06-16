@@ -8,6 +8,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { isPreviewingAsBuyer } from '@/lib/auth/preview';
 import { SiteHeader } from './SiteHeader';
 import type { ViewerRole } from './nav-config';
 
@@ -36,13 +37,15 @@ export async function SiteHeaderWrapper() {
   };
 
   if (agent) {
+    // Phase 27.3: agent previewing as buyer → render buyer chrome.
+    const previewAsBuyer = await isPreviewingAsBuyer();
     const source = agent.name?.trim() || user.email?.trim() || '?';
     return (
       <SiteHeader
-        role="agent"
+        role={previewAsBuyer ? 'buyer' : 'agent'}
         initial={source.charAt(0) || '?'}
         displayName={agent.name?.trim() || user.email || null}
-        brokerage={agent.brokerage}
+        brokerage={previewAsBuyer ? null : agent.brokerage}
         avatarUrl={agent.headshot_url}
       />
     );
