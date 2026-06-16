@@ -2,6 +2,46 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-16 02:03 UTC — Dashboard listings: 3-state tabs + Archived filter fix
+
+**Objective**: Owner reported (1) the Archived tab on `/dashboard` shows
+non-archived listings (a Published row was visible under Archived); (2) the
+schema has 3 listing states (`draft | published | archived`) but the UI only
+exposed 2 tabs (Active / Archived), collapsing draft + published into one.
+
+**Actions** (`app/dashboard/page.tsx`):
+- Replaced `?archived=1` toggle with `?status=draft|published|archived`
+  (legacy `?archived=1` redirects logically to `archived`). Default tab =
+  `published`.
+- Replaced `query.neq('status','archived')` (active branch) / no-filter
+  (archived branch — the bug) with explicit `query.eq('status', activeTab)`.
+- Added per-status counts shown next to each tab (one extra select on
+  `status`, RLS-scoped). Tabs render as `Draft 2 · Published 5 · Archived 1`.
+- Per-tab empty-state copy: "No drafts." / "No published listings — publish
+  one to share it." / "No archived listings."
+- Onboarding CTA grid now only shows when ALL counts are zero (was: any time
+  active list was empty), so a new agent with one draft no longer sees the
+  CTA grid on the Published tab.
+
+**Decisions**:
+- Default = Published (not Active=draft+published) — matches what an agent
+  most often wants to see; drafts are work-in-progress noise.
+- Counts inline rather than as separate badges — single glance, low visual
+  weight, helps agents notice unfinished drafts.
+- Kept `?archived=1` as a back-compat alias mapped to `status=archived` so
+  any bookmarks / email links keep working.
+
+**Issues**: Original bug was a missing `else` branch — `if (!showArchived)
+query.neq('status','archived')` filtered Active correctly but Archived ran
+unfiltered, returning everything. Tests would have caught this; we don't
+have any on this page.
+
+**Resolution**: tsc clean, `npm run build` green, pushed to main.
+
+**Next steps**: None for this fix. Future: consider a `Listed Date` /
+`Days on market` column once we track it; consider a "Recently archived"
+sub-sort.
+
 ## 2026-06-15 — Nearby pool: desktop wheel + arrow buttons, drop blurb
 
 **Objective**: Owner: (1) on Mac the Nearby pool can't be advanced — touch

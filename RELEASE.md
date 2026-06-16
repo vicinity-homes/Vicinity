@@ -3,6 +3,14 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.28.5 — 2026-06-16
+
+### 🐛 Bug Fixes
+- **Archived tab now actually filters.** Previously the Archived tab on the dashboard was showing non-archived listings — clicking it didn't narrow anything down. It now shows only archived listings.
+
+### ✨ Improvements
+- **Three listing tabs instead of two.** The dashboard now has separate Draft / Published / Archived tabs (it used to merge Draft + Published into one "Active" tab, making it hard to see at a glance which listings were still unfinished). Each tab shows a count next to its name, and the default view is Published.
+
 ## v0.28.4 — 2026-06-15
 
 ### 🐛 Bug Fixes

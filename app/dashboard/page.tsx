@@ -33,8 +33,10 @@ type ListingRow = {
   updated_at: string;
 };
 
+type StatusTab = 'draft' | 'published' | 'archived';
+
 interface PageProps {
-  searchParams: Promise<{ archived?: string }>;
+  searchParams: Promise<{ status?: string; archived?: string }>;
 }
 
 function fmtPrice(n: number | null): string | null {
@@ -68,8 +70,11 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default async function DashboardHomePage({ searchParams }: PageProps) {
-  const { archived } = await searchParams;
-  const showArchived = archived === '1';
+  const params = await searchParams;
+  // Back-compat: legacy ?archived=1 → status=archived. Default = published.
+  const rawStatus = params.status ?? (params.archived === '1' ? 'archived' : 'published');
+  const activeTab: StatusTab =
+    rawStatus === 'draft' || rawStatus === 'archived' ? rawStatus : 'published';
 
   const supabase = await createClient();
   const {
@@ -86,17 +91,26 @@ export default async function DashboardHomePage({ searchParams }: PageProps) {
   const agentSlug = agentRow?.slug ?? null;
   const agentId = agentRow?.id ?? null;
 
+  // Counts per status — one query, group in JS. Cheap (RLS-scoped to agent).
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-  let query = (supabase as any)
+  const { data: allStatuses } = (await (supabase as any)
+    .from('listings')
+    .select('status')) as { data: Array<{ status: string }> | null };
+  const counts = { draft: 0, published: 0, archived: 0 } as Record<StatusTab, number>;
+  for (const r of allStatuses ?? []) {
+    if (r.status === 'draft' || r.status === 'published' || r.status === 'archived') {
+      counts[r.status as StatusTab] += 1;
+    }
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+  const query = (supabase as any)
     .from('listings')
     .select(
       'id, slug, address, city, state, status, price, beds, baths, sqft, cover_url, updated_at',
     )
+    .eq('status', activeTab)
     .order('updated_at', { ascending: false });
-
-  if (!showArchived) {
-    query = query.neq('status', 'archived');
-  }
 
   const { data: listings } = (await query) as { data: ListingRow[] | null };
   const rows = listings ?? [];
@@ -149,7 +163,7 @@ export default async function DashboardHomePage({ searchParams }: PageProps) {
           redundant once the agent has stuff to look at, so we replace them
           with state worth seeing.
       */}
-      {rows.length === 0 && !showArchived ? (
+      {rows.length === 0 && activeTab === 'published' && counts.draft === 0 && counts.archived === 0 ? (
         <section className="mb-10 grid grid-cols-3 gap-2 sm:gap-5">
           <Link
             href="/dashboard/listings/new"
@@ -218,29 +232,37 @@ export default async function DashboardHomePage({ searchParams }: PageProps) {
       <div className="mb-4 flex items-center justify-between">
         <div className="text-[11px] uppercase tracking-widest text-gold">Your Listings</div>
         <div className="flex items-center gap-2 text-xs">
-          <Link
-            href="/dashboard"
-            className={`rounded-full px-3 py-1 ${
-              !showArchived ? 'bg-bronze/30 text-cream' : 'text-cream/60 hover:text-cream'
-            }`}
-          >
-            Active
-          </Link>
-          <Link
-            href="/dashboard?archived=1"
-            className={`rounded-full px-3 py-1 ${
-              showArchived ? 'bg-bronze/30 text-cream' : 'text-cream/60 hover:text-cream'
-            }`}
-          >
-            Archived
-          </Link>
+          {(['draft', 'published', 'archived'] as const).map((tab) => {
+            const isActive = activeTab === tab;
+            const label = tab === 'draft' ? 'Draft' : tab === 'published' ? 'Published' : 'Archived';
+            return (
+              <Link
+                key={tab}
+                href={tab === 'published' ? '/dashboard' : `/dashboard?status=${tab}`}
+                className={`rounded-full px-3 py-1 ${
+                  isActive ? 'bg-bronze/30 text-cream' : 'text-cream/60 hover:text-cream'
+                }`}
+              >
+                {label}
+                {counts[tab] > 0 && (
+                  <span className={`ml-1.5 ${isActive ? 'text-cream/70' : 'text-cream/40'}`}>
+                    {counts[tab]}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
         </div>
       </div>
 
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-bronze/40 border-dashed bg-ink2 px-8 py-16 text-center">
           <p className="text-cream/70 text-sm">
-            {showArchived ? 'No archived listings.' : 'No listings yet — create your first one.'}
+            {activeTab === 'draft'
+              ? 'No drafts.'
+              : activeTab === 'archived'
+                ? 'No archived listings.'
+                : 'No published listings — publish one to share it.'}
           </p>
         </div>
       ) : (
