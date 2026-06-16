@@ -94,6 +94,17 @@ export default async function CommunityFeedPage({
     category: v.category,
   }));
 
+  // Phase 27.6 (2026-06-17): right-rail "View N listings" button on the
+  // feed needs an accurate count — same query shape as `/c/[slug]` so the
+  // two surfaces never disagree. `published` (not `'active'`) per the
+  // listings.status check constraint in 0001_init.sql.
+  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+  const { count: activeListings } = await (supabase as any)
+    .from('listings')
+    .select('id', { count: 'exact', head: true })
+    .eq('community_id', community.id)
+    .eq('status', 'published');
+
   // Resolve `start` (video id) → array index. Bad/missing falls to 0.
   let initialIndex = 0;
   if (start) {
@@ -112,6 +123,7 @@ export default async function CommunityFeedPage({
       }}
       videos={feedVideos}
       initialIndex={initialIndex}
+      activeListingsCount={activeListings ?? 0}
     />
   );
 }

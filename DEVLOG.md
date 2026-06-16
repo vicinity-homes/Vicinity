@@ -2,6 +2,33 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-17 — Phase 27.6: right-rail "View N listings" CTA on community video feed
+
+**Objective**: Vivian-reported follow-up. After the badge on `/c/[slug]` was
+fixed (Phase 27.5), the swipe feed at `/c/[slug]/feed` still had no way to
+get to the community's listings — buyer would have to swipe back, hit the
+badge, then continue. Add a right-rail CTA on the feed itself, and make sure
+both surfaces show the same set of listings.
+
+**Actions**:
+- `app/(public)/c/[slug]/feed/page.tsx`: count published listings inside the
+  community (same query as `/c/[slug]`) and pass as `activeListingsCount`
+  prop. Same `status='published'` filter — single source of truth across
+  every community surface (`/c/[slug]` badge, the right-rail button below,
+  `/browse?community=` grid, `fetchBrowseCardsByCommunitySlug`).
+- `app/(public)/c/[slug]/feed/CommunityVideoFeed.tsx`: add `HouseIcon` +
+  pill button at the top of the right rail (above Like). Pill shows
+  `<count> listings` and routes to `/browse?community=<slug>` — exact same
+  destination as the `/c/[slug]` badge, so the two entry points land on
+  one shared scoped-grid view. Hidden when count is 0 (no listings → no
+  CTA, avoids dead-button UX).
+- Existing video feed query already pulls from `community_video_membership`
+  (primary + extra link kinds), so the videos shown in feed are the same
+  set as the tile grid on `/c/[slug]`. No change needed there — already
+  one source of truth.
+
+**Verification**: `npx tsc --noEmit` clean. Visual check pending Vercel.
+
 ## 2026-06-17 — Phase 27.5 hotfix: community page showed "0 active listings" + badge dropped to global Explore
 
 **Objective**: Vivian-reported bug. On `/c/peachtree-corners` the metric tag

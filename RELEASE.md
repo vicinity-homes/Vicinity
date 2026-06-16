@@ -3,6 +3,15 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.32.5 — 2026-06-17
+
+### ✨ Improvements
+- **Jump straight from a community's videos to its listings.** While
+  swiping through a community's neighborhood videos, you'll now see a gold
+  "N listings" pill on the right-rail. Tap it to go directly to that
+  community's homes for sale — no need to swipe back to the community page
+  first. The pill hides itself if the community has no active listings.
+
 ## v0.32.4 — 2026-06-17
 
 ### 🐛 Bug Fixes

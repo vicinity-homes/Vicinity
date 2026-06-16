@@ -119,6 +119,25 @@ function BackArrowIcon() {
   );
 }
 
+function HouseIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width={22}
+      height={22}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 11.5 12 4l9 7.5" />
+      <path d="M5 10v10h14V10" />
+    </svg>
+  );
+}
+
 const CATEGORY_META = new Map(COMMUNITY_VIDEO_CATEGORIES.map((m) => [m.id, m] as const));
 
 function categoryLabel(id: string | null): { label: string; blurb?: string } | null {
@@ -327,10 +346,12 @@ export function CommunityVideoFeed({
   community,
   videos,
   initialIndex = 0,
+  activeListingsCount = 0,
 }: {
   community: CommunityFeedCommunity;
   videos: CommunityFeedVideo[];
   initialIndex?: number;
+  activeListingsCount?: number;
 }) {
   const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(initialIndex);
@@ -542,13 +563,32 @@ export function CommunityVideoFeed({
         </button>
       </div>
 
-      {/* Right rail — Like / Save / Sound. Position matches BrowseFeed
-       * (Phase 28 pattern): bottom-right above the safe-area, NOT vertically
-       * centered. Targets community, not video. */}
+      {/* Right rail — Listings CTA / Like / Save / Sound. Position matches
+       * BrowseFeed (Phase 28 pattern): bottom-right above the safe-area, NOT
+       * vertically centered. Like/Save target the community, not the video.
+       *
+       * Phase 27.6 (2026-06-17): "View N listings" pill at the top of the
+       * rail. Same destination as the badge on `/c/[slug]` —
+       * `/browse?community=<slug>` — so the two surfaces share one
+       * scoped-grid view of the community's published listings. Hidden when
+       * count is 0 (no homes for sale yet). */}
       <div
         className="absolute right-3 z-20 flex flex-col items-center gap-3"
         style={{ bottom: 'max(6rem, calc(env(safe-area-inset-bottom) + 5rem))' }}
       >
+        {activeListingsCount > 0 && (
+          <button
+            type="button"
+            onClick={() => router.push(`/browse?community=${community.slug}`)}
+            aria-label={`View ${activeListingsCount} ${activeListingsCount === 1 ? 'listing' : 'listings'} in ${community.name}`}
+            className="flex flex-col items-center gap-0.5 rounded-2xl border border-gold/60 bg-gold/15 px-3 py-2 text-gold backdrop-blur transition hover:border-gold hover:bg-gold/25"
+          >
+            <HouseIcon />
+            <span className="font-medium text-[10px] leading-tight">
+              {activeListingsCount} {activeListingsCount === 1 ? 'listing' : 'listings'}
+            </span>
+          </button>
+        )}
         <button
           type="button"
           onClick={toggleLike}
