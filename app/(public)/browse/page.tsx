@@ -1,5 +1,9 @@
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
-import { fetchBrowseCards } from '@/lib/feed/browse-cards';
+import {
+  fetchBrowseCards,
+  fetchBrowseCardsByCommunitySlug,
+} from '@/lib/feed/browse-cards';
+import { createClient } from '@/lib/supabase/server';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -18,14 +22,44 @@ export const dynamic = 'force-dynamic';
  * vertical swipe feed (which felt aggressive on first impression), we show
  * a Pinterest-style grid first. Tapping any card launches the swipe feed
  * starting at that listing — Xiaohongshu / Douyin "explore → detail" pattern.
+ *
+ * Phase 27.5 (2026-06-16): also accepts `?community=<slug>` to scope the
+ * grid to active (published) listings inside a single community. Linked
+ * from the "N active listings" badge on `/c/[slug]`. Unknown / empty slug
+ * silently falls through to the global grid so the page is never empty.
  */
-export default async function BrowsePage() {
-  const cards = await fetchBrowseCards();
+export default async function BrowsePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ community?: string }>;
+}) {
+  const { community: communitySlug } = await searchParams;
+
+  const scopedCards = communitySlug
+    ? await fetchBrowseCardsByCommunitySlug(communitySlug)
+    : null;
+  const cards = scopedCards && scopedCards.length > 0 ? scopedCards : await fetchBrowseCards();
+  const isCommunityScoped = Boolean(scopedCards && scopedCards.length > 0);
+
+  // Resolve the community name for the header label when scoped.
+  let communityLabel: string | null = null;
+  if (isCommunityScoped && communitySlug) {
+    const supabase = await createClient();
+    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+    const { data } = (await (supabase as any)
+      .from('communities')
+      .select('name')
+      .eq('slug', communitySlug)
+      .maybeSingle()) as { data: { name: string } | null };
+    communityLabel = data?.name ?? null;
+  }
 
   return (
     <main className="min-h-dvh bg-ink pb-20 text-cream md:pb-0">
       <header className="sticky top-0 z-20 flex items-center justify-center border-cream/10 border-b bg-ink/85 px-4 py-3 backdrop-blur-md md:hidden">
-        <div className="font-medium text-cream/80 text-sm uppercase tracking-wider">Explore</div>
+        <div className="font-medium text-cream/80 text-sm uppercase tracking-wider">
+          {isCommunityScoped && communityLabel ? `Listings in ${communityLabel}` : 'Explore'}
+        </div>
       </header>
 
       {cards.length === 0 ? (
@@ -42,7 +76,7 @@ export default async function BrowsePage() {
                 key={card.listing.id}
                 href={
                   card.mediaKind === 'video'
-                    ? `/browse/feed?start=${encodeURIComponent(card.listing.id)}`
+                    ? `/browse/feed?${isCommunityScoped ? `community=${encodeURIComponent(communitySlug as string)}&` : ''}start=${encodeURIComponent(card.listing.id)}`
                     : `/v/${card.agent.slug}/${card.listing.slug}`
                 }
                 prefetch={false}

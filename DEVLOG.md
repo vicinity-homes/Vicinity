@@ -2,6 +2,41 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-17 — Phase 27.5 hotfix: community page showed "0 active listings" + badge dropped to global Explore
+
+**Objective**: Vivian-reported bug. On `/c/peachtree-corners` the metric tag
+read "0 active listings" even though the same listings appeared in `/nearby`.
+Tapping the badge also landed on the global Explore grid instead of a
+community-scoped listing view.
+
+**Root causes** (two independent bugs in the same component):
+1. `app/(public)/c/[slug]/page.tsx` counted listings with `eq('status','active')`,
+   but the `listings.status` check constraint in `0001_init.sql` only allows
+   `'draft' | 'published' | 'archived'`. The count was always 0. Every other
+   surface (`fetchBrowseCardsByCommunitySlug`, `/nearby`) correctly uses
+   `'published'` — this site was the lone outlier.
+2. The badge linked to `/browse?community=<slug>`, but `/browse/page.tsx` (the
+   grid) never read the `community` search param — only `/browse/feed` did.
+   So the link silently fell through to the unscoped global grid.
+
+**Actions**:
+- `app/(public)/c/[slug]/page.tsx`: count `status = 'published'`.
+- `app/(public)/browse/page.tsx`: accept `?community=<slug>`. When set and the
+  community has ≥1 published listing, render via `fetchBrowseCardsByCommunitySlug`,
+  swap the mobile header to `Listings in <Name>`, and propagate `community=`
+  into the swipe-feed deep link so a follow-on swipe stays community-scoped
+  (matches the existing `/browse/feed?community=` plumbing). Unknown / empty
+  community silently falls back to the global grid — same forgiving behavior
+  the swipe page already had.
+
+**Verification**: `npx tsc --noEmit` clean. Visual / count verification waits
+on Vercel preview against the Peachtree Corners fixture.
+
+**Learnings**: The string `'active'` reads as obviously-correct English when
+you're writing the page, which is why this slipped review. Worth a one-line
+guard test asserting `listings.status` is one of the three allowed values
+when used as an equality filter.
+
 ## 2026-06-17 — Phase 28.3: Nearby vertical swipe leaked to next listing on iOS
 
 **Objective**: Fix a bug surfaced by the owner from Vivian's testing — on the

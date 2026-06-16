@@ -84,7 +84,7 @@ export default async function CommunityPage({
     .from('listings')
     .select('id', { count: 'exact', head: true })
     .eq('community_id', community.id)
-    .eq('status', 'active');
+    .eq('status', 'published');
 
   // Resolve hero cover: explicit pick → uploaded image → first ready video poster.
   const firstReadyVideo = videos[0] ?? null;

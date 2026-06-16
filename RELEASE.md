@@ -3,6 +3,17 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.32.4 — 2026-06-17
+
+### 🐛 Bug Fixes
+- **Community page now shows the correct active listing count.** A community
+  page was reading "0 active listings" even when active listings existed in
+  that area. The count is now accurate.
+- **"N active listings" badge now opens the right page.** Tapping the badge
+  on a community page used to drop you onto the global Explore grid. It now
+  opens an Explore grid filtered to listings inside that community, with
+  the header reading "Listings in &lt;Community Name&gt;".
+
 ## v0.32.3 — 2026-06-17
 
 ### 🐛 Bug Fixes
