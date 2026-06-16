@@ -66,7 +66,7 @@ export default async function CommunityUploadPage({
     );
   }
 
-  const [{ data: videosRaw }, { data: photosRaw }] = await Promise.all([
+  const [{ data: videosRaw }, { data: photosRaw }, { data: othersRaw }] = await Promise.all([
     // biome-ignore lint/suspicious/noExplicitAny: stub generated types
     (supabase as any)
       .from('community_videos')
@@ -87,7 +87,24 @@ export default async function CommunityUploadPage({
       .order('sort_order', { ascending: true }) as Promise<{
       data: CommunityPhotoDbRow[] | null;
     }>,
+    // Phase 27.4 (2026-06-16): list of OTHER communities so the multi-tag
+    // chip row in the video panel can offer them as options. Excludes the
+    // current community (its videos already implicitly belong here via the
+    // primary FK). Cap at 200 to keep the page payload bounded; agents
+    // with more should still see the most relevant ones first via name
+    // ordering.
+    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+    (supabase as any)
+      .from('communities')
+      .select('id, name, city, state')
+      .neq('id', id)
+      .order('name', { ascending: true })
+      .limit(200) as Promise<{
+      data: { id: string; name: string; city: string | null; state: string }[] | null;
+    }>,
   ]);
+
+  const availableCommunities = othersRaw ?? [];
 
   const dbPhotos = photosRaw ?? [];
   const signed = await signCommunityPhotoUrls(dbPhotos.map((p) => p.storage_path));
@@ -133,6 +150,7 @@ export default async function CommunityUploadPage({
         communityId={community.id}
         initialVideos={videosRaw ?? []}
         initialPhotos={initialPhotos}
+        availableCommunities={availableCommunities}
       />
     </div>
   );

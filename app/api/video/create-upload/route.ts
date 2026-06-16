@@ -238,5 +238,30 @@ async function handleCommunity(
     return NextResponse.json({ error: 'row_insert_failed' }, { status: 500 });
   }
 
+  // Phase 27.4 (2026-06-16): fan out extra community memberships to the
+  // side table. Best-effort: a failure here doesn't unwind the primary
+  // insert (the video is already reserved in CF Stream and the primary
+  // row is in place). We log + continue. Dedup IDs and exclude the
+  // primary parent so we don't double-count.
+  const extras = (input.extra_community_ids ?? []).filter(
+    (cid) => cid && cid !== input.parent_id,
+  );
+  const uniqueExtras = Array.from(new Set(extras));
+  if (uniqueExtras.length > 0) {
+    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+    const { error: linkErr } = await (supabase as any)
+      .from('community_video_extra_links')
+      .insert(
+        uniqueExtras.map((cid) => ({
+          video_id: row.id,
+          community_id: cid,
+        })),
+      );
+    if (linkErr) {
+      console.error('[create-upload] extra community links failed', linkErr);
+      // Don't fail the request — the primary upload still succeeded.
+    }
+  }
+
   return NextResponse.json({ uploadUrl, videoId, rowId: row.id });
 }

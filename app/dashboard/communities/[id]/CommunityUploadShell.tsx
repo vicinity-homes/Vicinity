@@ -14,7 +14,7 @@ import {
   CommunityPhotoPanel,
   type CommunityPhotoRow,
 } from '@/app/dashboard/communities/[id]/CommunityPhotoPanel';
-import { CommunityVideoPanel, type CommunityVideoRow } from './CommunityVideoPanel';
+import { CommunityVideoPanel, type CommunityOption, type CommunityVideoRow } from './CommunityVideoPanel';
 import {
   COMMUNITY_VIDEO_CATEGORIES,
   type CommunityVideoCategoryId,
@@ -29,10 +29,12 @@ export function CommunityUploadShell({
   communityId,
   initialVideos,
   initialPhotos,
+  availableCommunities,
 }: {
   communityId: string;
   initialVideos: CommunityVideoRow[];
   initialPhotos: CommunityPhotoRow[];
+  availableCommunities: CommunityOption[];
 }) {
   const [category, setCategory] = useState<CommunityVideoCategoryId>('walk_the_block');
   const meta = getCategoryMeta(category);
@@ -74,6 +76,7 @@ export function CommunityUploadShell({
         communityId={communityId}
         initialVideos={initialVideos}
         category={category}
+        availableCommunities={availableCommunities}
       />
 
       <CommunityPhotoPanel

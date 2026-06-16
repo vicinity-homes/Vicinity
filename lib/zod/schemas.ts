@@ -71,6 +71,12 @@ export const VideoCreateUpload = z.object({
   // (silent browser geolocation) for nearby queries but does not surface a
   // map / coords UI.
   address: z.string().max(200).optional(),
+  // Phase 27.4 (2026-06-16) — community-scope multi-tag. A video lives
+  // primarily in `parent_id` (its "home" community via the FK on
+  // community_videos.community_id) and additionally in N other
+  // communities via the `community_video_extra_links` side table. Cap at
+  // 10 to keep the request payload bounded and prevent runaway tagging.
+  extra_community_ids: z.array(z.string().uuid()).max(10).optional(),
 });
 export type VideoCreateUpload = z.infer<typeof VideoCreateUpload>;
 

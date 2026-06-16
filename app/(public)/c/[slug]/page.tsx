@@ -118,7 +118,7 @@ export default async function CommunityPage({
           {videos.map((v) => (
             <li key={v.id}>
               <Link
-                href={`/browse/feed?community=${community.slug}&video=${v.id}`}
+                href={`/browse/feed?community=${community.slug}`}
                 prefetch={false}
                 className="group relative block aspect-[9/16] overflow-hidden rounded-lg bg-ink2"
               >

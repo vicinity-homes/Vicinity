@@ -65,6 +65,11 @@ export type CommunityTarget = {
   // forward it on the wire; when empty we still send lat/lng (silent geo)
   // but no address.
   address?: string;
+  // Phase 27.4 (2026-06-16) — additional community memberships. The video
+  // is primarily uploaded under `communityId`; these extra IDs cause the
+  // server to also insert rows into `community_video_extra_links` so the
+  // same video shows up under multiple `/c/[slug]` pages.
+  extraCommunityIds?: string[];
 };
 export type UploadTarget = ListingTarget | CommunityTarget;
 
@@ -139,6 +144,9 @@ export function VideoUploader({ target, onUploaded }: Props) {
             ...(typeof target.lng === 'number' ? { lng: target.lng } : {}),
             ...(target.address && target.address.trim() !== ''
               ? { address: target.address.trim() }
+              : {}),
+            ...(target.extraCommunityIds && target.extraCommunityIds.length > 0
+              ? { extra_community_ids: target.extraCommunityIds }
               : {}),
           };
 

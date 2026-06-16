@@ -306,6 +306,42 @@ export async function fetchBrowseCards(): Promise<BrowseCard[]> {
 }
 
 /**
+ * Phase 27.4 (2026-06-16): community-scoped browse feed. Used when the
+ * buyer taps a tile on `/c/[slug]` — they should land in a swipe feed
+ * filtered to active listings inside that single community. We resolve
+ * the community by slug, then fan out the same join as the global
+ * fetcher so every BrowseCard renders identically (right-rail Nearby
+ * pool, agent card, etc.). Returns [] for unknown slug — the caller
+ * falls back to global feed.
+ */
+export async function fetchBrowseCardsByCommunitySlug(
+  slug: string,
+): Promise<BrowseCard[]> {
+  const supabase = await createClient();
+
+  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+  const { data: community } = (await (supabase as any)
+    .from('communities')
+    .select('id')
+    .eq('slug', slug)
+    .maybeSingle()) as { data: { id: string } | null };
+  if (!community) return [];
+
+  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+  const { data: rawListings } = (await (supabase as any)
+    .from('listings')
+    .select(
+      'id, slug, address, city, state, price, beds, baths, sqft, description, community_id, agent_id',
+    )
+    .eq('status', 'published')
+    .eq('community_id', community.id)
+    .order('created_at', { ascending: false })
+    .limit(FEED_LIMIT)) as { data: ListingRow[] | null };
+
+  return assembleCards(rawListings ?? [], supabase);
+}
+
+/**
  * Phase 21 (2026-06-13): fetch BrowseCards for a specific id set,
  * preserving the input order. Used by `/saved` to render the buyer's
  * saved listings via the same grid card shape as `/browse`. Filters

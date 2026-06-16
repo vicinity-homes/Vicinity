@@ -2,6 +2,73 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-16 — Phase 27.4: community-scoped browse feed + multi-community video tagging
+
+**Objective**: close the two follow-ups from Phase 27.3.
+
+1. `/c/[slug]` tile click → swipe feed scoped to that community's
+   active listings (instead of dropping the buyer back into the global
+   feed).
+2. Upload UI: let an agent tag a single video into multiple
+   communities at upload time (one block tour can be relevant to
+   several adjacent neighborhoods).
+
+**Why these two together**: they share the same plumbing — migration
+0023's `community_video_extra_links` side table + the
+`community_video_membership` view. Phase 27.3 added the schema; this
+phase makes both ends use it.
+
+**Browse feed change** — added `fetchBrowseCardsByCommunitySlug(slug)`
+in `lib/feed/browse-cards.ts`. Resolves slug → community.id, filters
+listings by `community_id`, and reuses the same `assembleCards()` join
+so every card renders identically (right-rail Nearby pool, agent card,
+photos fallback). `/browse/feed` page now reads `?community=<slug>`;
+unknown / empty slug falls back to global feed silently rather than
+404'ing — the swipe is a presentation tweak, not an addressable
+resource the user typed by hand. Updated `/c/[slug]` tile links to
+drop the now-unused `&video=<id>` param (cards are listing-shaped, not
+video-shaped — the community video shows up in the Nearby rail of the
+listings already).
+
+**Upload UI multi-tag** —
+- Wire schema `lib/zod/schemas.ts`: `extra_community_ids: uuid[].max(10)`.
+- Client `VideoUploader.CommunityTarget`: `extraCommunityIds?: string[]`,
+  passed on the wire when non-empty.
+- API route: after the primary `community_videos` insert succeeds,
+  fan-out into `community_video_extra_links`. Best-effort — link
+  failure logs but does NOT unwind the primary insert (CF Stream slot
+  is reserved, primary row exists; data integrity stays sane because
+  the side table is purely additive).
+- Server fetches up to 200 OTHER communities (excludes current via
+  `.neq('id', id)`) and threads them through
+  `CommunityUploadPage` → `CommunityUploadShell` →
+  `CommunityVideoPanel`. The panel renders chip toggles below the
+  uploader; tap to add, tap again to remove, capped at 10.
+
+**Pitfalls**:
+- N:N inserts run as anon. Migration 0023 RLS lets any authenticated
+  agent insert links, mirroring the V1 shared-community model on
+  `community_videos` itself. If we ever tighten community ownership,
+  the side-table policy needs the same tightening.
+- Fan-out is best-effort. If we later want strict atomicity (link rows
+  always present iff the primary row is), wrap both inserts in a
+  Postgres function or supabase rpc — leaving as best-effort for V1
+  because partial failure is recoverable from the UI (re-tag a video
+  after the fact, future phase).
+
+**Files**:
+- `lib/feed/browse-cards.ts` — new `fetchBrowseCardsByCommunitySlug`
+- `app/(public)/browse/feed/page.tsx` — `?community=<slug>` query param
+- `app/(public)/c/[slug]/page.tsx` — tile link param trim
+- `lib/zod/schemas.ts` — `extra_community_ids`
+- `components/dashboard/VideoUploader.tsx` — `extraCommunityIds` field
+- `app/api/video/create-upload/route.ts` — N:N fan-out after primary insert
+- `app/dashboard/communities/[id]/CommunityVideoPanel.tsx` — chip multi-select
+- `app/dashboard/communities/[id]/CommunityUploadShell.tsx` — prop pass-through
+- `app/dashboard/communities/[id]/upload/page.tsx` — fetch other communities
+
+**Verification**: `npx tsc --noEmit` clean, `npx next build` green.
+
 ## 2026-06-16 — Phase 27.3: preview-as-buyer (cookie-based view-switch for agents)
 
 **Objective**: Owner asked for a way for agents to see the buyer surface

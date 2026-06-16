@@ -3,6 +3,18 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.30.0 — 2026-06-16
+
+### ✨ Features
+- **Tap a community video → swipe its homes.** On a community page, tapping any video tile now drops you straight into the swipe feed filtered to active listings inside that community. Before, the tile sent you back to the global feed; now it acts like a "homes here" shortcut. If a community has no active listings yet, you fall through to the full feed so you're never staring at a blank screen.
+- **One video, multiple communities.** When agents upload a community video, they can now also tag it into other communities they manage. A walk-the-block tour that's relevant to both Foster City and San Mateo Park, for example, can be tagged once and will appear under both `/c/foster-city` and `/c/san-mateo-park` without re-uploading. Cap is 10 extra communities per video; the upload UI shows them as chips you tap to toggle.
+
+### 🛠 Improvements
+- The agent upload flow now lists every other community you can tag a video into, sorted alphabetically, in a clean chip row below the uploader. No menus, no re-picking categories — drop the video, tap the neighborhoods it belongs to, done.
+
+### 🧪 Known issues
+- The existing video editor doesn't yet show or let you edit which extra communities a video is tagged into after upload. For now, set the tags at upload time. An "edit tags" UI is a follow-up.
+
 ## v0.29.0 — 2026-06-16
 
 ### ✨ Features
