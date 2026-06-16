@@ -9,7 +9,6 @@
  * `actions.ts` header for rationale.
  */
 
-import { CopyLinkButton } from '@/app/dashboard/_components/CopyLinkButton';
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
@@ -156,13 +155,20 @@ export default async function EditListingPage({
             {listing.neighborhood ? ` · ${listing.neighborhood}` : ''}
           </p>
         </div>
-        <div className="flex shrink-0 flex-col items-start gap-1.5 sm:items-end">
+        <div className="flex shrink-0 flex-row items-center gap-2">
           {listing.status === 'published' && agent?.slug ? (
-            <CopyLinkButton path={`/v/${agent.slug}/${listing.slug}`} display="View public ↗" />
+            <a
+              href={`/v/${agent.slug}/${listing.slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-bronze/30 bg-ink px-3 py-1.5 text-xs text-cream/80 transition hover:border-gold hover:text-gold"
+            >
+              Public URL ↗
+            </a>
           ) : null}
           <a
             href={`/dashboard/listings/${listing.id}/analytics`}
-            className="inline-flex max-w-full items-center gap-2 rounded-full border border-bronze/30 bg-ink px-3 py-1.5 text-xs text-cream/80 transition hover:border-gold hover:text-gold"
+            className="inline-flex items-center gap-2 rounded-full border border-bronze/30 bg-ink px-3 py-1.5 text-xs text-cream/80 transition hover:border-gold hover:text-gold"
           >
             View analytics →
           </a>
