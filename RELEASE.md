@@ -3,6 +3,15 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.32.6 — 2026-06-17
+
+### ✨ Improvements
+- **Cleaner community-feed right rail.** The "view listings" shortcut is now
+  a small house icon button matching the Like / Save / Mute style, with the
+  number of available homes shown as a gold badge on its corner. It sits
+  directly below the heart so the rail looks like one consistent column
+  instead of a mix of pill + circles.
+
 ## v0.32.5 — 2026-06-17
 
 ### ✨ Improvements

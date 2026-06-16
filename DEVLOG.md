@@ -2,6 +2,24 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-17 — Phase 27.7: Listings CTA → circular icon + corner badge (matches Save/Like)
+
+**What:** Restyled the community feed's "View N listings" gold pill into a
+circular 12×12 icon button in the same shape family as Like/Save/Mute, with
+the count rendered as a gold corner badge (BrowseFeed `Nearby` badge
+pattern, `BrowseFeed.tsx:282`). Reordered the rail to **Like → Save →
+Listings → Mute** so Listings sits directly below Save as requested.
+
+**Why:** User feedback — pill was visually inconsistent with the rest of the
+rail. Single-shape rail with a badge for the only numeric affordance is
+cleaner and reuses an existing in-codebase pattern.
+
+**Files:** `app/(public)/c/[slug]/feed/CommunityVideoFeed.tsx`.
+
+**Verify:** `tsc --noEmit` clean. `/c/peachtree-corners/feed` shows four
+same-shape circles; third one (house) carries a gold "N" badge top-right,
+clicks to `/browse?community=peachtree-corners`.
+
 ## 2026-06-17 — Phase 27.6: right-rail "View N listings" CTA on community video feed
 
 **Objective**: Vivian-reported follow-up. After the badge on `/c/[slug]` was

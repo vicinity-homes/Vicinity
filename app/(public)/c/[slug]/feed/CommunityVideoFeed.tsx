@@ -563,65 +563,64 @@ export function CommunityVideoFeed({
         </button>
       </div>
 
-      {/* Right rail — Listings CTA / Like / Save / Sound. Position matches
-       * BrowseFeed (Phase 28 pattern): bottom-right above the safe-area, NOT
-       * vertically centered. Like/Save target the community, not the video.
-       *
-       * Phase 27.6 (2026-06-17): "View N listings" pill at the top of the
-       * rail. Same destination as the badge on `/c/[slug]` —
-       * `/browse?community=<slug>` — so the two surfaces share one
-       * scoped-grid view of the community's published listings. Hidden when
+      {/* Right rail: Like / Save / Listings / Mute.
+       * Phase 27.7 (2026-06-17): Listings becomes a 12×12 circular icon in
+       * the same family as the other rail buttons, with the count rendered
+       * as a gold badge on the top-right corner — visually consistent with
+       * BrowseFeed's "Nearby" badge pattern (BrowseFeed.tsx:282). Placed
+       * below Save: Like → Save → Listings → Mute. Same destination as
+       * the badge on `/c/[slug]` (`/browse?community=<slug>`). Hidden when
        * count is 0 (no homes for sale yet). */}
-      <div
-        className="absolute right-3 z-20 flex flex-col items-center gap-3"
-        style={{ bottom: 'max(6rem, calc(env(safe-area-inset-bottom) + 5rem))' }}
-      >
-        {activeListingsCount > 0 && (
-          <button
-            type="button"
-            onClick={() => router.push(`/browse?community=${community.slug}`)}
-            aria-label={`View ${activeListingsCount} ${activeListingsCount === 1 ? 'listing' : 'listings'} in ${community.name}`}
-            className="flex flex-col items-center gap-0.5 rounded-2xl border border-gold/60 bg-gold/15 px-3 py-2 text-gold backdrop-blur transition hover:border-gold hover:bg-gold/25"
-          >
-            <HouseIcon />
-            <span className="font-medium text-[10px] leading-tight">
-              {activeListingsCount} {activeListingsCount === 1 ? 'listing' : 'listings'}
-            </span>
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={toggleLike}
-          aria-label="Like community"
-          className={`flex h-12 w-12 items-center justify-center rounded-full border backdrop-blur transition ${
-            liked
-              ? 'border-rose-400/70 bg-rose-400/20 text-rose-400'
-              : 'border-cream/20 bg-ink/40 text-cream hover:border-cream/50'
-          }`}
-        >
-          <HeartIcon filled={liked} />
-        </button>
-        <button
-          type="button"
-          onClick={toggleSave}
-          aria-label="Save community"
-          className={`flex h-12 w-12 items-center justify-center rounded-full border backdrop-blur transition ${
-            saved
-              ? 'border-gold/70 bg-gold/20 text-gold'
-              : 'border-cream/20 bg-ink/40 text-cream hover:border-cream/50'
-          }`}
-        >
-          <BookmarkIcon filled={saved} />
-        </button>
-        <button
-          type="button"
-          onClick={() => setMuted((m) => !m)}
-          aria-label={muted ? 'Unmute' : 'Mute'}
-          className="flex h-12 w-12 items-center justify-center rounded-full border border-cream/20 bg-ink/40 text-cream backdrop-blur transition hover:border-cream/50"
-        >
-          {muted ? <SoundOffIcon /> : <SoundOnIcon />}
-        </button>
-      </div>
+       <div
+         className="absolute right-3 z-20 flex flex-col items-center gap-3"
+         style={{ bottom: 'max(6rem, calc(env(safe-area-inset-bottom) + 5rem))' }}
+       >
+         <button
+           type="button"
+           onClick={toggleLike}
+           aria-label="Like community"
+           className={`flex h-12 w-12 items-center justify-center rounded-full border backdrop-blur transition ${
+             liked
+               ? 'border-rose-400/70 bg-rose-400/20 text-rose-400'
+               : 'border-cream/20 bg-ink/40 text-cream hover:border-cream/50'
+           }`}
+         >
+           <HeartIcon filled={liked} />
+         </button>
+         <button
+           type="button"
+           onClick={toggleSave}
+           aria-label="Save community"
+           className={`flex h-12 w-12 items-center justify-center rounded-full border backdrop-blur transition ${
+             saved
+               ? 'border-gold/70 bg-gold/20 text-gold'
+               : 'border-cream/20 bg-ink/40 text-cream hover:border-cream/50'
+           }`}
+         >
+           <BookmarkIcon filled={saved} />
+         </button>
+         {activeListingsCount > 0 && (
+           <button
+             type="button"
+             onClick={() => router.push(`/browse?community=${community.slug}`)}
+             aria-label={`View ${activeListingsCount} ${activeListingsCount === 1 ? 'listing' : 'listings'} in ${community.name}`}
+             className="relative flex h-12 w-12 items-center justify-center rounded-full border border-cream/20 bg-ink/40 text-cream backdrop-blur transition hover:border-gold hover:text-gold"
+           >
+             <HouseIcon />
+             <span className="-right-1 -top-1 absolute rounded-full bg-gold px-1.5 py-0.5 font-semibold text-[9px] text-ink leading-none tabular-nums">
+               {activeListingsCount}
+             </span>
+           </button>
+         )}
+         <button
+           type="button"
+           onClick={() => setMuted((m) => !m)}
+           aria-label={muted ? 'Unmute' : 'Mute'}
+           className="flex h-12 w-12 items-center justify-center rounded-full border border-cream/20 bg-ink/40 text-cream backdrop-blur transition hover:border-cream/50"
+         >
+           {muted ? <SoundOffIcon /> : <SoundOnIcon />}
+         </button>
+       </div>
     </div>
   );
 }
