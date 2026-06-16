@@ -3,6 +3,15 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.32.1 — 2026-06-17
+
+### ✨ Improvements
+- **Swipe feeds now loop forever.** Both the main listings feed and a community's video feed used to hit a hard stop after the last card — you'd swipe up and nothing happened. Now they wrap around endlessly, the way TikTok and Reels do, so you can keep flicking without thinking about where the catalog ends.
+- **Community swipe surface cleaned up.** The action buttons (Like / Save / Sound) on a community video now sit in the bottom-right, the same spot they live on a listing — consistent across the app instead of two different layouts. Filenames like `Community_with_pool.mp4` no longer leak onto the screen; you see the category description instead.
+
+### 🐛 Bug Fixes
+- **Sign-in pill no longer overlaps the share button** in the community video feed header. The global account chrome is hidden inside the immersive feed, same as on the listing feed.
+
 ## v0.32.0 — 2026-06-17
 
 ### ✨ Features

@@ -2,6 +2,56 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-17 — Phase 27.9: community swipe UI parity + infinite swipe
+
+**Objective**: Vivian flagged four bugs on `/c/<slug>/feed`:
+1. "Sign In" pill (top-right global avatar slot) overlapped the Share
+   button in the feed header.
+2. Right-rail action stack was vertically centered; the rest of the
+   product (BrowseFeed listing cards) anchors it bottom-right.
+3. Caption block printed `video.title`, which defaults to the uploaded
+   filename — buyers saw `Community_with_pool.mp4` on screen.
+4. Both feeds (listing + community) hit a hard end after the last card —
+   the user expected TikTok-style endless looping.
+
+**Actions**:
+- `app/_components/nav-config.ts` + `TopRightAvatar.tsx`: hide chrome on
+  `/c/<slug>/feed` (regex). SiteHeader / BottomNav share `isChromeHidden`,
+  so all fixed-position chrome disappears in one place. Fixes #1.
+- `CommunityVideoFeed.tsx`: right rail switched from
+  `top-1/2 -translate-y-1/2` to BrowseFeed's
+  `bottom: max(6rem, calc(env(safe-area-inset-bottom) + 5rem))` pattern.
+  Caption no longer renders `video.title`; only the category blurb. We
+  already have `COMMUNITY_VIDEO_CATEGORIES[*].blurb` so the surface stays
+  informative without leaking filenames. Fixes #2 and #3.
+- Both `BrowseFeed.tsx` and `CommunityVideoFeed.tsx`: replaced the
+  finite `cards.map((c, idx) => ...)` with an `Array.from({ length:
+  totalCards }, ...)` loop that repeats the source array `loops` times.
+  When `activeIndex >= (loops-1) * sourceLen`, append another loop
+  (capped at 50 to bound DOM growth — ~hundreds of cards even for tiny
+  catalogs). IntersectionObserver effect re-runs on `totalCards` so
+  newly-appended copies get observed. Per-listing state
+  (`saved` / `liked` / `sourceByCard` / `cycleByCard`) is keyed by
+  `listing.id`, so all copies of the same listing share state — saving
+  on copy #1 reflects on copy #2. Fixes #4.
+
+**Decisions**:
+- Render-N-copies vs. true virtualization (rebase scrollTop at boundary):
+  picked render-N-copies because (a) snap-y scrolling + scrollTop rebase
+  fights the browser's snap engine and frequently jitters at the seam,
+  (b) catalog sizes are small (≤ tens of listings, ≤ tens of community
+  videos in V1), so 50 loops × ~30 items = 1500 DOM nodes — well within
+  budget when only the active ±1 actually mounts video elements via
+  `mountWindow`. Tradeoff: memory grows linearly with how far the user
+  swipes, but at 50 loops it's bounded.
+- Did NOT add a "you've looped back" indicator. TikTok doesn't, and the
+  whole point is for buyers to stop noticing the catalog boundary.
+- Caption: kept the bottom-32 offset (above the right-rail buttons) so
+  the blurb never collides with the action stack.
+
+**Verification**: tsc clean. `next build` green.
+**Next steps**: deploy → Vivian smoke-tests on her phone.
+
 ## 2026-06-17 — Phase 27.8: agent-pickable community covers
 
 **Objective**: previously the community "cover" (used in the buyer

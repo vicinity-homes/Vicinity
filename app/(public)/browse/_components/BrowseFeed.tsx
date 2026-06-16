@@ -970,6 +970,21 @@ export function BrowseFeed({
   const cardRefs = useRef<Map<number, HTMLElement>>(new Map());
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
+  // Phase 27.9 (2026-06-16): infinite swipe — repeat the cards array as the
+  // user nears the end. Keyed-by-listing.id state (saved / liked / source /
+  // cycle) is intentionally shared across loop copies; a buyer landing on
+  // copy #2 of the same listing sees its existing Like / Save state. Cap
+  // 50 loops to bound DOM growth.
+  const [loops, setLoops] = useState(2);
+  const totalCards = cards.length === 0 ? 0 : cards.length * loops;
+  useEffect(() => {
+    if (cards.length === 0) return;
+    if (activeIndex >= (loops - 1) * cards.length && loops < 50) {
+      setLoops((l) => l + 1);
+    }
+  }, [activeIndex, loops, cards.length]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-attach on totalCards growth
   useEffect(() => {
     const root = scrollerRef.current;
     if (!root) return;
@@ -987,7 +1002,7 @@ export function BrowseFeed({
     // biome-ignore lint/complexity/noForEach: Map iteration is cleanest with forEach
     cardRefs.current.forEach((el) => obs.observe(el));
     return () => obs.disconnect();
-  }, []);
+  }, [totalCards]);
 
   // Phase 9: when launched from the grid with ?start=<id>, jump to that
   // card without animation on first paint. Skipped when initialIndex is 0
@@ -1168,7 +1183,9 @@ export function BrowseFeed({
         className="h-full w-full snap-y snap-mandatory overflow-y-scroll overscroll-contain"
         style={{ scrollSnapType: 'y mandatory' }}
       >
-        {cards.map((card, idx) => {
+        {Array.from({ length: totalCards }, (_, idx) => {
+          const card = cards[idx % cards.length];
+          if (!card) return null;
           const id = card.listing.id;
           const cardSource = sourceByCard[id] ?? 'hero';
           const cardCycle = cycleByCard[id] ?? 0;
@@ -1176,7 +1193,7 @@ export function BrowseFeed({
           if (card.mediaKind === 'photo') {
             return (
               <PhotoCard
-                key={card.id}
+                key={`${card.id}-${idx}`}
                 card={card}
                 cycleIdx={cardCycle}
                 cardRef={(el) => setCardRef(idx, el)}
@@ -1195,7 +1212,7 @@ export function BrowseFeed({
           }
           return (
             <Card
-              key={card.id}
+              key={`${card.id}-${idx}`}
               card={card}
               source={cardSource}
               cycleIdx={cardCycle}

@@ -29,8 +29,12 @@ const HIDDEN_PREFIXES = [
   '/auth/',
 ];
 
+// Community swipe feed: /c/<slug>/feed — also immersive, hide chrome.
+const COMMUNITY_FEED_RE = /^\/c\/[^/]+\/feed(?:\/|$)/;
+
 function isHidden(pathname: string): boolean {
   if (pathname === '/') return true;
+  if (COMMUNITY_FEED_RE.test(pathname)) return true;
   return HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(p));
 }
 

@@ -97,8 +97,12 @@ export const CHROME_HIDDEN_PREFIXES = [
   '/auth/',
 ];
 
+// Community swipe feed: /c/<slug>/feed — immersive vertical video, hide chrome.
+const COMMUNITY_FEED_RE = /^\/c\/[^/]+\/feed(?:\/|$)/;
+
 export function isChromeHidden(pathname: string): boolean {
   if (pathname === '/') return true;
+  if (COMMUNITY_FEED_RE.test(pathname)) return true;
   return CHROME_HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(p));
 }
 

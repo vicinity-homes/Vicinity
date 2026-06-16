@@ -309,15 +309,16 @@ function VideoCard({
         </div>
       )}
 
-      {/* Bottom caption — title + blurb. */}
-      <div className="absolute right-20 bottom-20 left-4 text-cream">
-        {video.title && (
-          <div className="font-serif text-cream text-xl leading-tight tracking-tight drop-shadow">
-            {video.title}
-          </div>
-        )}
+      {/* Bottom caption — category blurb only.
+       * We deliberately do NOT render `video.title`: titles default to the
+       * uploaded filename (e.g. "Community_with_pool.mp4"), which leaks the
+       * file artifact onto the buyer surface. The category blurb already
+       * tells the buyer what they're watching ("A walk through the
+       * neighborhood, block by block."). When we add curated descriptions
+       * (post-V1), they replace the blurb here. */}
+      <div className="absolute right-20 bottom-32 left-4 text-cream">
         {cat?.blurb && (
-          <p className="mt-2 text-cream/80 text-sm leading-snug drop-shadow">{cat.blurb}</p>
+          <p className="text-cream/85 text-sm leading-snug drop-shadow">{cat.blurb}</p>
         )}
       </div>
     </section>
@@ -338,6 +339,19 @@ export function CommunityVideoFeed({
   const [muted, setMuted] = useState(false);
   const [liked, setLiked] = useState(false); // in-memory, V1
   const [saved, setSaved] = useState(false);
+  // Phase 27.9 (2026-06-16): infinite swipe — render the videos array
+  // multiple times. Start at 2 copies; whenever the user enters the last
+  // copy we append another. Capped at 50 copies (~hundreds of cards) to
+  // prevent unbounded DOM growth in marathon sessions; in practice no buyer
+  // swipes past 50× the catalog.
+  const [loops, setLoops] = useState(2);
+  const totalCards = videos.length === 0 ? 0 : videos.length * loops;
+  useEffect(() => {
+    if (videos.length === 0) return;
+    if (activeIndex >= (loops - 1) * videos.length && loops < 50) {
+      setLoops((l) => l + 1);
+    }
+  }, [activeIndex, loops, videos.length]);
   const deviceIdRef = useRef<string | null>(null);
   const cardRefs = useRef<Map<number, HTMLElement>>(new Map());
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -372,7 +386,9 @@ export function CommunityVideoFeed({
     };
   }, [muted]);
 
-  // Intersection observer → activeIndex.
+  // Intersection observer → activeIndex. Re-runs when totalCards changes so
+  // newly-appended loop copies get observed.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-attach on totalCards growth
   useEffect(() => {
     const root = scrollerRef.current;
     if (!root) return;
@@ -389,7 +405,7 @@ export function CommunityVideoFeed({
     );
     cardRefs.current.forEach((el) => obs.observe(el));
     return () => obs.disconnect();
-  }, []);
+  }, [totalCards]);
 
   // Jump to initialIndex on mount when ?start was passed.
   // biome-ignore lint/correctness/useExhaustiveDependencies: one-shot mount jump
@@ -463,10 +479,10 @@ export function CommunityVideoFeed({
     const set = new Set<number>();
     for (let d = -1; d <= 1; d++) {
       const i = activeIndex + d;
-      if (i >= 0 && i < videos.length) set.add(i);
+      if (i >= 0 && i < totalCards) set.add(i);
     }
     return set;
-  }, [activeIndex, videos.length]);
+  }, [activeIndex, totalCards]);
 
   if (videos.length === 0) {
     return (
@@ -482,17 +498,21 @@ export function CommunityVideoFeed({
       className="h-screen w-full snap-y snap-mandatory overflow-y-scroll bg-black"
       style={{ scrollSnapType: 'y mandatory' }}
     >
-      {videos.map((v, idx) => (
-        <VideoCard
-          key={v.id}
-          video={v}
-          shouldMount={mountWindow.has(idx)}
-          isActive={idx === activeIndex}
-          cardRef={(el) => setCardRef(idx, el)}
-          muted={muted}
-          onAutoplayBlocked={onAutoplayBlocked}
-        />
-      ))}
+      {Array.from({ length: totalCards }, (_, idx) => {
+        const v = videos[idx % videos.length];
+        if (!v) return null;
+        return (
+          <VideoCard
+            key={`${v.id}-${idx}`}
+            video={v}
+            shouldMount={mountWindow.has(idx)}
+            isActive={idx === activeIndex}
+            cardRef={(el) => setCardRef(idx, el)}
+            muted={muted}
+            onAutoplayBlocked={onAutoplayBlocked}
+          />
+        );
+      })}
 
       {/* Top header — Back + community name pill. */}
       <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-3 pt-3">
@@ -524,8 +544,13 @@ export function CommunityVideoFeed({
         </button>
       </div>
 
-      {/* Right rail — Like / Save / Sound. Targets community, not video. */}
-      <div className="-translate-y-1/2 absolute top-1/2 right-3 z-20 flex flex-col gap-4">
+      {/* Right rail — Like / Save / Sound. Position matches BrowseFeed
+       * (Phase 28 pattern): bottom-right above the safe-area, NOT vertically
+       * centered. Targets community, not video. */}
+      <div
+        className="absolute right-3 z-20 flex flex-col items-center gap-3"
+        style={{ bottom: 'max(6rem, calc(env(safe-area-inset-bottom) + 5rem))' }}
+      >
         <button
           type="button"
           onClick={toggleLike}
