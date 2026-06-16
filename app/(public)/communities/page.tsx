@@ -95,7 +95,6 @@ export default async function CommunitiesGridPage() {
               <li key={c.id}>
                 <Link
                   href={`/c/${c.slug}`}
-                  prefetch={false}
                   className="group relative block aspect-[9/16] overflow-hidden rounded-xl bg-ink2 ring-1 ring-bronze/30 transition hover:ring-gold/60"
                 >
                   {cover ? (

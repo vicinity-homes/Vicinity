@@ -3,6 +3,17 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.32.11 — 2026-06-17
+
+### 🐛 Bug Fixes
+- **Tapping a community card now responds instantly.** Previously the
+  first click on a community in the grid had a noticeable 1-3 second
+  pause before the community page started rendering. The grid now
+  prepares the next page in the background while you browse, runs the
+  page's data lookups in parallel, and paints a placeholder layout the
+  moment you click — so the page feels alive immediately even on slower
+  networks.
+
 ## v0.32.10 — 2026-06-17
 
 ### 🐛 Bug Fixes

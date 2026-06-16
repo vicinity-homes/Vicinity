@@ -2,6 +2,57 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-17 — perf: instant click on Communities grid (prefetch + parallel queries + loading skeleton)
+
+**Symptom:** Vivian: "first click on a community takes ~3 seconds to respond."
+On `/communities` the user clicks a community card → blank wait → /c/[slug] paints.
+
+**Root cause (three compounding issues):**
+
+1. `/communities` cards used `prefetch={false}` on the `<Link>` to /c/[slug].
+   Next 14 normally prefetches the destination's RSC payload as soon as the
+   link enters the viewport, so click-through is instant. With prefetch off
+   we only start fetching at click time — full RSC roundtrip (memberships
+   view + videos + listing count + cover resolve) sits on the critical path.
+2. Inside `/c/[slug]/page.tsx`, three Supabase queries (community,
+   memberships, listing-count) ran serially despite memberships and the
+   listing-count being independent. Two of them now run in `Promise.all`.
+3. No `loading.tsx` boundary for `/c/[slug]`. Next.js shows the previous
+   route until SSR resolves, which on a slow link reads as a 1-3s freeze.
+   Added a skeleton that paints the 21:9 hero shape + 4-col thumb grid
+   instantly so the click feels alive.
+
+**Files:**
+- `app/(public)/communities/page.tsx` — drop `prefetch={false}` on the card.
+- `app/(public)/c/[slug]/page.tsx` — parallelise memberships + listing-count.
+- `app/(public)/c/[slug]/loading.tsx` — new skeleton (hero + thumb grid).
+
+**Why prefetch={false} was there originally:** unclear. Other Links in the
+codebase that point AWAY from the current page (e.g. video tiles into
+`/c/<slug>/feed`, the inline "active listings" pill into `/browse`) also
+use `prefetch={false}` — likely a precaution against prefetching expensive
+feed pages. Keeping those alone for now: a video-feed page with full Stream
+players is genuinely heavy to prefetch eagerly. The communities grid card
+is the only one whose destination is light enough to prefetch and whose
+click-through latency users actively complain about.
+
+**Verify:** `tsc --noEmit` clean. Functional verify: open /communities,
+hover any card → DevTools Network shows the RSC chunk arriving in the
+background; click → page should snap. On a cold load (no prefetch yet)
+the skeleton appears instantly and real content swaps in within 300-800ms.
+
+**Risk:** very low. Prefetching the community page costs one RSC roundtrip
+per visible card, which is cheap (no Stream players, just metadata + thumbs).
+If we later see high RSC bandwidth from /communities, switch from `prefetch`
+default to `prefetch="auto"` (only on hover/focus) — but that's the Next 14
+default behaviour for static-rendered destinations, and /c/[slug] is dynamic,
+so default behaviour already throttles to hover/focus prefetch.
+
+**Next:** if Vivian still feels lag, suspect (a) the Cloudflare Stream
+thumbnail CDN being slow from her location — measure `thumbnailUrl()`
+TTFB; (b) Vercel cold-start on the function serving /c/[slug] — promote
+to `revalidate = 60` (ISR) so warm responses are O(ms).
+
 ## 2026-06-17 — perf: drop revalidatePath from listing autosave action
 
 **Symptom:** Vivian reported the dashboard UI feels slow — "every keystroke

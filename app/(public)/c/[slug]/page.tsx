@@ -57,12 +57,23 @@ export default async function CommunityPage({
 
   if (!community) notFound();
 
-  // Membership view: primary community_id on community_videos UNION extras.
+  // Run the membership lookup + active-listings count in parallel; both
+  // depend on community.id but are independent of each other.
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-  const { data: memberships } = (await (supabase as any)
-    .from('community_video_membership')
-    .select('video_id')
-    .eq('community_id', community.id)) as { data: Array<{ video_id: string }> | null };
+  const [{ data: memberships }, { count: activeListings }] = (await Promise.all([
+    (supabase as any)
+      .from('community_video_membership')
+      .select('video_id')
+      .eq('community_id', community.id),
+    (supabase as any)
+      .from('listings')
+      .select('id', { count: 'exact', head: true })
+      .eq('community_id', community.id)
+      .eq('status', 'published'),
+  ])) as [
+    { data: Array<{ video_id: string }> | null },
+    { count: number | null },
+  ];
 
   const videoIds = (memberships ?? []).map((m) => m.video_id);
 
@@ -76,15 +87,6 @@ export default async function CommunityPage({
       .eq('status', 'ready')) as { data: VideoRow[] | null };
     videos = rows ?? [];
   }
-
-  // Active listings count (status filter mirrors how /browse already
-  // selects "active" inventory — see lib/feed/browse-cards.ts).
-  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-  const { count: activeListings } = await (supabase as any)
-    .from('listings')
-    .select('id', { count: 'exact', head: true })
-    .eq('community_id', community.id)
-    .eq('status', 'published');
 
   // Resolve hero cover: explicit pick → uploaded image → first ready video poster.
   const firstReadyVideo = videos[0] ?? null;
