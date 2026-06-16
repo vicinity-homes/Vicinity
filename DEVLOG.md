@@ -2,6 +2,27 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-16 — Phase 27.5: hide right-rail Nearby in community-scoped feed
+
+**Objective**: in `/browse/feed?community=<slug>`, the right rail still
+showed the "Nearby" button. Inside a community-scoped feed it reads as
+redundant — the user already entered from a single community context, so
+switching the active card into its community-video pool doesn't add
+anything new.
+
+**Actions**:
+- `BrowseFeed` gained an optional `hideNearby` prop (defaults false to
+  preserve the global feed unchanged).
+- `app/(public)/browse/feed/page.tsx`: pass `hideNearby` true only when
+  the community filter actually matched (`allCards.length > 0`).
+  Unknown-slug fallback to the global feed keeps Nearby visible.
+
+**Decisions**: gated on the matched count, not just `Boolean(community)`,
+so a stale/wrong slug doesn't hide the button after we've already
+silently fallen back to the global feed.
+
+**Verification**: `tsc --noEmit` clean.
+
 ## 2026-06-16 — Phase 27.4: community-scoped browse feed + multi-community video tagging
 
 **Objective**: close the two follow-ups from Phase 27.3.

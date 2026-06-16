@@ -894,6 +894,7 @@ function DescriptionBlock({ paragraphs }: { paragraphs: string[] }) {
 export function BrowseFeed({
   cards,
   initialIndex = 0,
+  hideNearby = false,
 }: {
   cards: BrowseCard[];
   /**
@@ -901,6 +902,14 @@ export function BrowseFeed({
    * Defaults to 0 (top of feed) for backwards compatibility.
    */
   initialIndex?: number;
+  /**
+   * Phase 27.5 (2026-06-16): hide the right-rail Nearby button. Used by the
+   * community-scoped feed (`/browse/feed?community=<slug>`) — the user
+   * already entered the feed from a single community context, so offering
+   * "Nearby" (which switches the active card into its community-video
+   * pool) reads as redundant noise. Defaults false (global feed shows it).
+   */
+  hideNearby?: boolean;
 }) {
   const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(initialIndex);
@@ -1244,15 +1253,17 @@ export function BrowseFeed({
         <ActionButton label="Contact" onClick={openContact}>
           <CommentIcon />
         </ActionButton>
-        <ActionButton
-          label="Nearby"
-          onClick={() => switchSource(activeSource === 'nearby' ? 'hero' : 'nearby')}
-          active={activeSource === 'nearby'}
-          disabled={!hasNearby}
-          badge={hasNearby && active ? active.categoryVideos.length : undefined}
-        >
-          <NearbyIcon />
-        </ActionButton>
+        {!hideNearby && (
+          <ActionButton
+            label="Nearby"
+            onClick={() => switchSource(activeSource === 'nearby' ? 'hero' : 'nearby')}
+            active={activeSource === 'nearby'}
+            disabled={!hasNearby}
+            badge={hasNearby && active ? active.categoryVideos.length : undefined}
+          >
+            <NearbyIcon />
+          </ActionButton>
+        )}
         {active?.mediaKind !== 'photo' && (
           <ActionButton
             label={muted ? 'Sound' : 'Mute'}

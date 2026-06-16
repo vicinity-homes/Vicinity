@@ -3,6 +3,11 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.30.1 — 2026-06-16
+
+### 🐛 Bug Fixes
+- Inside a single community's swipe feed, the right-side action bar no longer offers a "Nearby" button. You're already inside one community, so jumping into its community videos from there was a no-op shortcut to the same content. The button stays where it belongs — in the global feed.
+
 ## v0.30.0 — 2026-06-16
 
 ### ✨ Features
