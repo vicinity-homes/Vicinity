@@ -1,4 +1,5 @@
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
+import { fetchBrowseCards } from '@/lib/feed/browse-cards';
 import {
   buildListingCards,
   loadListingFeedBySlug,
@@ -93,9 +94,41 @@ export default async function PublicListingPage({
   const data = await loadListingFeedBySlug(agentSlug, listingSlug);
   if (!data) notFound();
 
+  // Phase 35.3 (2026-06-17): /v/ now mirrors the explore feed so a buyer
+  // who lands here from a share link can swipe up/down to neighboring
+  // listings — same as if they'd found this listing inside /browse/feed.
+  // Tianrou: "explore 里别的 listing 都可以上下滑切其他 listing,为什么
+  // 这个滑不了?" — exactly. Buyer doesn't know /v/ is a separate route;
+  // their mental model is one explore stream.
+  //
+  // Strategy:
+  //   - Video-backed listing → load the full explore card list, place
+  //     this listing at the front, append the rest. We front-place
+  //     instead of "find + center" because /browse/feed already builds
+  //     this listing card with multi-hero pool / community videos /
+  //     POIs from loadListingFeedBySlug, while fetchBrowseCards builds
+  //     a slimmer card. Front-place keeps this listing's rich card +
+  //     hands the swipe-down lane to explore neighbors.
+  //   - Photo-only listing → keep old single-card behavior. Explore
+  //     feed is video-only by product rule (BrowseFeedPage filters
+  //     mediaKind === 'video'), so there's no neighbor lane to swipe
+  //     into. Single card here matches that constraint.
+  //
+  // Dedup: drop any explore card whose listing.id === this listing.id
+  // so we don't render the same listing twice.
   const photos =
     data.listingVideos.length === 0 ? await loadListingPhotos(data.listing.id) : null;
-  const cards = await buildListingCards(data, photos);
+  const localCards = await buildListingCards(data, photos);
+  const headCard = localCards[0];
+
+  let cards = localCards;
+  if (headCard && headCard.mediaKind === 'video') {
+    const exploreCards = await fetchBrowseCards();
+    const tail = exploreCards.filter(
+      (c) => c.mediaKind === 'video' && c.listing.id !== data.listing.id,
+    );
+    cards = [headCard, ...tail];
+  }
 
   return <VideoFeed listingId={data.listing.id} cards={cards} />;
 }
