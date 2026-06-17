@@ -98,6 +98,17 @@ export type BrowseCard = {
     email: string | null;
     phone: string | null;
   };
+  /**
+   * Phase 34b (V1 buyer redo): set when the listing belongs to a community.
+   * BrowseFeed renders a top-left chip per V1 prototype Scenario A; tapping
+   * the chip opens CommunitySheet (L1) — does NOT navigate. videoCount is
+   * the fan-out community-video pool size.
+   */
+  community?: {
+    slug: string;
+    name: string;
+    videoCount: number;
+  };
 };
 
 type Source = 'hero' | 'nearby';
