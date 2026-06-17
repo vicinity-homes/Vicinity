@@ -90,17 +90,35 @@ export default async function CommunityEditorPage({
   // Phase 35.2: full manage-list rows (visibility + category) so the editor
   // page is the manage surface — no more bouncing to /upload to delete or
   // hide a video.
+  // Phase 35.3: include uploaded_by so the row can render owner-only chrome
+  // (delete/edit only if you uploaded it; "by @other-agent" caption otherwise).
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
   const { data: videoRows } = (await (supabase as any)
     .from('community_videos')
     .select(
-      'id, cf_video_id, title, category, category_needs_review, status, visibility, created_at',
+      'id, cf_video_id, title, category, category_needs_review, status, visibility, created_at, uploaded_by, uploader:agents!community_videos_uploaded_by_fkey(slug, name)',
     )
     .eq('community_id', community.id)
     .order('created_at', { ascending: false })) as {
-    data: ManageVideoRow[] | null;
+    data:
+      | (Omit<ManageVideoRow, 'uploaderSlug' | 'uploaderDisplayName'> & {
+          uploader: { slug: string | null; name: string | null } | null;
+        })[]
+      | null;
   };
-  const manageVideos = videoRows ?? [];
+  const manageVideos: ManageVideoRow[] = (videoRows ?? []).map((row) => ({
+    id: row.id,
+    cf_video_id: row.cf_video_id,
+    title: row.title,
+    category: row.category,
+    category_needs_review: row.category_needs_review,
+    status: row.status,
+    visibility: row.visibility,
+    created_at: row.created_at,
+    uploaded_by: row.uploaded_by ?? null,
+    uploaderSlug: row.uploader?.slug ?? null,
+    uploaderDisplayName: row.uploader?.name ?? null,
+  }));
   // CoverPanel still wants the lighter shape (id, cf_video_id, title) for
   // ready videos only — not every uploaded video is cover-eligible.
   const coverVideos = manageVideos
@@ -145,6 +163,7 @@ export default async function CommunityEditorPage({
         <CommunityVideoManageList
           communityId={community.id}
           videos={manageVideos}
+          myAgentId={myAgentId}
         />
       </section>
 

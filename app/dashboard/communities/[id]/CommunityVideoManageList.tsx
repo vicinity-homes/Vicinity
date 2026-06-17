@@ -47,14 +47,21 @@ export interface ManageVideoRow {
   status: string;
   visibility: 'public' | 'private' | 'archived';
   created_at: string;
+  /** agents.id of the original uploader; null for legacy rows. */
+  uploaded_by: string | null;
+  uploaderSlug: string | null;
+  uploaderDisplayName: string | null;
 }
 
 export function CommunityVideoManageList({
   communityId,
   videos,
+  myAgentId,
 }: {
   communityId: string;
   videos: ManageVideoRow[];
+  /** Current viewer's agent.id. Drives owner-only edit/delete. */
+  myAgentId: string | null;
 }) {
   if (videos.length === 0) {
     return (
@@ -81,6 +88,7 @@ export function CommunityVideoManageList({
         sublabel="Visible to buyers"
         items={groups.public}
         communityId={communityId}
+        myAgentId={myAgentId}
       />
       {groups.private.length > 0 ? (
         <Group
@@ -88,6 +96,7 @@ export function CommunityVideoManageList({
           sublabel="Hidden from buyers, kept in your dashboard"
           items={groups.private}
           communityId={communityId}
+          myAgentId={myAgentId}
         />
       ) : null}
       {groups.archived.length > 0 ? (
@@ -96,6 +105,7 @@ export function CommunityVideoManageList({
           sublabel="Parked — out of sight, not deleted"
           items={groups.archived}
           communityId={communityId}
+          myAgentId={myAgentId}
           collapsible
         />
       ) : null}
@@ -108,12 +118,14 @@ function Group({
   sublabel,
   items,
   communityId,
+  myAgentId,
   collapsible,
 }: {
   label: string;
   sublabel: string;
   items: ManageVideoRow[];
   communityId: string;
+  myAgentId: string | null;
   collapsible?: boolean;
 }) {
   const [open, setOpen] = useState(!collapsible);
@@ -139,7 +151,12 @@ function Group({
       {open ? (
         <ul className="space-y-2">
           {items.map((v) => (
-            <ManageRow key={v.id} video={v} communityId={communityId} />
+            <ManageRow
+              key={v.id}
+              video={v}
+              communityId={communityId}
+              myAgentId={myAgentId}
+            />
           ))}
         </ul>
       ) : null}
@@ -147,11 +164,29 @@ function Group({
   );
 }
 
-function ManageRow({ video, communityId }: { video: ManageVideoRow; communityId: string }) {
+function ManageRow({
+  video,
+  communityId,
+  myAgentId,
+}: {
+  video: ManageVideoRow;
+  communityId: string;
+  myAgentId: string | null;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [editingCat, setEditingCat] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Phase 35.3: only the original uploader gets edit / hide / delete on a
+  // row. Other agents see the same row for context (so they know what's
+  // already been shot in this community) but every mutating action is
+  // hidden — RLS now enforces the same rule server-side, this is just the
+  // UI matching the policy so we don't show buttons that 403.
+  const isOwner =
+    myAgentId != null && video.uploaded_by != null && video.uploaded_by === myAgentId;
+  // Legacy rows with NULL uploaded_by: nobody owns them, nobody can edit.
+  // The "by …" caption stays blank for those.
 
   const catMeta = video.category
     ? COMMUNITY_VIDEO_CATEGORIES.find((c) => c.id === video.category)
@@ -208,6 +243,14 @@ function ManageRow({ video, communityId }: { video: ManageVideoRow; communityId:
               </span>
             ) : null}
             <VisibilityChip visibility={video.visibility} />
+            {!isOwner && video.uploaderDisplayName ? (
+              <span
+                className="rounded bg-cream/5 px-1.5 py-0.5 text-cream/55"
+                title={video.uploaderSlug ? `@${video.uploaderSlug}` : undefined}
+              >
+                by {video.uploaderDisplayName}
+              </span>
+            ) : null}
             <span
               className={
                 video.status === 'ready'
@@ -223,36 +266,38 @@ function ManageRow({ video, communityId }: { video: ManageVideoRow; communityId:
         </div>
       </div>
 
-      {/* actions row — wraps on narrow screens */}
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        <ActionButton onClick={() => setEditingCat((s) => !s)} disabled={pending}>
-          {editingCat ? 'cancel' : 'edit category'}
-        </ActionButton>
-        {video.visibility === 'public' ? (
-          <>
-            <ActionButton onClick={() => handleVisibility('private')} disabled={pending}>
-              mark private
+      {/* actions row — wraps on narrow screens. Only the uploader sees it. */}
+      {isOwner ? (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          <ActionButton onClick={() => setEditingCat((s) => !s)} disabled={pending}>
+            {editingCat ? 'cancel' : 'edit category'}
+          </ActionButton>
+          {video.visibility === 'public' ? (
+            <>
+              <ActionButton onClick={() => handleVisibility('private')} disabled={pending}>
+                mark private
+              </ActionButton>
+              <ActionButton onClick={() => handleVisibility('archived')} disabled={pending}>
+                archive
+              </ActionButton>
+            </>
+          ) : (
+            <ActionButton onClick={() => handleVisibility('public')} disabled={pending}>
+              make public
             </ActionButton>
+          )}
+          {video.visibility === 'private' ? (
             <ActionButton onClick={() => handleVisibility('archived')} disabled={pending}>
               archive
             </ActionButton>
-          </>
-        ) : (
-          <ActionButton onClick={() => handleVisibility('public')} disabled={pending}>
-            make public
+          ) : null}
+          <ActionButton onClick={handleDelete} disabled={pending} tone="danger">
+            delete
           </ActionButton>
-        )}
-        {video.visibility === 'private' ? (
-          <ActionButton onClick={() => handleVisibility('archived')} disabled={pending}>
-            archive
-          </ActionButton>
-        ) : null}
-        <ActionButton onClick={handleDelete} disabled={pending} tone="danger">
-          delete
-        </ActionButton>
-      </div>
+        </div>
+      ) : null}
 
-      {editingCat ? (
+      {editingCat && isOwner ? (
         <div className="mt-3 rounded border border-bronze/25 bg-ink p-3">
           <div className="mb-2 text-[11px] uppercase tracking-wide text-cream/55">
             Re-categorize

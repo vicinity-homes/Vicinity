@@ -283,15 +283,49 @@ export async function deletePoi(poiId: string, communityId: string): Promise<Act
 // is orphaned — V1 accepted cost; a periodic reconcile job will clean those
 // up post-launch. Same approach as listing_videos (no delete UI yet).
 
+/**
+ * Phase 35.3: resolve the caller's agents.id and gate writes on
+ * uploaded_by = that id. We rely on RLS (migration 0027) for the actual
+ * deny — this server-side check just gives us a clean error message
+ * instead of a blank "update_failed" when an agent tries to mutate
+ * someone else's video, and it skips the round-trip when we can prove
+ * up-front the row isn't theirs.
+ */
+async function requireOwnedVideo(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  videoId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'unauthorized' };
+  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+  const { data: agentRow } = (await (supabase as any)
+    .from('agents')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle()) as { data: { id: string } | null };
+  if (!agentRow) return { ok: false, error: 'unauthorized' };
+  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+  const { data: videoRow } = (await (supabase as any)
+    .from('community_videos')
+    .select('uploaded_by')
+    .eq('id', videoId)
+    .maybeSingle()) as { data: { uploaded_by: string | null } | null };
+  if (!videoRow) return { ok: false, error: 'not_found' };
+  if (videoRow.uploaded_by !== agentRow.id) {
+    return { ok: false, error: 'not_owner' };
+  }
+  return { ok: true };
+}
+
 export async function deleteCommunityVideo(
   videoId: string,
   communityId: string,
 ): Promise<ActionResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: 'unauthorized' };
+  const owned = await requireOwnedVideo(supabase, videoId);
+  if (!owned.ok) return owned;
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
   const { error } = await (supabase as any).from('community_videos').delete().eq('id', videoId);
   if (error) {
@@ -303,10 +337,7 @@ export async function deleteCommunityVideo(
 }
 
 // ─── Phase 35.2: visibility + category edit ──────────────────────
-// Why server actions instead of inline supabase calls in the client:
-// future change to tighten ownership (`uploaded_by = auth.uid()`) lands
-// here without touching every caller, and revalidatePath stays in one
-// place so the manage list refreshes on tap.
+// Owner-only as of Phase 35.3 — see requireOwnedVideo above.
 
 const COMMUNITY_VIDEO_VISIBILITIES = ['public', 'private', 'archived'] as const;
 export type CommunityVideoVisibility = (typeof COMMUNITY_VIDEO_VISIBILITIES)[number];
@@ -320,10 +351,8 @@ export async function updateCommunityVideoVisibility(
     return { ok: false, error: 'invalid_visibility' };
   }
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: 'unauthorized' };
+  const owned = await requireOwnedVideo(supabase, videoId);
+  if (!owned.ok) return owned;
   const { error } = await (supabase as unknown as {
     from: (t: string) => {
       update: (v: { visibility: string }) => {
@@ -366,10 +395,8 @@ export async function updateCommunityVideoCategory(
     return { ok: false, error: 'invalid_category' };
   }
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: 'unauthorized' };
+  const owned = await requireOwnedVideo(supabase, videoId);
+  if (!owned.ok) return owned;
   const { error } = await (supabase as unknown as {
     from: (t: string) => {
       update: (v: { category: string; category_needs_review: boolean }) => {
