@@ -146,11 +146,13 @@ export default async function DashboardHomePage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-12">
-      <div className="mb-8">
+    <div className="mx-auto max-w-6xl px-5 py-6 sm:px-8 sm:py-12">
+      <div className="mb-6 sm:mb-8">
         {/* Phase 35: dropped duplicate "View public profile" CTA — same link
-         * already lives on the Me tab (/profile). One canonical entry. */}
-        <h1 className="font-serif text-4xl tracking-tight text-cream sm:text-5xl">Dashboard</h1>
+         * already lives on the Me tab (/profile). One canonical entry.
+         * Phase 35.1: scaled down for mobile — 4xl was wasting half the
+         * viewport on a label nobody needs that big. */}
+        <h1 className="font-serif text-2xl tracking-tight text-cream sm:text-4xl">Dashboard</h1>
       </div>
 
       {/*
@@ -163,19 +165,19 @@ export default async function DashboardHomePage({ searchParams }: PageProps) {
           with state worth seeing.
       */}
       {rows.length === 0 && activeTab === 'published' && counts.draft === 0 && counts.archived === 0 ? (
-        <section className="mb-10 grid grid-cols-3 gap-2 sm:gap-5">
+        <section className="mb-8 grid grid-cols-1 gap-2 sm:mb-10 sm:grid-cols-3 sm:gap-5">
           <Link
             href="/dashboard/listings/new"
-            className="group flex items-center justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-5 transition hover:border-gold/40"
+            className="group flex items-center justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-4 transition hover:border-gold/40 sm:p-5"
           >
             <div>
-              <div className="text-[11px] uppercase tracking-widest text-gold">New listing</div>
-              <div className="mt-2 font-serif text-2xl text-cream">Add a property →</div>
+              <div className="text-[10px] uppercase tracking-widest text-gold sm:text-[11px]">New listing</div>
+              <div className="mt-1 font-serif text-base text-cream sm:mt-2 sm:text-2xl">Add a property →</div>
             </div>
             <svg
               viewBox="0 0 24 24"
-              width={20}
-              height={20}
+              width={18}
+              height={18}
               fill="currentColor"
               className="text-gold"
               aria-hidden="true"
@@ -185,18 +187,18 @@ export default async function DashboardHomePage({ searchParams }: PageProps) {
           </Link>
           <Link
             href="/dashboard/communities"
-            className="group flex items-center justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-5 transition hover:border-gold/40"
+            className="group flex items-center justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-4 transition hover:border-gold/40 sm:p-5"
           >
             <div>
-              <div className="text-[11px] uppercase tracking-widest text-gold">
+              <div className="text-[10px] uppercase tracking-widest text-gold sm:text-[11px]">
                 New community video
               </div>
-              <div className="mt-2 font-serif text-2xl text-cream">Pick a community →</div>
+              <div className="mt-1 font-serif text-base text-cream sm:mt-2 sm:text-2xl">Pick a community →</div>
             </div>
             <svg
               viewBox="0 0 24 24"
-              width={20}
-              height={20}
+              width={18}
+              height={18}
               fill="currentColor"
               className="text-gold"
               aria-hidden="true"
@@ -206,16 +208,16 @@ export default async function DashboardHomePage({ searchParams }: PageProps) {
           </Link>
           <Link
             href="/dashboard/leads"
-            className="group flex items-center justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-5 transition hover:border-gold/40"
+            className="group flex items-center justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-4 transition hover:border-gold/40 sm:p-5"
           >
             <div>
-              <div className="text-[11px] uppercase tracking-widest text-gold">Leads</div>
-              <div className="mt-2 font-serif text-2xl text-cream">View leads →</div>
+              <div className="text-[10px] uppercase tracking-widest text-gold sm:text-[11px]">Leads</div>
+              <div className="mt-1 font-serif text-base text-cream sm:mt-2 sm:text-2xl">View leads →</div>
             </div>
             <svg
               viewBox="0 0 24 24"
-              width={20}
-              height={20}
+              width={18}
+              height={18}
               fill="currentColor"
               className="text-gold"
               aria-hidden="true"
