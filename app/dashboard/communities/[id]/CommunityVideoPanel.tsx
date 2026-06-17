@@ -54,7 +54,13 @@ export function CommunityVideoPanel({
   communityId,
   initialVideos,
   category,
-  availableCommunities,
+  // Phase 35.3 (2026-06-17): hidden until we land a geo guardrail. Tianrou
+  // (agent UAT) flagged that without a "must be within X miles" check,
+  // multi-tagging will get abused by agents pasting their video into
+  // unrelated communities for reach. Prop stays in the API so the parent
+  // server component doesn't have to change shape; we just stop rendering
+  // the picker. Re-enable in the migration that adds the distance check.
+  availableCommunities: _availableCommunities,
 }: {
   communityId: string;
   initialVideos: CommunityVideoRow[];
@@ -64,10 +70,6 @@ export function CommunityVideoPanel({
   const router = useRouter();
   const [videos, setVideos] = useState<CommunityVideoRow[]>(initialVideos);
   const [address, setAddress] = useState<string>('');
-  // Phase 27.4 (2026-06-16): multi-tag. The video's primary community is
-  // `communityId` (the page we're on); these are additional communities
-  // it should also appear under via `community_video_extra_links`.
-  const [extraIds, setExtraIds] = useState<string[]>([]);
   // Phase 23: silent geo. Captured once on mount; never surfaced in the UI.
   // If the user denies geolocation we just don't send lat/lng — the row still
   // saves with `address` (or neither, in which case Nearby just skips it).
@@ -140,14 +142,7 @@ export function CommunityVideoPanel({
     ...(typeof lat === 'number' ? { lat } : {}),
     ...(typeof lng === 'number' ? { lng } : {}),
     ...(address.trim() !== '' ? { address: address.trim() } : {}),
-    ...(extraIds.length > 0 ? { extraCommunityIds: extraIds } : {}),
   };
-
-  function toggleExtra(id: string) {
-    setExtraIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  }
 
   return (
     <section className="rounded border border-bronze/30 bg-ink2 p-5">
@@ -179,44 +174,8 @@ export function CommunityVideoPanel({
       <VideoUploader target={target} onUploaded={handleUploaded} />
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
 
-      {/* ── Also tag in (Phase 27.4) ─────────────────────────────── */}
-      {availableCommunities.length > 0 ? (
-        <div className="mt-4 rounded border border-bronze/20 bg-ink/40 p-3">
-          <div className="mb-1 text-xs font-medium text-cream/70">
-            Also show this video in{' '}
-            <span className="text-cream/40">(optional, up to 10)</span>
-          </div>
-          <p className="mb-2 text-[11px] text-cream/50">
-            Pick other communities you'd like this video to appear under. Useful when one block
-            tour is relevant to several neighborhoods.
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {availableCommunities.map((c) => {
-              const isOn = extraIds.includes(c.id);
-              const disabled = !isOn && extraIds.length >= 10;
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => toggleExtra(c.id)}
-                  className={[
-                    'rounded-full border px-2.5 py-1 text-[11px] transition',
-                    isOn
-                      ? 'border-gold bg-gold/15 text-gold'
-                      : disabled
-                        ? 'cursor-not-allowed border-bronze/20 text-cream/30'
-                        : 'border-bronze/30 text-cream/70 hover:border-gold/60 hover:text-cream',
-                  ].join(' ')}
-                  title={c.city ? `${c.city}, ${c.state}` : c.state}
-                >
-                  {c.name}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
+      {/* Phase 35.3: "Also show this video in" multi-community picker
+       * removed pending a geo guardrail. See param comment above. */}
 
       {videos.length > 0 && (
         <details className="mt-4">

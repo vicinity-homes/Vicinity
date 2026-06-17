@@ -21,10 +21,7 @@ import {
   type CommunityOption,
   type CommunityVideoRow,
 } from './CommunityVideoPanel';
-import {
-  type CommunityVideoCategoryId,
-  getCategoryMeta,
-} from '@/lib/zod/community-video-categories';
+import { type CommunityVideoCategoryId } from '@/lib/zod/community-video-categories';
 import { useState } from 'react';
 
 export function CommunityUploadShell({
@@ -39,22 +36,16 @@ export function CommunityUploadShell({
   availableCommunities: CommunityOption[];
 }) {
   const [category, setCategory] = useState<CommunityVideoCategoryId>('walk_the_block');
-  const meta = getCategoryMeta(category);
 
   return (
     <div className="space-y-4">
-      {/* Shared category picker — drives both video + photo upload below. */}
+      {/* Shared category picker — drives both video + photo upload below.
+       * The picker now shows label / blurb / hard rule inline (chip cloud
+       * + spec card), so we don't double up with our own callout box. */}
       <section className="rounded border border-bronze/30 bg-ink2 p-4 sm:p-5">
         <div className="mb-3 text-sm font-medium text-cream">Category</div>
         <CategoryPicker mode="create" selected={category} onPick={setCategory} />
-        <div className="mt-3 rounded border border-gold/30 bg-gold/5 px-3 py-2 text-xs text-cream/80">
-          <span className="font-medium text-gold">{meta.label}</span>
-          <span className="text-cream/60"> — {meta.blurb}.</span>
-          <div className="mt-1 text-[11px] text-cream/60">
-            <span className="font-medium">Must include:</span> {meta.hardRule}
-          </div>
-        </div>
-        <p className="mt-2 text-[11px] text-cream/50">
+        <p className="mt-3 text-[11px] text-cream/50">
           Applies to both video and photos uploaded below.
         </p>
       </section>
