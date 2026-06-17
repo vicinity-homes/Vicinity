@@ -126,22 +126,6 @@ function NearbyIcon() {
   );
 }
 
-function SoundOnIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" width={22} height={22} fill="currentColor">
-      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05a4.5 4.5 0 0 0 2.5-4.02zM14 3.23v2.06A7 7 0 0 1 14 18.71v2.06A9 9 0 0 0 14 3.23z" />
-    </svg>
-  );
-}
-
-function SoundOffIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" width={22} height={22} fill="currentColor">
-      <path d="M3 9v6h4l5 5V4L7 9H3zm13.59 3L19 9.41 17.59 8 15 10.59 12.41 8 11 9.41 13.59 12 11 14.59 12.41 16 15 13.41 17.59 16 19 14.59 16.59 12z" />
-    </svg>
-  );
-}
-
 function ShareIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" width={22} height={22} fill="currentColor">
@@ -1294,15 +1278,12 @@ export function BrowseFeed({
             <NearbyIcon />
           </ActionButton>
         )}
-        {active?.mediaKind !== 'photo' && (
-          <ActionButton
-            label={muted ? 'Sound' : 'Mute'}
-            onClick={() => setMuted((m) => !m)}
-            active={!muted}
-          >
-            {muted ? <SoundOffIcon /> : <SoundOnIcon />}
-          </ActionButton>
-        )}
+        {/* phase34a (2026-06-17): right-rail mute button removed.
+         * Volume is controlled by the device's system volume keys —
+         * keeps the rail clean and avoids a redundant control. The
+         * `muted` state is retained internally for the autoplay-blocked
+         * fallback (browser blocks unmuted autoplay → start muted →
+         * first interaction unmutes). */}
       </div>
 
       {/* Phase 28.1 (2026-06-15): centered NEARBY label removed — the

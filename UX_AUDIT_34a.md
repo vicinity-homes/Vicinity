@@ -15,24 +15,11 @@ Ship the invisible plumbing + global hygiene that 34b/34c depend on. Nothing fla
 
 ## Locked tasks (P0 — must ship)
 
-### T1 · Listing → Community auto-attribution by geo
+### T1 · ⏸ DEFERRED to phase35 (paired with Create Community wizard)
 
-**Why**: 34b's community chip on a listing video needs `listing.community_id` populated. Today most listings don't have it (or only have it if the agent set it manually). Without this, A1 chip can't render.
+**Why deferred**: communities table has no geo (only `city, state` text). Adding geo (centroid + radius) requires the Create Community form to also collect those fields. Couples cleanly with phase35 wizard rework — doing it twice is waste. Backfill via geocoding API can also wait.
 
-**What**:
-1. **Schema check**: confirm `listings.community_id` column exists. If not, add it (`alter table listings add column community_id uuid references communities(id)`). Index it.
-2. **Geo source of truth**: communities have geo polygons (or center + radius — discover which). Listings have `lat`/`lng` (see `0011_listing_photos_and_geo.sql`).
-3. **Backfill migration**: write a SQL migration that, for every listing where `community_id is null` and `lat/lng is not null`, assigns the community whose geo contains the listing's point. If multiple match, pick smallest area. If none match, leave null (do not invent).
-4. **Insert/update trigger**: when a listing is inserted or its lat/lng changes, re-run the same attribution logic (`before insert or update of lat, lng on listings`).
-5. **Reporting query**: include in the migration a `select count(*) filter (where community_id is null) as orphans, count(*) as total from listings where status = 'active'` so we can see the orphan rate after backfill.
-
-**Stop and ask if**:
-- Communities don't have geo polygons (they may only have center+radius — adapt accordingly, or surface that we need polygons before this works)
-- More than 30% of active listings end up as orphans (something's wrong with the geo)
-
-**Files**: new `supabase/migrations/00XX_listing_community_attribution.sql`. Existing trigger functions in earlier migrations are precedent — match style.
-
-**Acceptance**: After migration runs locally, `select count(*) filter (where community_id is null) from listings where status='active' and lat is not null` is < 5% of total. Trigger fires on a manual `update listings set lat = lat + 0.0001 where id = '<test>'` and re-attributes.
+**Impact on 34b**: A1 chip on listing video can render off `listings.community_id` where agent has set it manually today (legacy path). For listings without it, chip hides. Acceptable for 34b launch.
 
 ---
 
@@ -137,4 +124,4 @@ PR ready to ff to main when ALL true:
 
 ---
 
-_Spec author: Hermes. Implementer: Claude Code. Reviewer: Hermes. Approver: Tianrou._
+_Spec + implementer: Hermes. Reviewer + approver: Tianrou._
