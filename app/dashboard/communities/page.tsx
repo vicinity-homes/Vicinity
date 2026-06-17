@@ -132,13 +132,12 @@ export default async function CommunitiesListPage() {
                     <span aria-hidden>→</span>
                   </div>
                 </Link>
-                {/* Upload shortcut — escapes the row link via z-index +
-                 * absolute positioning so the click doesn't bubble to the
-                 * <Link> wrapper. */}
+                {/* Upload shortcut — sibling of the row Link (not nested),
+                 * so clicks land on Upload directly without bubbling. The
+                 * absolute positioning floats it on top visually. */}
                 <Link
                   href={`/dashboard/communities/${c.id}/upload`}
                   className="absolute right-3 top-1/2 z-10 hidden -translate-y-1/2 items-center justify-center rounded-lg border border-bronze/40 bg-ink2 px-3 py-1.5 text-xs text-cream hover:border-gold hover:text-gold sm:inline-flex"
-                  onClick={(e) => e.stopPropagation()}
                 >
                   + Upload
                 </Link>
