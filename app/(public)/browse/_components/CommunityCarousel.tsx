@@ -185,7 +185,7 @@ export function CommunityCarousel({
 
         {/* Swipe hint, fades after first move. */}
         {safeActive === 0 && total > 1 && (
-          <div className="pointer-events-none absolute bottom-24 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-[10px] text-ink2 uppercase tracking-widest">
+          <div className="pointer-events-none absolute bottom-24 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-[10px] text-cream/85 uppercase tracking-widest">
             ← swipe →
           </div>
         )}
@@ -298,11 +298,11 @@ function CarouselSlide({
       ) : null}
 
       {/* Category label */}
-      <div className="absolute top-24 left-4 inline-flex items-center rounded-full border border-line-strong bg-ink/15 px-3 py-1 text-[11px] font-medium text-ink uppercase tracking-wider backdrop-blur-md">
+      <div className="absolute top-24 left-4 inline-flex items-center rounded-full border border-line-strong bg-ink/15 px-3 py-1 text-[11px] font-medium text-cream uppercase tracking-wider backdrop-blur-md">
         {video.line1}
       </div>
       {video.line2 && (
-        <div className="absolute right-4 bottom-8 left-4 text-[13px] text-ink2 leading-snug drop-shadow">
+        <div className="absolute right-4 bottom-8 left-4 text-[13px] text-cream/85 leading-snug drop-shadow">
           {video.line2}
         </div>
       )}

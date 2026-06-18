@@ -118,10 +118,10 @@ export default async function CommunityPage({
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/60 to-ink/10" />
         <div className="absolute inset-x-0 bottom-0 px-4 py-4 sm:px-6 sm:py-5">
-          <h1 className="font-semibold text-2xl text-ink tracking-tight sm:text-3xl">
+          <h1 className="font-semibold text-2xl text-cream tracking-tight sm:text-3xl">
             {community.name}
           </h1>
-          <div className="mt-1 text-ink2 text-sm">
+          <div className="mt-1 text-cream/75 text-sm">
             {community.city ? `${community.city}, ${community.state}` : community.state}
           </div>
         </div>
@@ -171,7 +171,7 @@ export default async function CommunityPage({
                   loading="lazy"
                 />
                 {v.category ? (
-                  <span className="absolute top-1.5 left-1.5 rounded bg-ink/90 px-1.5 py-0.5 font-medium text-[10px] text-ink">
+                  <span className="absolute top-1.5 left-1.5 rounded bg-ink/90 px-1.5 py-0.5 font-medium text-[10px] text-cream">
                     {v.category}
                   </span>
                 ) : null}

@@ -2,6 +2,7 @@
 
 import type { BrowseCard } from '@/app/(public)/browse/_components/BrowseFeed';
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
+import { demoCoverFor } from '@/lib/demo-media';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
@@ -181,9 +182,12 @@ export function NearbyClient() {
             <div className="relative aspect-[3/4] w-full bg-black/40">
               <Image
                 src={
-                  card.mediaKind === 'video'
-                    ? thumbnailUrl(card.hero.cfVideoId)
-                    : (card.heroPhotoUrl as string)
+                  demoCoverFor(
+                    card.listing.id,
+                    card.mediaKind === 'video'
+                      ? thumbnailUrl(card.hero.cfVideoId)
+                      : (card.heroPhotoUrl as string),
+                  ) as string
                 }
                 alt={card.listing.address}
                 fill
@@ -193,16 +197,16 @@ export function NearbyClient() {
               />
               <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
               {typeof card.distance === 'number' && (
-                <div className="absolute top-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] text-ink2 backdrop-blur-sm">
+                <div className="absolute top-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] text-cream backdrop-blur-sm">
                   {card.distance.toFixed(1)} mi
                 </div>
               )}
-              <div className="absolute right-2 bottom-2 left-2 text-ink">
+              <div className="absolute right-2 bottom-2 left-2 text-cream">
                 <div className="font-serif text-lg leading-tight tracking-tight drop-shadow">
                   {formatPrice(card.listing.price)}
                 </div>
-                <div className="truncate text-ink2 text-xs">{card.listing.address}</div>
-                <div className="flex items-center gap-1.5 text-[10px] text-ink2">
+                <div className="truncate text-cream/80 text-xs">{card.listing.address}</div>
+                <div className="flex items-center gap-1.5 text-[10px] text-cream/80">
                   {card.listing.beds != null && <span>{card.listing.beds} bd</span>}
                   {card.listing.baths != null && <span>· {card.listing.baths} ba</span>}
                   {card.listing.sqft != null && (

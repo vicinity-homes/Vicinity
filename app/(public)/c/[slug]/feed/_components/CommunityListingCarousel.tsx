@@ -184,7 +184,7 @@ export function CommunityListingCarousel({
         )}
 
         {safeActive === 0 && total > 1 && (
-          <div className="-translate-x-1/2 pointer-events-none absolute bottom-32 left-1/2 z-10 rounded-full bg-black/40 px-3 py-1 text-[10px] text-ink2 uppercase tracking-widest">
+          <div className="-translate-x-1/2 pointer-events-none absolute bottom-32 left-1/2 z-10 rounded-full bg-black/40 px-3 py-1 text-[10px] text-cream/85 uppercase tracking-widest">
             ← swipe →
           </div>
         )}

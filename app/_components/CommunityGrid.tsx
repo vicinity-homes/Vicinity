@@ -45,21 +45,21 @@ export function CommunityGrid({ communities }: { communities: CommunityListCard[
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-bronze/20 to-ink">
-                <span className="font-semibold text-3xl text-muted">{c.name.charAt(0)}</span>
+                <span className="font-semibold text-3xl text-cream/70">{c.name.charAt(0)}</span>
               </div>
             )}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink via-ink/80 to-transparent p-3 pt-10">
-              <div className="font-medium text-ink text-sm leading-tight">{c.name}</div>
-              <div className="mt-0.5 text-ink2 text-[11px]">
+              <div className="font-medium text-cream text-sm leading-tight">{c.name}</div>
+              <div className="mt-0.5 text-cream/75 text-[11px]">
                 {c.city ? `${c.city}, ${c.state}` : c.state}
               </div>
               {/* Real counters only — videos + active listings. */}
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 rounded-full bg-ink/20 px-2 py-0.5 text-[10px] text-ink backdrop-blur">
+                <span className="inline-flex items-center gap-1 rounded-full bg-cream/20 px-2 py-0.5 text-[10px] text-cream backdrop-blur">
                   {c.videoCount} {c.videoCount === 1 ? 'video' : 'videos'}
                 </span>
                 {c.listingCount > 0 && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-surface/10 px-2 py-0.5 text-[10px] text-ink2 backdrop-blur">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-cream/15 px-2 py-0.5 text-[10px] text-cream/85 backdrop-blur">
                     {c.listingCount} {c.listingCount === 1 ? 'home' : 'homes'}
                   </span>
                 )}

@@ -2,6 +2,38 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-18 23:10 UTC — phase38.2: fix theme-migration overlay regression (image / gradient / chip surfaces, 21 sites)
+
+**Objective**: Phase38.1 closed `bg-ink + text-ink` *literal same-className* dark-on-dark, but Tianrou immediately surfaced a second wave: (1) Nearby card photos still ship the wrong cover (no `demoCoverFor()` wrapper); (2) text on top of video stills / cover photos is unreadable (dark text on dark gradient mask); (3) community hero + grid card titles likewise vanish into the `from-ink via-ink/60` mask.
+
+**Root cause**: phase38.1's audit was scoped too narrow — it only grepped for `bg-ink…text-ink` in a *single class string*. It missed four equivalent dark-on-dark patterns:
+  (a) `bg-gradient-to-t from-ink … text-ink` — gradient mask + dark text on the same element
+  (b) `text-ink` / `text-ink2` placed directly over `<img>` / `<video>` via `absolute` positioning (no class-level `bg-*` to grep)
+  (c) `bg-black/60` translucent chips with `text-ink2`
+  (d) `bg-ink/N` translucent badges with `text-ink`
+
+**Audit-2 method**: `grep "from-ink|via-ink|to-ink"` (4 hits) ∪ `grep "absolute.*text-ink"` (40 hits) → triaged 21 surfaces across 6 files. Verified visually against three Tianrou screenshots before touching code.
+
+**Fix**:
+- `app/(public)/nearby/NearbyClient.tsx`: wrap photo/video src in `demoCoverFor()` (closes the demo-media coverage gap left after phase38); switch overlay/chip text to `text-cream` + `text-cream/80`.
+- `app/_components/CommunityGrid.tsx`: title `text-cream`, sub `text-cream/75`, two chips → `bg-cream/{15,20} text-cream{,/85}`.
+- `app/(public)/c/[slug]/page.tsx`: hero `<h1>` → `text-cream`, sub `text-cream/75`, video corner badge `text-cream`.
+- `app/(public)/saved/_components/SavedClient.tsx`: two listing-card overlays → `text-cream` (`replace_all`, both occurrences).
+- `app/(public)/browse/_components/CommunityCarousel.tsx`: hero chip + bottom description + center-bottom hint chip → `text-cream{,/85}`.
+- `app/(public)/c/[slug]/feed/_components/CommunityListingCarousel.tsx`: same center-bottom hint chip → `text-cream/85`.
+
+**Hierarchy rule** (consistent across the file set): primary copy on dark gradient/image = `text-cream`; secondary/meta = `text-cream/75`–`text-cream/85` (Airbnb / Linear / Stripe pattern).
+
+**Verification**: `npm run typecheck` (tsc --noEmit) → 0 errors. Residual same-color dark-on-dark grep returns 4 hits, all `bg-ink/{10,15} text-ink` chip-on-light-bg (dark icon glyph on translucent dark wash *over a light page* — those are fine and intentional, not the mobile bug class).
+
+**Pitfalls captured for the playbook**:
+- Single class-string greps don't catch render-layer dark-on-dark — also scan parent-child JSX co-occurrence (gradient mask + child text, `<img>` + absolute child text, translucent chip + dark glyph). Adding to vicinity skill `references/luxury-redesign-playbook.md` § 7e–7g.
+- Phase38.1 already burned this: a prior agent on `118f4ee` tried to fix the same call site but typed `text-paper` (a Tailwind token that doesn't exist), JIT silently dropped it, and the dark-on-dark stayed live until phase38.1.
+
+**Files touched** (6): NearbyClient.tsx, CommunityGrid.tsx, c/[slug]/page.tsx, SavedClient.tsx, CommunityCarousel.tsx, CommunityListingCarousel.tsx.
+
+---
+
 ## 2026-06-18 22:30 UTC — phase38.1: fix systemic bg-ink + text-ink same-color regression (19 sites)
 
 **Objective**: Tianrou flagged the `+ New community` CTA on the workspace
