@@ -116,17 +116,20 @@ export default async function PublicListingPage({
   //
   // Dedup: drop any explore card whose listing.id === this listing.id
   // so we don't render the same listing twice.
+  // Phase 35.4 (2026-06-18): photo listings also flow into the explore
+  // tail now (see browse/feed/page.tsx). Same front-place strategy as
+  // video — keep this listing's rich card on top, append explore
+  // neighbors (mixed photo + video) so a buyer who landed via a share
+  // link can swipe through the rest of Explore.
   const photos =
     data.listingVideos.length === 0 ? await loadListingPhotos(data.listing.id) : null;
   const localCards = await buildListingCards(data, photos);
   const headCard = localCards[0];
 
   let cards = localCards;
-  if (headCard && headCard.mediaKind === 'video') {
+  if (headCard) {
     const exploreCards = await fetchBrowseCards();
-    const tail = exploreCards.filter(
-      (c) => c.mediaKind === 'video' && c.listing.id !== data.listing.id,
-    );
+    const tail = exploreCards.filter((c) => c.listing.id !== data.listing.id);
     cards = [headCard, ...tail];
   }
 

@@ -3,6 +3,12 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.35.4 — 2026-06-18
+
+### ✨ Improvements
+
+- **Photo listings now show up in the Explore swipe feed.** Previously the swipe stream skipped any listing that didn't have a video. From now on, photo and video listings flow through the same feed — buyers see one continuous stream, no matter how each listing was uploaded. The full action rail (Like / Save / Share / Contact) is identical on photo cards.
+
 ## v0.35.3 — 2026-06-17
 
 ### ✨ Features

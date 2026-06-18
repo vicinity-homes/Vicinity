@@ -2,6 +2,26 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-18 — phase35.4: photo listings join the swipe feed
+
+**Objective**: Tianrou (third report on the same surface): "888 Rhonda Place Southeast, Leesburg VA — image listing 还是没有进入 feed 流". DB confirms photo-only (0 videos, 1 ready photo). The Phase 10 (2026-06-12) `mediaKind === 'video'` filter at `app/(public)/browse/feed/page.tsx:49` was excluding it from `/browse/feed`. Original rationale ("TikTok for Homebuying = video-only") was an engineering boundary — buyers experience Explore as one stream regardless of media kind, and we already removed the same constraint on `/v/` in Phase 35.3.
+
+**Actions**:
+- `app/(public)/browse/feed/page.tsx` — drop the `mediaKind === 'video'` filter; pass `finalCards` straight through.
+- `app/(public)/v/[agentSlug]/[listingSlug]/page.tsx` — drop the matching guard so a photo headCard also gets the explore tail appended (mixed photo + video).
+
+**Decisions**:
+- No component changes needed. `BrowseFeed.tsx:1248` already routes `mediaKind === 'photo'` cards to `PhotoCard` (Phase 20 photo parity wired the full right-rail). Stopping the upstream filter is the entire fix.
+- Reversed Phase 10. Two independent signals (Phase 35.3 `/v/` and now `/browse/feed`) → the constraint is wrong, not the test. Treating Tianrou's repeat report as a product decision rather than a deploy/cache miss.
+
+**Verification**: tsc clean, pnpm build green.
+
+**Learnings**:
+- When you build a parity component (`PhotoCard` matches `Card`), audit upstream filters that predate it — they're the most likely zombie constraints.
+- A repeat bug report on the same surface signals the previous fix-or-explanation was wrong. Don't chase deploy/cache again.
+
+**Next steps**: Confirm with Tianrou that 888 Rhonda Place appears at `/browse/feed` after deploy.
+
 ## 2026-06-17 — phase35.3: agent dashboard rework (Tianrou batch)
 
 **Objective**: process Tianrou's full review queue from the second agent

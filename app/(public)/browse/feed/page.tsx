@@ -41,12 +41,14 @@ export default async function BrowseFeedPage({
   const finalCards =
     community && allCards.length === 0 ? await fetchBrowseCards() : allCards;
 
-  // Phase 10 (2026-06-12): the immersive swipe feed is video-only by
-  // design ("TikTok for Homebuying"). Photo-only listings still appear in
-  // the grid at `/browse`; clicking one opens the listing detail page,
-  // not this feed. Filter them out here so we don't surface a broken
-  // black card with no <video> source.
-  const cards = finalCards.filter((c) => c.mediaKind === 'video');
+  // Phase 35.4 (2026-06-18): photo-only listings now flow into the swipe
+  // feed alongside video listings. The Phase 10 video-only constraint was
+  // an engineering boundary leaking into product — buyers experience
+  // Explore as a single stream regardless of media kind. `BrowseFeed`
+  // already renders `PhotoCard` for `mediaKind === 'photo'` (Phase 20
+  // photo parity wired up the full right-rail), so no component changes
+  // are needed; we just stop filtering them out here.
+  const cards = finalCards;
 
   // Resolve `start` (a listing id) → array index. Bad / missing ids fall
   // through to 0 silently — preferable to a 404 because the swipe is just
