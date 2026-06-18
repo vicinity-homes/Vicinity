@@ -197,42 +197,42 @@ export async function DashboardMetrics({ agentId }: { agentId: string }) {
       {/* New leads (24h) */}
       <Link
         href="/dashboard/leads"
-        className="group flex flex-col justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-3 transition hover:border-gold/40 sm:p-5"
+        className="group flex flex-col justify-between rounded-2xl border border-line bg-surface p-3 transition hover:border-line-strong sm:p-5"
       >
-        <div className="text-[9px] uppercase tracking-widest text-gold sm:text-[11px]">
+        <div className="text-[9px] uppercase tracking-widest text-ink sm:text-[11px]">
           {m.newLeads24h > 0 ? `🔥 ${m.newLeads24h} new · 24h` : 'Leads · 24h'}
         </div>
-        <div className="mt-2 truncate font-serif text-base text-cream sm:text-2xl">
+        <div className="mt-2 truncate font-serif text-base text-ink sm:text-2xl">
           {m.latestLead ? m.latestLead.name : m.newLeads24h > 0 ? 'View →' : 'No new leads'}
         </div>
         {m.latestLead && (
-          <div className="mt-0.5 text-[10px] text-cream/50 sm:text-[11px]">
+          <div className="mt-0.5 text-[10px] text-muted sm:text-[11px]">
             {relTime(m.latestLead.created_at)}
           </div>
         )}
       </Link>
 
       {/* This week */}
-      <div className="flex flex-col justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-3 sm:p-5">
-        <div className="text-[9px] uppercase tracking-widest text-gold sm:text-[11px]">
+      <div className="flex flex-col justify-between rounded-2xl border border-line bg-surface p-3 sm:p-5">
+        <div className="text-[9px] uppercase tracking-widest text-ink sm:text-[11px]">
           This week
         </div>
         {totalThisWeek === 0 ? (
-          <div className="mt-2 font-serif text-cream/60 text-xs sm:text-base">
+          <div className="mt-2 font-serif text-ink2 text-xs sm:text-base">
             Waiting for views…
           </div>
         ) : (
           <>
-            <div className="mt-2 flex items-baseline gap-1.5 font-serif text-cream sm:gap-3">
+            <div className="mt-2 flex items-baseline gap-1.5 font-serif text-ink sm:gap-3">
               <span className="text-base sm:text-2xl">{m.thisWeek.views.toLocaleString()}</span>
-              <span className="text-[9px] text-cream/50 uppercase tracking-wider sm:text-xs">
+              <span className="text-[9px] text-muted uppercase tracking-wider sm:text-xs">
                 views
               </span>
             </div>
-            <div className="mt-1 text-[10px] text-cream/60 sm:text-xs">
+            <div className="mt-1 text-[10px] text-ink2 sm:text-xs">
               {m.thisWeek.saves}s · {m.thisWeek.leads}l
               {wowViews && (
-                <span className={wowViews.up ? ' text-gold' : ' text-bronze'}>
+                <span className={wowViews.up ? ' text-ink' : ' text-ink2'}>
                   {' '}
                   · {wowViews.txt}
                 </span>
@@ -246,24 +246,24 @@ export async function DashboardMetrics({ agentId }: { agentId: string }) {
       {m.topListing ? (
         <Link
           href={`/dashboard/listings/${m.topListing.id}/analytics`}
-          className="group flex flex-col justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-3 transition hover:border-gold/40 sm:p-5"
+          className="group flex flex-col justify-between rounded-2xl border border-line bg-surface p-3 transition hover:border-line-strong sm:p-5"
         >
-          <div className="text-[9px] uppercase tracking-widest text-gold sm:text-[11px]">
+          <div className="text-[9px] uppercase tracking-widest text-ink sm:text-[11px]">
             🏆 Top listing
           </div>
-          <div className="mt-2 truncate font-serif text-cream text-sm sm:text-xl">
+          <div className="mt-2 truncate font-serif text-ink text-sm sm:text-xl">
             {m.topListing.address ?? '(no address)'}
           </div>
-          <div className="mt-0.5 text-[10px] text-cream/60 sm:text-xs">
+          <div className="mt-0.5 text-[10px] text-ink2 sm:text-xs">
             {m.topListing.views}v · {m.topListing.leads}l
           </div>
         </Link>
       ) : (
-        <div className="flex flex-col justify-between rounded-2xl border border-cream/5 bg-ink2/60 p-3 sm:p-5">
-          <div className="text-[9px] uppercase tracking-widest text-gold sm:text-[11px]">
+        <div className="flex flex-col justify-between rounded-2xl border border-line bg-surface p-3 sm:p-5">
+          <div className="text-[9px] uppercase tracking-widest text-ink sm:text-[11px]">
             Top listing
           </div>
-          <div className="mt-2 font-serif text-cream/60 text-xs sm:text-base">No views yet</div>
+          <div className="mt-2 font-serif text-ink2 text-xs sm:text-base">No views yet</div>
         </div>
       )}
     </section>

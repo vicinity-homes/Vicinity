@@ -59,7 +59,7 @@ export function AvatarPicker({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-full border border-cream/20 bg-ink/40 px-3 py-1.5 text-cream/80 text-xs hover:border-gold/60 hover:text-cream"
+        className="inline-flex items-center gap-1.5 rounded-full border border-line bg-bg px-3 py-1.5 text-ink2 text-xs hover:border-line-strong hover:text-ink"
       >
         <Camera size={14} aria-hidden="true" />
         Change avatar
@@ -96,14 +96,14 @@ export function AvatarCircle({
         alt="Avatar"
         width={size}
         height={size}
-        className="rounded-full border border-gold/40 bg-ink2 object-cover"
+        className="rounded-full border border-line-strong bg-surface object-cover"
         style={{ width: size, height: size }}
       />
     );
   }
   return (
     <div
-      className="flex items-center justify-center rounded-full border border-gold/40 bg-ink2 font-serif text-cream"
+      className="flex items-center justify-center rounded-full border border-line-strong bg-surface font-serif text-ink"
       style={{ width: size, height: size, fontSize: Math.round(size * 0.4) }}
       aria-label="Avatar"
     >
@@ -141,25 +141,25 @@ function PickerModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-4 backdrop-blur"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-bg p-4 backdrop-blur"
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative w-full max-w-md overflow-hidden rounded-xl border border-cream/15 bg-ink2 shadow-2xl">
-        <div className="flex items-center justify-between border-cream/10 border-b px-4 py-3">
-          <div className="font-medium text-cream text-sm">Choose avatar</div>
+      <div className="relative w-full max-w-md overflow-hidden rounded-xl border border-line bg-surface shadow-2xl">
+        <div className="flex items-center justify-between border-line border-b px-4 py-3">
+          <div className="font-medium text-ink text-sm">Choose avatar</div>
           <button
             type="button"
             onClick={onClose}
             disabled={busy}
             aria-label="Close"
-            className="text-cream/60 hover:text-cream"
+            className="text-ink2 hover:text-ink"
           >
             <X size={18} aria-hidden="true" />
           </button>
         </div>
 
-        <div className="flex border-cream/10 border-b text-xs">
+        <div className="flex border-line border-b text-xs">
           <TabButton active={tab === 'presets'} onClick={() => setTab('presets')}>
             Presets
           </TabButton>
@@ -192,12 +192,12 @@ function PickerModal({
           ) : null}
 
           {currentUrl ? (
-            <div className="mt-4 border-cream/10 border-t pt-3 text-right">
+            <div className="mt-4 border-line border-t pt-3 text-right">
               <button
                 type="button"
                 onClick={() => void commit(null)}
                 disabled={busy}
-                className="text-cream/50 text-xs hover:text-rose-300"
+                className="text-muted text-xs hover:text-rose-300"
               >
                 Remove avatar
               </button>
@@ -224,8 +224,8 @@ function TabButton({
       onClick={onClick}
       className={`flex-1 px-4 py-2 transition ${
         active
-          ? 'border-gold border-b-2 text-cream'
-          : 'border-transparent border-b-2 text-cream/50 hover:text-cream/80'
+          ? 'border-line-strong border-b-2 text-ink'
+          : 'border-transparent border-b-2 text-muted hover:text-ink2'
       }`}
     >
       {children}
@@ -252,8 +252,8 @@ function PresetGrid({
             type="button"
             disabled={busy}
             onClick={() => onPick(preset)}
-            className={`relative aspect-square overflow-hidden rounded-full border-2 bg-ink transition ${
-              selected ? 'border-gold' : 'border-cream/15 hover:border-cream/40'
+            className={`relative aspect-square overflow-hidden rounded-full border-2 bg-bg transition ${
+              selected ? 'border-line-strong' : 'border-line hover:border-line'
             }`}
             aria-label="Select preset avatar"
             aria-pressed={selected}
@@ -342,11 +342,11 @@ function UploadCropPanel({
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-cream/15 border-dashed bg-ink/40 px-4 py-10 text-cream/70 transition hover:border-gold/40 hover:text-cream"
+          className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-line border-dashed bg-bg px-4 py-10 text-ink2 transition hover:border-line-strong hover:text-ink"
         >
           <Upload size={20} aria-hidden="true" />
           <span className="text-sm">Pick an image</span>
-          <span className="text-cream/40 text-xs">JPEG, PNG, or WebP · up to 5 MB</span>
+          <span className="text-muted text-xs">JPEG, PNG, or WebP · up to 5 MB</span>
         </button>
       </div>
     );
@@ -354,7 +354,7 @@ function UploadCropPanel({
 
   return (
     <div>
-      <div className="relative h-64 w-full overflow-hidden rounded-lg bg-ink">
+      <div className="relative h-64 w-full overflow-hidden rounded-lg bg-bg">
         <Cropper
           image={src}
           crop={crop}
@@ -382,7 +382,7 @@ function UploadCropPanel({
           type="button"
           onClick={() => setSrc(null)}
           disabled={busy}
-          className="flex-1 rounded-md border border-cream/15 px-3 py-2 text-cream/70 text-sm hover:text-cream"
+          className="flex-1 rounded-md border border-line px-3 py-2 text-ink2 text-sm hover:text-ink"
         >
           Pick another
         </button>
@@ -390,7 +390,7 @@ function UploadCropPanel({
           type="button"
           onClick={() => void confirm()}
           disabled={busy}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-gold px-3 py-2 font-medium text-ink text-sm transition hover:opacity-90 disabled:opacity-60"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-ink px-3 py-2 font-medium text-ink text-sm transition hover:opacity-90 disabled:opacity-60"
         >
           {busy ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : null}
           {busy ? 'Saving…' : 'Save avatar'}

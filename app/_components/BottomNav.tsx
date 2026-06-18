@@ -45,7 +45,7 @@ function TabButton({ tab, active }: { tab: Tab; active: boolean }) {
       href={tab.href}
       aria-current={active ? 'page' : undefined}
       className={`flex h-14 flex-col items-center justify-center gap-0.5 text-[10px] transition-colors ${
-        active ? 'text-gold' : 'text-cream/65 hover:text-cream'
+        active ? 'text-ink' : 'text-ink2 hover:text-ink'
       }`}
     >
       <Icon size={20} aria-hidden="true" />
@@ -64,7 +64,7 @@ export function BottomNav({ role }: { role: ViewerRole }) {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-cream/10 border-t bg-ink/90 backdrop-blur-md md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-line border-t bg-bg backdrop-blur-md md:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <ul className="mx-auto flex max-w-3xl items-stretch justify-around">

@@ -55,7 +55,7 @@ export function CopyLinkButton({ path, display }: Props) {
     <button
       type="button"
       onClick={onClick}
-      className="group inline-flex max-w-full items-center gap-2 rounded-full border border-bronze/30 bg-ink px-3 py-1.5 text-xs text-cream/80 transition hover:border-gold hover:text-gold"
+      className="group inline-flex max-w-full items-center gap-2 rounded-full border border-line bg-bg px-3 py-1.5 text-xs text-ink2 transition hover:border-line-strong hover:text-ink"
       title="Copy public link"
     >
       <svg

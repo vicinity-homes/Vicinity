@@ -37,10 +37,10 @@ export default async function ProfilePage() {
 
   if (!user) {
     return (
-      <main className="min-h-dvh bg-ink text-cream">
+      <main className="min-h-dvh bg-bg text-ink">
         <Header />
         <section className="mx-auto max-w-md px-6 py-12">
-          <h1 className="font-serif text-3xl text-cream">Welcome</h1>
+          <h1 className="font-serif text-3xl text-ink">Welcome</h1>
 
           <div className="mt-8 flex flex-col gap-3">
             <Link
@@ -81,7 +81,7 @@ export default async function ProfilePage() {
 
   if (agent) {
     return (
-      <main className="min-h-dvh bg-ink text-cream pb-20 md:pb-0">
+      <main className="min-h-dvh bg-bg text-ink pb-20 md:pb-0">
         <Header />
         <section className="mx-auto max-w-md px-6 py-8">
           <EditableAgentIdentity
@@ -96,11 +96,11 @@ export default async function ProfilePage() {
             <NearbyRadiusPref />
           </div>
 
-          <div className="mt-6 rounded-xl border border-cream/10 bg-ink2/40 p-4 text-xs text-cream/60">
-            <div className="font-medium text-cream/80">Account settings</div>
+          <div className="mt-6 rounded-xl border border-line bg-surface p-4 text-xs text-ink2">
+            <div className="font-medium text-ink2">Account settings</div>
             <div className="mt-1">
               Need to change your password? Use{' '}
-              <Link href="/forgot-password" className="text-gold hover:underline">
+              <Link href="/forgot-password" className="text-ink hover:underline">
                 Forgot password
               </Link>{' '}
               to send yourself a one-time code.
@@ -125,7 +125,7 @@ export default async function ProfilePage() {
             <form action="/api/auth/signout" method="post">
               <button
                 type="submit"
-                className="w-full rounded-full border border-cream/15 px-6 py-3 text-cream/70 text-sm transition hover:text-cream"
+                className="w-full rounded-full border border-line px-6 py-3 text-ink2 text-sm transition hover:text-ink"
               >
                 Sign out
               </button>
@@ -149,7 +149,7 @@ export default async function ProfilePage() {
   const buyerDisplayName = buyer?.display_name?.trim() || user.email?.split('@')[0] || 'Buyer';
 
   return (
-    <main className="min-h-dvh bg-ink text-cream pb-20 md:pb-0">
+    <main className="min-h-dvh bg-bg text-ink pb-20 md:pb-0">
       <Header />
       <section className="mx-auto max-w-md px-6 py-8">
         <EditableBuyerIdentity
@@ -163,11 +163,11 @@ export default async function ProfilePage() {
           <NearbyRadiusPref />
         </div>
 
-        <div className="mt-6 rounded-xl border border-cream/10 bg-ink2/40 p-4 text-xs text-cream/60">
-          <div className="font-medium text-cream/80">Account settings</div>
+        <div className="mt-6 rounded-xl border border-line bg-surface p-4 text-xs text-ink2">
+          <div className="font-medium text-ink2">Account settings</div>
           <div className="mt-1">
             Need to change your password? Use{' '}
-            <Link href="/forgot-password" className="text-gold hover:underline">
+            <Link href="/forgot-password" className="text-ink hover:underline">
               Forgot password
             </Link>{' '}
             to send yourself a one-time code.
@@ -184,7 +184,7 @@ export default async function ProfilePage() {
           <form action="/api/auth/signout" method="post">
             <button
               type="submit"
-              className="w-full rounded-full border border-cream/15 px-6 py-3 text-cream/70 text-sm transition hover:text-cream"
+              className="w-full rounded-full border border-line px-6 py-3 text-ink2 text-sm transition hover:text-ink"
             >
               Sign out
             </button>
@@ -197,8 +197,8 @@ export default async function ProfilePage() {
 
 function Header() {
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-center border-cream/10 border-b bg-ink/85 px-4 py-3 backdrop-blur-md md:hidden">
-      <div className="font-medium text-cream/80 text-sm uppercase tracking-wider">Profile</div>
+    <header className="sticky top-0 z-20 flex items-center justify-center border-line border-b bg-bg px-4 py-3 backdrop-blur-md md:hidden">
+      <div className="font-medium text-ink2 text-sm uppercase tracking-wider">Profile</div>
     </header>
   );
 }

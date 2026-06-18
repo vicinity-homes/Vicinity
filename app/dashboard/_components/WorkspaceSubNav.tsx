@@ -32,7 +32,7 @@ export function WorkspaceSubNav({ active, cta }: { active: Section; cta?: ReactN
             <span
               key={s.key}
               aria-current="page"
-              className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 font-medium text-gold"
+              className="rounded-full border border-line-strong bg-ink/10 px-3 py-1.5 font-medium text-ink"
             >
               {s.label}
             </span>
@@ -40,7 +40,7 @@ export function WorkspaceSubNav({ active, cta }: { active: Section; cta?: ReactN
             <Link
               key={s.key}
               href={s.href}
-              className="rounded-full border border-cream/15 px-3 py-1.5 text-cream/70 transition hover:border-gold/40 hover:text-cream"
+              className="rounded-full border border-line px-3 py-1.5 text-ink2 transition hover:border-line-strong hover:text-ink"
             >
               {s.label}
             </Link>

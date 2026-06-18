@@ -83,18 +83,18 @@ export function CommunityListingsSheet({
         role="dialog"
         aria-modal="true"
         aria-label={`Homes in ${communityName}`}
-        className={`fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-2xl border-cream/15 border-t bg-ink text-cream shadow-2xl transition-transform duration-300 ${
+        className={`fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-2xl border-line border-t bg-bg text-ink shadow-2xl transition-transform duration-300 ${
           open ? 'translate-y-0' : 'translate-y-full'
         }`}
       >
         <div className="flex justify-center pt-3 pb-1">
-          <div className="h-1 w-10 rounded-full bg-cream/30" />
+          <div className="h-1 w-10 rounded-full bg-surface/30" />
         </div>
 
         <div className="flex items-start justify-between gap-3 px-4 pb-3">
           <div className="min-w-0">
             <h2 className="font-serif text-xl leading-tight">Homes in {communityName}</h2>
-            <p className="mt-0.5 text-[12px] text-cream/60">
+            <p className="mt-0.5 text-[12px] text-ink2">
               {listings.length} {listings.length === 1 ? 'active listing' : 'active listings'}
               {listings.length > 0 && ' · sorted by newest'}
             </p>
@@ -103,7 +103,7 @@ export function CommunityListingsSheet({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="-mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-cream/70 transition-colors hover:bg-cream/10 hover:text-cream"
+            className="-mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink2 transition-colors hover:bg-surface/10 hover:text-ink"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path
@@ -118,7 +118,7 @@ export function CommunityListingsSheet({
 
         <div className="flex-1 overflow-y-auto pb-[env(safe-area-inset-bottom)]">
           {listings.length === 0 ? (
-            <div className="px-4 py-12 text-center text-[13px] text-cream/55">
+            <div className="px-4 py-12 text-center text-[13px] text-ink2">
               No homes for sale in this community yet.
             </div>
           ) : (
@@ -139,9 +139,9 @@ export function CommunityListingsSheet({
                     <button
                       type="button"
                       onClick={() => onOpenListing(idx)}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-cream/5"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-surface/5"
                     >
-                      <div className="relative aspect-[4/5] w-20 shrink-0 overflow-hidden rounded-lg bg-ink2 ring-1 ring-cream/10">
+                      <div className="relative aspect-[4/5] w-20 shrink-0 overflow-hidden rounded-lg bg-surface ring-1 ring-line">
                         {poster ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -151,30 +151,30 @@ export function CommunityListingsSheet({
                             loading="lazy"
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center text-cream/30 text-xs">
+                          <div className="flex h-full w-full items-center justify-center text-muted text-xs">
                             —
                           </div>
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
                         {l.price != null && (
-                          <div className="font-semibold text-cream text-base">
+                          <div className="font-semibold text-ink text-base">
                             {formatPrice(l.price)}
                           </div>
                         )}
-                        <div className="mt-0.5 truncate text-[13px] text-cream/85">
+                        <div className="mt-0.5 truncate text-[13px] text-ink2">
                           {l.address}
                         </div>
-                        <div className="truncate text-[12px] text-cream/55">
+                        <div className="truncate text-[12px] text-ink2">
                           {l.city}, {l.state}
                         </div>
                         {(l.beds != null || l.baths != null || l.sqft != null) && (
-                          <div className="mt-1 text-[12px] text-cream/70">
+                          <div className="mt-1 text-[12px] text-ink2">
                             {formatBedBathSqft(l)}
                           </div>
                         )}
                       </div>
-                      <div className="text-cream/40" aria-hidden="true">
+                      <div className="text-muted" aria-hidden="true">
                         ›
                       </div>
                     </button>

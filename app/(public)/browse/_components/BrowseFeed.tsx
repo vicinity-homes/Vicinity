@@ -249,7 +249,7 @@ function ActionButton({
   const activeCls =
     activeColor === 'rose'
       ? 'border-rose-400/70 bg-rose-400/20 text-rose-400'
-      : 'border-gold/70 bg-gold/20 text-gold';
+      : 'border-cream/40 bg-cream/15 text-cream';
   const cls = `flex h-12 w-12 items-center justify-center rounded-full border backdrop-blur transition ${
     active
       ? activeCls
@@ -262,7 +262,7 @@ function ActionButton({
       <span className="relative">
         <span className={cls}>{children}</span>
         {badge ? (
-          <span className="-right-1 -top-1 absolute rounded-full bg-gold px-1.5 py-0.5 font-semibold text-[9px] text-ink leading-none tabular-nums">
+          <span className="-right-1 -top-1 absolute rounded-full bg-cream px-1.5 py-0.5 font-semibold text-[9px] text-ink leading-none tabular-nums">
             {badge}
           </span>
         ) : null}
@@ -450,7 +450,7 @@ function PhotoCard({
             type="button"
             onClick={goPrev}
             aria-label="Previous photo"
-            className="-translate-y-1/2 absolute top-1/2 left-3 z-10 hidden h-10 w-10 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur transition-colors hover:border-gold hover:text-gold md:flex"
+            className="-translate-y-1/2 absolute top-1/2 left-3 z-10 hidden h-10 w-10 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur transition-colors hover:border-cream hover:text-cream md:flex"
             style={{ touchAction: 'manipulation' }}
           >
             ‹
@@ -459,7 +459,7 @@ function PhotoCard({
             type="button"
             onClick={goNext}
             aria-label="Next photo"
-            className="-translate-y-1/2 absolute top-1/2 right-3 z-10 hidden h-10 w-10 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur transition-colors hover:border-gold hover:text-gold md:flex"
+            className="-translate-y-1/2 absolute top-1/2 right-3 z-10 hidden h-10 w-10 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur transition-colors hover:border-cream hover:text-cream md:flex"
             style={{ touchAction: 'manipulation' }}
           >
             ›
@@ -506,7 +506,7 @@ function PhotoCard({
         )}
         <Link
           href={`/a/${card.agent.slug}`}
-          className="mt-2 inline-block text-cream/80 text-xs hover:text-gold"
+          className="mt-2 inline-block text-cream/80 text-xs hover:text-cream"
           onClick={(e) => e.stopPropagation()}
         >
           Listed by {card.agent.name}
@@ -748,8 +748,8 @@ function Card({
        * dropped — the title alone reads cleaner and the blurb was
        * pushing the pill into a multi-line wrap on long captions. */}
       {source === 'nearby' && sel.category && (
-        <div className="absolute top-16 left-5 z-10 inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/15 px-3 py-1 backdrop-blur">
-          <span className="font-medium text-[11px] text-gold uppercase tracking-wider">
+        <div className="absolute top-16 left-5 z-10 inline-flex items-center gap-2 rounded-full border border-cream/40 bg-cream/15 px-3 py-1 backdrop-blur">
+          <span className="font-medium text-[11px] text-cream uppercase tracking-wider">
             {sel.line1}
           </span>
           {poolSize > 1 && (
@@ -774,7 +774,7 @@ function Card({
             onOpenCommunitySheet();
           }}
           aria-label={`Explore ${card.community.name} community`}
-          className="absolute top-16 left-3 z-10 flex max-w-[70%] items-center gap-2 rounded-full border border-cream/15 bg-ink/65 py-1.5 pr-3 pl-2 text-cream backdrop-blur-md transition-colors hover:border-gold/60"
+          className="absolute top-16 left-3 z-10 flex max-w-[70%] items-center gap-2 rounded-full border border-cream/15 bg-ink/65 py-1.5 pr-3 pl-2 text-cream backdrop-blur-md transition-colors hover:border-cream/40"
           style={{ touchAction: 'manipulation' }}
         >
           <span className="text-base leading-none">🏘️</span>
@@ -806,7 +806,7 @@ function Card({
               onSwipe(-1);
             }}
             aria-label="Previous nearby video"
-            className="-translate-x-1/2 absolute top-20 left-1/2 z-10 hidden h-10 w-10 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur transition-colors hover:border-gold hover:text-gold md:flex"
+            className="-translate-x-1/2 absolute top-20 left-1/2 z-10 hidden h-10 w-10 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur transition-colors hover:border-cream hover:text-cream md:flex"
             style={{ touchAction: 'manipulation' }}
           >
             ‹
@@ -818,7 +818,7 @@ function Card({
               onSwipe(1);
             }}
             aria-label="Next nearby video"
-            className="-translate-x-1/2 absolute bottom-32 left-1/2 z-10 hidden h-10 w-10 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur transition-colors hover:border-gold hover:text-gold md:flex"
+            className="-translate-x-1/2 absolute bottom-32 left-1/2 z-10 hidden h-10 w-10 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur transition-colors hover:border-cream hover:text-cream md:flex"
             style={{ touchAction: 'manipulation', transform: 'translateX(-50%) rotate(180deg)' }}
           >
             ‹
@@ -862,7 +862,7 @@ function Card({
         )}
         <Link
           href={`/a/${card.agent.slug}`}
-          className="mt-2 inline-block text-cream/80 text-xs hover:text-gold"
+          className="mt-2 inline-block text-cream/80 text-xs hover:text-cream"
           onClick={(e) => e.stopPropagation()}
         >
           Listed by {card.agent.name}
@@ -894,7 +894,7 @@ function DescriptionBlock({ paragraphs }: { paragraphs: string[] }) {
                 e.stopPropagation();
                 setExpanded(false);
               }}
-              className="text-cream/60 hover:text-gold"
+              className="text-cream/60 hover:text-cream"
             >
               less
             </button>
@@ -910,7 +910,7 @@ function DescriptionBlock({ paragraphs }: { paragraphs: string[] }) {
                 e.stopPropagation();
                 setExpanded(true);
               }}
-              className="ml-1 text-cream/60 hover:text-gold"
+              className="ml-1 text-cream/60 hover:text-cream"
             >
               ... more
             </button>
@@ -1379,7 +1379,7 @@ export function BrowseFeed({
             }
           }}
           aria-label={activeSource !== 'hero' ? 'Back to listing video' : 'Back'}
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur-md transition-colors hover:border-gold hover:text-gold"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur-md transition-colors hover:border-cream hover:text-cream"
           style={{ touchAction: 'manipulation' }}
         >
           <BackArrowIcon />
@@ -1389,7 +1389,7 @@ export function BrowseFeed({
             type="button"
             onClick={onShare}
             aria-label="Share listing"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur-md transition-colors hover:border-gold hover:text-gold"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur-md transition-colors hover:border-cream hover:text-cream"
             style={{ touchAction: 'manipulation' }}
           >
             <ShareIcon />

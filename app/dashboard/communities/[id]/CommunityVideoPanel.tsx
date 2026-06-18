@@ -145,16 +145,16 @@ export function CommunityVideoPanel({
   };
 
   return (
-    <section className="rounded border border-bronze/30 bg-ink2 p-5">
+    <section className="rounded border border-line bg-surface p-5">
       <div className="mb-4 flex items-baseline justify-between">
         <h2 className="text-base font-semibold">Upload a video</h2>
-        <span className="text-xs text-cream/50">{videos.length} uploaded</span>
+        <span className="text-xs text-muted">{videos.length} uploaded</span>
       </div>
 
       {/* ── Address (Phase 23) ───────────────────────────────────── */}
       <div className="mb-4">
-        <label htmlFor="cv-address" className="mb-1 block text-xs font-medium text-cream/70">
-          Address <span className="text-cream/40">(optional)</span>
+        <label htmlFor="cv-address" className="mb-1 block text-xs font-medium text-ink2">
+          Address <span className="text-muted">(optional)</span>
         </label>
         <input
           id="cv-address"
@@ -163,9 +163,9 @@ export function CommunityVideoPanel({
           onChange={(e) => setAddress(e.target.value)}
           placeholder="e.g. Smith Park, 123 Main St — or leave blank to use current location"
           maxLength={200}
-          className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-sm text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+          className="w-full rounded border border-line bg-bg px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-line-strong focus:outline-none focus:ring-1 focus:ring-line-strong"
         />
-        <p className="mt-1 text-[11px] text-cream/50">
+        <p className="mt-1 text-[11px] text-muted">
           What's in the video — readable for buyers. If left blank, we use your phone's location
           quietly so this still shows up in Nearby.
         </p>
@@ -179,7 +179,7 @@ export function CommunityVideoPanel({
 
       {videos.length > 0 && (
         <details className="mt-4">
-          <summary className="cursor-pointer select-none text-xs uppercase tracking-wide text-cream/60 hover:text-cream">
+          <summary className="cursor-pointer select-none text-xs uppercase tracking-wide text-ink2 hover:text-ink">
             Already uploaded ({videos.length})
           </summary>
           <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -188,9 +188,9 @@ export function CommunityVideoPanel({
                 ? (COMMUNITY_VIDEO_CATEGORIES.find((c) => c.id === v.category)?.label ?? v.category)
                 : v.kind;
               return (
-                <li key={v.id} className="flex gap-3 rounded border border-bronze/20 p-3 text-sm">
+                <li key={v.id} className="flex gap-3 rounded border border-line p-3 text-sm">
                   <div
-                    className="h-16 w-28 flex-shrink-0 overflow-hidden rounded bg-ink"
+                    className="h-16 w-28 flex-shrink-0 overflow-hidden rounded bg-bg"
                     style={{
                       backgroundImage: `url(${thumbnailUrl(v.cf_video_id)})`,
                       backgroundSize: 'cover',
@@ -198,8 +198,8 @@ export function CommunityVideoPanel({
                     }}
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium text-cream">{v.title ?? '(untitled)'}</div>
-                    <div className="text-xs text-cream/50">
+                    <div className="truncate font-medium text-ink">{v.title ?? '(untitled)'}</div>
+                    <div className="text-xs text-muted">
                       {displayCategory}
                       {v.category_needs_review ? (
                         <span className="ml-1 rounded bg-yellow-500/20 px-1 py-0.5 text-[10px] text-yellow-300">
@@ -211,7 +211,7 @@ export function CommunityVideoPanel({
                           {' · '}
                           <span
                             className={
-                              v.status === 'error' ? 'text-red-400' : 'text-cream/50'
+                              v.status === 'error' ? 'text-red-400' : 'text-muted'
                             }
                           >
                             {v.status === 'error' ? 'Upload failed' : 'Processing…'}

@@ -8,7 +8,7 @@ import { useState } from 'react';
 type Status = 'idle' | 'sending' | 'error';
 
 const inputCls =
-  'mt-1 w-full rounded-lg border border-white/10 bg-ink px-3 py-2 text-sm text-cream placeholder:text-cream/30 focus:border-gold focus:outline-none disabled:opacity-50';
+  'mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-line-strong focus:outline-none disabled:opacity-50';
 
 export function ForgotPasswordForm() {
   const router = useRouter();
@@ -47,13 +47,13 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl border border-white/5 bg-ink2/60 p-8">
-      <h1 className="font-serif text-3xl text-cream">Forgot password</h1>
-      <p className="mt-1 text-sm text-cream/50">
+    <form onSubmit={handleSubmit} className="rounded-2xl border border-line bg-surface p-8">
+      <h1 className="font-serif text-3xl text-ink">Forgot password</h1>
+      <p className="mt-1 text-sm text-muted">
         Enter your email. We&apos;ll send a 6-digit code to reset your password.
       </p>
       <label className="mt-6 block">
-        <span className="text-xs text-cream/60">Email</span>
+        <span className="text-xs text-ink2">Email</span>
         <input
           type="email"
           required

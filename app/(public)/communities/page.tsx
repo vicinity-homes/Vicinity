@@ -15,8 +15,8 @@ export default async function CommunitiesGridPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
       <header className="mb-6">
-        <h1 className="font-semibold text-2xl text-cream tracking-tight">Communities</h1>
-        <p className="mt-1 text-cream/60 text-sm">
+        <h1 className="font-semibold text-2xl text-ink tracking-tight">Communities</h1>
+        <p className="mt-1 text-ink2 text-sm">
           Walk the block, hear the morning rush, see what after-dark really looks like — twelve
           neighborhood stories per community.
         </p>

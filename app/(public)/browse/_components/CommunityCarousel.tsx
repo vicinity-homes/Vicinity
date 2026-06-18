@@ -116,17 +116,17 @@ export function CommunityCarousel({
           type="button"
           onClick={onClose}
           aria-label="Back to listing"
-          className="flex h-11 items-center gap-2 rounded-full border border-cream/20 bg-ink/55 pr-3 pl-2 text-cream backdrop-blur-md transition-colors hover:border-gold hover:text-gold"
+          className="flex h-11 items-center gap-2 rounded-full border border-line bg-bg pr-3 pl-2 text-ink backdrop-blur-md transition-colors hover:border-line-strong hover:text-ink"
         >
           <span className="text-xl leading-none">‹</span>
           <span className="flex flex-col text-left leading-tight">
             <span className="text-[12px] font-semibold">Back</span>
-            <span className="max-w-[40vw] truncate text-[10px] text-cream/65">
+            <span className="max-w-[40vw] truncate text-[10px] text-ink2">
               {backLabel}
             </span>
           </span>
         </button>
-        <div className="flex h-9 items-center rounded-full bg-ink/55 px-3 font-medium text-[12px] text-cream backdrop-blur-md tabular-nums">
+        <div className="flex h-9 items-center rounded-full bg-bg px-3 font-medium text-[12px] text-ink backdrop-blur-md tabular-nums">
           {safeActive + 1} / {total}
         </div>
       </div>
@@ -137,7 +137,7 @@ export function CommunityCarousel({
           <div
             key={`${v.cfVideoId}-prog`}
             className={`h-0.5 flex-1 rounded-full ${
-              i <= safeActive ? 'bg-gold' : 'bg-cream/20'
+              i <= safeActive ? 'bg-ink' : 'bg-surface/20'
             }`}
           />
         ))}
@@ -166,7 +166,7 @@ export function CommunityCarousel({
             type="button"
             onClick={() => setActive((i) => Math.max(0, i - 1))}
             aria-label="Previous video"
-            className="-translate-y-1/2 absolute top-1/2 left-3 hidden h-11 w-11 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur-md transition-colors hover:border-gold hover:text-gold md:flex"
+            className="-translate-y-1/2 absolute top-1/2 left-3 hidden h-11 w-11 items-center justify-center rounded-full border border-line bg-bg text-ink backdrop-blur-md transition-colors hover:border-line-strong hover:text-ink md:flex"
           >
             ‹
           </button>
@@ -176,7 +176,7 @@ export function CommunityCarousel({
             type="button"
             onClick={() => setActive((i) => Math.min(total - 1, i + 1))}
             aria-label="Next video"
-            className="-translate-y-1/2 absolute top-1/2 right-3 hidden h-11 w-11 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur-md transition-colors hover:border-gold hover:text-gold md:flex"
+            className="-translate-y-1/2 absolute top-1/2 right-3 hidden h-11 w-11 items-center justify-center rounded-full border border-line bg-bg text-ink backdrop-blur-md transition-colors hover:border-line-strong hover:text-ink md:flex"
           >
             ›
           </button>
@@ -184,7 +184,7 @@ export function CommunityCarousel({
 
         {/* Swipe hint, fades after first move. */}
         {safeActive === 0 && total > 1 && (
-          <div className="pointer-events-none absolute bottom-24 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-[10px] text-cream/70 uppercase tracking-widest">
+          <div className="pointer-events-none absolute bottom-24 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-[10px] text-ink2 uppercase tracking-widest">
             ← swipe →
           </div>
         )}
@@ -288,11 +288,11 @@ function CarouselSlide({
       ) : null}
 
       {/* Category label */}
-      <div className="absolute top-24 left-4 inline-flex items-center rounded-full border border-gold/40 bg-gold/15 px-3 py-1 text-[11px] font-medium text-gold uppercase tracking-wider backdrop-blur-md">
+      <div className="absolute top-24 left-4 inline-flex items-center rounded-full border border-line-strong bg-ink/15 px-3 py-1 text-[11px] font-medium text-ink uppercase tracking-wider backdrop-blur-md">
         {video.line1}
       </div>
       {video.line2 && (
-        <div className="absolute right-4 bottom-8 left-4 text-[13px] text-cream/85 leading-snug drop-shadow">
+        <div className="absolute right-4 bottom-8 left-4 text-[13px] text-ink2 leading-snug drop-shadow">
           {video.line2}
         </div>
       )}

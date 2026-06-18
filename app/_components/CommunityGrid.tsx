@@ -14,7 +14,7 @@ import type { CommunityListCard } from '@/lib/communities/list';
 export function CommunityGrid({ communities }: { communities: CommunityListCard[] }) {
   if (communities.length === 0) {
     return (
-      <p className="rounded-lg border border-cream/10 bg-ink2 px-4 py-6 text-cream/60 text-sm">
+      <p className="rounded-lg border border-line bg-surface px-4 py-6 text-ink2 text-sm">
         No communities yet.
       </p>
     );
@@ -26,7 +26,7 @@ export function CommunityGrid({ communities }: { communities: CommunityListCard[
         <li key={c.id}>
           <Link
             href={`/c/${c.slug}`}
-            className="group relative block aspect-[9/16] overflow-hidden rounded-xl bg-ink2 ring-1 ring-bronze/30 transition hover:ring-gold/60"
+            className="group relative block aspect-[9/16] overflow-hidden rounded-xl bg-surface ring-1 ring-line transition hover:ring-line-strong"
           >
             {c.cover ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -38,21 +38,21 @@ export function CommunityGrid({ communities }: { communities: CommunityListCard[
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-bronze/20 to-ink">
-                <span className="font-semibold text-3xl text-cream/30">{c.name.charAt(0)}</span>
+                <span className="font-semibold text-3xl text-muted">{c.name.charAt(0)}</span>
               </div>
             )}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink via-ink/80 to-transparent p-3 pt-10">
-              <div className="font-medium text-cream text-sm leading-tight">{c.name}</div>
-              <div className="mt-0.5 text-cream/60 text-[11px]">
+              <div className="font-medium text-ink text-sm leading-tight">{c.name}</div>
+              <div className="mt-0.5 text-ink2 text-[11px]">
                 {c.city ? `${c.city}, ${c.state}` : c.state}
               </div>
               {/* Real counters only — videos + active listings. */}
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 rounded-full bg-gold/20 px-2 py-0.5 text-[10px] text-gold backdrop-blur">
+                <span className="inline-flex items-center gap-1 rounded-full bg-ink/20 px-2 py-0.5 text-[10px] text-ink backdrop-blur">
                   {c.videoCount} {c.videoCount === 1 ? 'video' : 'videos'}
                 </span>
                 {c.listingCount > 0 && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-cream/10 px-2 py-0.5 text-[10px] text-cream/80 backdrop-blur">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-surface/10 px-2 py-0.5 text-[10px] text-ink2 backdrop-blur">
                     {c.listingCount} {c.listingCount === 1 ? 'home' : 'homes'}
                   </span>
                 )}

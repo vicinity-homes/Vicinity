@@ -336,8 +336,8 @@ function VideoCard({
        * (post-V1), they replace the blurb here. */}
       <div className="absolute right-20 bottom-20 left-4 text-cream">
         {cat && (
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/15 px-3 py-1 backdrop-blur">
-            <span className="font-medium text-gold text-xs">{cat.label}</span>
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cream/40 bg-cream/15 px-3 py-1 backdrop-blur">
+            <span className="font-medium text-cream text-xs">{cat.label}</span>
           </div>
         )}
         {cat?.blurb && (
@@ -518,7 +518,7 @@ export function CommunityVideoFeed({
 
   if (videos.length === 0) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-ink text-cream/60 text-sm">
+      <div className="flex h-screen w-full items-center justify-center bg-bg text-muted text-sm">
         No videos in this community yet.
       </div>
     );
@@ -552,7 +552,7 @@ export function CommunityVideoFeed({
           type="button"
           onClick={onBack}
           aria-label={`Back to ${community.name}`}
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur-md transition-colors hover:border-gold hover:text-gold"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur-md transition-colors hover:border-cream hover:text-cream"
           style={{ touchAction: 'manipulation' }}
         >
           <BackArrowIcon />
@@ -569,7 +569,7 @@ export function CommunityVideoFeed({
           type="button"
           onClick={onShare}
           aria-label="Share community"
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur-md transition-colors hover:border-gold hover:text-gold"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur-md transition-colors hover:border-cream hover:text-cream"
           style={{ touchAction: 'manipulation' }}
         >
           <ShareIcon />
@@ -606,7 +606,7 @@ export function CommunityVideoFeed({
            aria-label="Save community"
            className={`flex h-12 w-12 items-center justify-center rounded-full border backdrop-blur transition ${
              saved
-               ? 'border-gold/70 bg-gold/20 text-gold'
+               ? 'border-cream/40 bg-cream/15 text-cream'
                : 'border-cream/20 bg-ink/40 text-cream hover:border-cream/50'
            }`}
          >
@@ -636,7 +636,7 @@ export function CommunityVideoFeed({
            aria-label={`View ${listings.length} ${
              listings.length === 1 ? 'home' : 'homes'
            } in ${community.name}`}
-           className="absolute top-16 left-3 z-20 flex items-center gap-1.5 rounded-full border border-cream/20 bg-ink/65 py-2 pr-3 pl-3 text-cream backdrop-blur-md transition-colors hover:border-gold hover:text-gold"
+           className="absolute top-16 left-3 z-20 flex items-center gap-1.5 rounded-full border border-cream/20 bg-ink/65 py-2 pr-3 pl-3 text-cream backdrop-blur-md transition-colors hover:border-cream hover:text-cream"
            style={{ touchAction: 'manipulation' }}
          >
            <span aria-hidden="true">🏠</span>

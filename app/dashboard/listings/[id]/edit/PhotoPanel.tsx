@@ -200,8 +200,8 @@ export function PhotoPanel({ listingId, initialPhotos, initialCoverPhotoId }: Pr
           return (
             <div
               key={photo.id}
-              className={`group relative aspect-[4/3] overflow-hidden rounded border bg-ink ${
-                isCover ? 'border-gold/70 ring-1 ring-gold/40' : 'border-bronze/20'
+              className={`group relative aspect-[4/3] overflow-hidden rounded border bg-bg ${
+                isCover ? 'border-line-strong ring-1 ring-line-strong' : 'border-line'
               }`}
             >
               {/* Cross-origin Supabase URL — next/image domain config out of scope. */}
@@ -213,7 +213,7 @@ export function PhotoPanel({ listingId, initialPhotos, initialCoverPhotoId }: Pr
               />
 
               {isCover ? (
-                <span className="absolute top-1.5 left-1.5 rounded bg-gold px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">
+                <span className="absolute top-1.5 left-1.5 rounded bg-ink px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">
                   Cover
                 </span>
               ) : null}
@@ -224,10 +224,10 @@ export function PhotoPanel({ listingId, initialPhotos, initialCoverPhotoId }: Pr
                 disabled={coverPending}
                 aria-label={isCover ? 'Clear cover' : 'Set as cover'}
                 title={isCover ? 'Clear cover' : 'Set as cover'}
-                className={`absolute top-1.5 right-9 rounded bg-ink/80 p-1.5 disabled:opacity-50 ${
+                className={`absolute top-1.5 right-9 rounded bg-bg p-1.5 disabled:opacity-50 ${
                   isCover
-                    ? 'text-gold block'
-                    : 'hidden text-cream/80 hover:text-gold group-hover:block'
+                    ? 'text-ink block'
+                    : 'hidden text-ink2 hover:text-ink group-hover:block'
                 }`}
               >
                 <Star size={14} aria-hidden="true" fill={isCover ? 'currentColor' : 'none'} />
@@ -237,7 +237,7 @@ export function PhotoPanel({ listingId, initialPhotos, initialCoverPhotoId }: Pr
                 type="button"
                 onClick={() => handleDelete(photo.id)}
                 aria-label="Delete photo"
-                className="absolute top-1.5 right-1.5 hidden rounded bg-ink/80 p-1.5 text-cream/80 hover:text-red-300 group-hover:block"
+                className="absolute top-1.5 right-1.5 hidden rounded bg-bg p-1.5 text-ink2 hover:text-red-300 group-hover:block"
               >
                 <Trash2 size={14} aria-hidden="true" />
               </button>
@@ -248,11 +248,11 @@ export function PhotoPanel({ listingId, initialPhotos, initialCoverPhotoId }: Pr
         {pending.map((p) => (
           <div
             key={p.tempId}
-            className="relative aspect-[4/3] overflow-hidden rounded border border-bronze/20 bg-ink"
+            className="relative aspect-[4/3] overflow-hidden rounded border border-line bg-bg"
           >
             {/* Object-URL preview during upload. */}
             <img src={p.preview} alt="" className="h-full w-full object-cover opacity-50" />
-            <div className="absolute inset-0 flex items-center justify-center text-cream/80 text-xs">
+            <div className="absolute inset-0 flex items-center justify-center text-ink2 text-xs">
               {p.error ? <span className="text-red-300">{p.error}</span> : 'Uploading…'}
             </div>
           </div>
@@ -276,12 +276,12 @@ export function PhotoPanel({ listingId, initialPhotos, initialCoverPhotoId }: Pr
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="inline-flex items-center gap-2 rounded-md border border-bronze/40 bg-ink/40 px-4 py-2 text-cream/90 text-sm hover:border-bronze hover:text-cream"
+          className="inline-flex items-center gap-2 rounded-md border border-line bg-bg px-4 py-2 text-ink2 text-sm hover:border-bronze hover:text-ink"
         >
           <Upload size={16} aria-hidden="true" />
           Add photos
         </button>
-        <p className="mt-2 text-cream/50 text-xs">JPEG / PNG / WebP, up to 10 MB each.</p>
+        <p className="mt-2 text-muted text-xs">JPEG / PNG / WebP, up to 10 MB each.</p>
       </div>
     </div>
   );

@@ -42,23 +42,23 @@ function StatusBanner({
   // tone variant ships its own border / pill / button classes.
   const tone = isPublished
     ? {
-        wrapper: 'border-gold/40 bg-gold/10 text-gold',
-        pill: 'border-gold/40',
-        helpText: 'text-gold/70',
-        button: 'border-gold/50 hover:bg-gold/15',
+        wrapper: 'border-line-strong bg-ink/10 text-ink',
+        pill: 'border-line-strong',
+        helpText: 'text-ink/70',
+        button: 'border-line-strong hover:bg-ink/15',
       }
     : isArchived
       ? {
-          wrapper: 'border-cream/15 bg-cream/5 text-cream/70',
-          pill: 'border-cream/25',
-          helpText: 'text-cream/50',
-          button: 'border-cream/30 hover:bg-cream/10',
+          wrapper: 'border-line bg-surface/5 text-ink2',
+          pill: 'border-line',
+          helpText: 'text-muted',
+          button: 'border-line hover:bg-surface/10',
         }
       : {
-          wrapper: 'border-bronze/40 bg-bronze/15 text-cream',
-          pill: 'border-bronze/50',
-          helpText: 'text-cream/70',
-          button: 'border-bronze/50 hover:bg-bronze/20',
+          wrapper: 'border-line bg-ink2/15 text-ink',
+          pill: 'border-line',
+          helpText: 'text-ink2',
+          button: 'border-line hover:bg-ink2/20',
         };
 
   const title = isDraft
@@ -149,7 +149,7 @@ export default async function DashboardListingPreviewPage({ params }: PageProps)
         wrapper with `fixed inset-0` so the feed renders edge-to-edge while
         the banner sits at z-60 above it.
       */}
-      <div className="fixed inset-0 z-50 bg-ink">
+      <div className="fixed inset-0 z-50 bg-bg">
         <VideoFeed listingId={data.listing.id} cards={cards} />
       </div>
     </>

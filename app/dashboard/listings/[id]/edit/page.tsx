@@ -66,7 +66,7 @@ export default async function EditListingPage({
   if (!listing) {
     return (
       <div className="mx-auto max-w-2xl py-12 text-center">
-        <p className="text-sm text-cream/60">
+        <p className="text-sm text-ink2">
           Listing not found, or you don&apos;t have access to it.
         </p>
       </div>
@@ -149,7 +149,7 @@ export default async function EditListingPage({
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">{listing.address}</h1>
-          <p className="mt-1 text-sm text-cream/60">
+          <p className="mt-1 text-sm text-ink2">
             {listing.city}, {listing.state}
             {listing.zip ? ` ${listing.zip}` : ''}
             {listing.neighborhood ? ` · ${listing.neighborhood}` : ''}
@@ -161,14 +161,14 @@ export default async function EditListingPage({
               href={`/v/${agent.slug}/${listing.slug}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-bronze/30 bg-ink px-3 py-1.5 text-xs text-cream/80 transition hover:border-gold hover:text-gold"
+              className="inline-flex items-center gap-2 rounded-full border border-line bg-bg px-3 py-1.5 text-xs text-ink2 transition hover:border-line-strong hover:text-ink"
             >
               Public URL ↗
             </a>
           ) : null}
           <a
             href={`/dashboard/listings/${listing.id}/analytics`}
-            className="inline-flex items-center gap-2 rounded-full border border-bronze/30 bg-ink px-3 py-1.5 text-xs text-cream/80 transition hover:border-gold hover:text-gold"
+            className="inline-flex items-center gap-2 rounded-full border border-line bg-bg px-3 py-1.5 text-xs text-ink2 transition hover:border-line-strong hover:text-ink"
           >
             View analytics →
           </a>
@@ -177,7 +177,7 @@ export default async function EditListingPage({
 
       <PublishPanel listingId={listing.id} status={listing.status} />
 
-      <section className="rounded border border-bronze/30 bg-ink2 p-6">
+      <section className="rounded border border-line bg-surface p-6">
         <h2 className="mb-4 text-base font-semibold">Listing details</h2>
         <EditListingForm
           listingId={listing.id}
@@ -205,10 +205,10 @@ export default async function EditListingPage({
         />
       </section>
 
-      <section className="rounded border border-bronze/30 bg-ink2 p-6">
+      <section className="rounded border border-line bg-surface p-6">
         <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
           <h2 className="text-base font-semibold">Videos</h2>
-          <span className="text-xs text-cream/50">Drag to reorder · use ⓒ to set cover</span>
+          <span className="text-xs text-muted">Drag to reorder · use ⓒ to set cover</span>
         </div>
         <VideoPanel
           listingId={listing.id}
@@ -217,10 +217,10 @@ export default async function EditListingPage({
         />
       </section>
 
-      <section className="rounded border border-bronze/30 bg-ink2 p-6">
+      <section className="rounded border border-line bg-surface p-6">
         <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
           <h2 className="text-base font-semibold">Photos</h2>
-          <span className="text-xs text-cream/50">
+          <span className="text-xs text-muted">
             JPEG / PNG / WebP — used as fallback when no video is uploaded · use ⓒ to set cover
           </span>
         </div>
@@ -231,10 +231,10 @@ export default async function EditListingPage({
         />
       </section>
 
-      <section className="rounded border border-bronze/30 bg-ink2 p-6">
+      <section className="rounded border border-line bg-surface p-6">
         <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
           <h2 className="text-base font-semibold">Social copy</h2>
-          <span className="text-xs text-cream/50">
+          <span className="text-xs text-muted">
             Facebook + Instagram drafts, copy to clipboard
           </span>
         </div>

@@ -65,8 +65,8 @@ export function CommunityVideoManageList({
 }) {
   if (videos.length === 0) {
     return (
-      <p className="text-xs text-cream/50">
-        No videos yet. Tap <span className="text-cream/80">+ Upload</span> to add one.
+      <p className="text-xs text-muted">
+        No videos yet. Tap <span className="text-ink2">+ Upload</span> to add one.
       </p>
     );
   }
@@ -133,16 +133,16 @@ function Group({
     <div>
       <div className="mb-2 flex items-baseline justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-xs font-semibold uppercase tracking-wide text-cream/70">
-            {label} <span className="ml-1 text-cream/40">({items.length})</span>
+          <div className="text-xs font-semibold uppercase tracking-wide text-ink2">
+            {label} <span className="ml-1 text-muted">({items.length})</span>
           </div>
-          <div className="text-[11px] text-cream/45">{sublabel}</div>
+          <div className="text-[11px] text-muted">{sublabel}</div>
         </div>
         {collapsible ? (
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
-            className="h-9 px-2 text-xs text-cream/60 hover:text-cream"
+            className="h-9 px-2 text-xs text-ink2 hover:text-ink"
           >
             {open ? 'hide' : 'show'}
           </button>
@@ -219,10 +219,10 @@ function ManageRow({
   }
 
   return (
-    <li className="rounded border border-bronze/25 bg-ink2 p-3">
+    <li className="rounded border border-line bg-surface p-3">
       <div className="flex gap-3">
         <div
-          className="h-16 w-24 shrink-0 overflow-hidden rounded bg-ink"
+          className="h-16 w-24 shrink-0 overflow-hidden rounded bg-bg"
           style={{
             backgroundImage: `url(${thumbnailUrl(video.cf_video_id)})`,
             backgroundSize: 'cover',
@@ -230,11 +230,11 @@ function ManageRow({
           }}
         />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium text-cream">
+          <div className="truncate text-sm font-medium text-ink">
             {video.title ?? '(untitled)'}
           </div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-cream/55">
-            <span className="rounded border border-bronze/30 px-1.5 py-0.5">
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-ink2">
+            <span className="rounded border border-line px-1.5 py-0.5">
               {catMeta?.label ?? video.category ?? 'uncategorized'}
             </span>
             {video.category_needs_review ? (
@@ -245,7 +245,7 @@ function ManageRow({
             <VisibilityChip visibility={video.visibility} />
             {!isOwner && video.uploaderDisplayName ? (
               <span
-                className="rounded bg-cream/5 px-1.5 py-0.5 text-cream/55"
+                className="rounded bg-surface/5 px-1.5 py-0.5 text-ink2"
                 title={video.uploaderSlug ? `@${video.uploaderSlug}` : undefined}
               >
                 by {video.uploaderDisplayName}
@@ -263,7 +263,7 @@ function ManageRow({
             {video.status !== 'ready' ? (
               <span
                 className={
-                  video.status === 'error' ? 'text-red-400' : 'text-cream/45'
+                  video.status === 'error' ? 'text-red-400' : 'text-muted'
                 }
               >
                 {video.status === 'error' ? 'Upload failed' : 'Processing…'}
@@ -305,8 +305,8 @@ function ManageRow({
       ) : null}
 
       {editingCat && isOwner ? (
-        <div className="mt-3 rounded border border-bronze/25 bg-ink p-3">
-          <div className="mb-2 text-[11px] uppercase tracking-wide text-cream/55">
+        <div className="mt-3 rounded border border-line bg-bg p-3">
+          <div className="mb-2 text-[11px] uppercase tracking-wide text-ink2">
             Re-categorize
           </div>
           <CategoryPicker
@@ -331,11 +331,11 @@ function VisibilityChip({ visibility }: { visibility: CommunityVideoVisibility }
   }
   if (visibility === 'private') {
     return (
-      <span className="rounded bg-cream/10 px-1.5 py-0.5 text-cream/70">private</span>
+      <span className="rounded bg-surface/10 px-1.5 py-0.5 text-ink2">private</span>
     );
   }
   return (
-    <span className="rounded bg-bronze/30 px-1.5 py-0.5 text-cream/60">archived</span>
+    <span className="rounded bg-ink2/30 px-1.5 py-0.5 text-ink2">archived</span>
   );
 }
 
@@ -359,7 +359,7 @@ function ActionButton({
         'min-h-9 rounded border px-2.5 py-1 text-[11px] transition disabled:opacity-50',
         tone === 'danger'
           ? 'border-red-500/40 text-red-300 hover:border-red-400 hover:bg-red-500/10'
-          : 'border-bronze/40 text-cream/80 hover:border-gold/60 hover:text-cream',
+          : 'border-line text-ink2 hover:border-line-strong hover:text-ink',
       ].join(' ')}
     >
       {children}

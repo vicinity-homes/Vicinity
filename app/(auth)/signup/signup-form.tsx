@@ -8,7 +8,7 @@ type Status = 'idle' | 'sending' | 'sent' | 'error';
 type Role = 'agent' | 'buyer';
 
 const inputCls =
-  'mt-1 w-full rounded-lg border border-white/10 bg-ink px-3 py-2 text-sm text-cream placeholder:text-cream/30 focus:border-gold focus:outline-none disabled:opacity-50';
+  'mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-line-strong focus:outline-none disabled:opacity-50';
 
 export function SignupForm({ redirect }: { redirect: string }) {
   const [role, setRole] = useState<Role>('buyer');
@@ -65,22 +65,22 @@ export function SignupForm({ redirect }: { redirect: string }) {
 
   if (status === 'sent') {
     return (
-      <div className="rounded-2xl border border-white/5 bg-ink2/60 p-8 text-center">
-        <h1 className="font-serif text-2xl text-cream">Check your inbox</h1>
-        <p className="mt-3 text-sm text-cream/70">
-          We sent a confirmation link to <span className="text-gold">{email}</span>.
+      <div className="rounded-2xl border border-line bg-surface p-8 text-center">
+        <h1 className="font-serif text-2xl text-ink">Check your inbox</h1>
+        <p className="mt-3 text-sm text-ink2">
+          We sent a confirmation link to <span className="text-ink">{email}</span>.
         </p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl border border-white/5 bg-ink2/60 p-8">
-      <h1 className="font-serif text-3xl text-cream">Create account</h1>
-      <p className="mt-1 text-sm text-cream/50">Join Vicinity in seconds.</p>
+    <form onSubmit={handleSubmit} className="rounded-2xl border border-line bg-surface p-8">
+      <h1 className="font-serif text-3xl text-ink">Create account</h1>
+      <p className="mt-1 text-sm text-muted">Join Vicinity in seconds.</p>
 
       <fieldset className="mt-6">
-        <legend className="text-xs text-cream/60">I am a…</legend>
+        <legend className="text-xs text-ink2">I am a…</legend>
         <div className="mt-2 grid grid-cols-2 gap-2">
           <RoleOption
             label="Homebuyer"
@@ -100,7 +100,7 @@ export function SignupForm({ redirect }: { redirect: string }) {
       </fieldset>
 
       <label className="mt-6 block">
-        <span className="text-xs text-cream/60">Email</span>
+        <span className="text-xs text-ink2">Email</span>
         <input
           type="email"
           required
@@ -113,7 +113,7 @@ export function SignupForm({ redirect }: { redirect: string }) {
         />
       </label>
       <label className="mt-4 block">
-        <span className="text-xs text-cream/60">Password</span>
+        <span className="text-xs text-ink2">Password</span>
         <input
           type="password"
           required
@@ -127,7 +127,7 @@ export function SignupForm({ redirect }: { redirect: string }) {
         />
       </label>
       <label className="mt-4 block">
-        <span className="text-xs text-cream/60">Confirm password</span>
+        <span className="text-xs text-ink2">Confirm password</span>
         <input
           type="password"
           required
@@ -182,12 +182,12 @@ function RoleOption({
       onClick={onSelect}
       className={`rounded-lg border px-3 py-3 text-left text-sm transition disabled:opacity-50 ${
         selected
-          ? 'border-gold bg-gold/10 text-cream'
-          : 'border-white/10 bg-ink text-cream/80 hover:border-white/30'
+          ? 'border-line-strong bg-ink/10 text-ink'
+          : 'border-line bg-bg text-ink2 hover:border-line'
       }`}
     >
       <div className="font-medium">{label}</div>
-      <div className="mt-0.5 text-xs text-cream/50">{sub}</div>
+      <div className="mt-0.5 text-xs text-muted">{sub}</div>
     </button>
   );
 }

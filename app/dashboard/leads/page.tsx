@@ -39,12 +39,12 @@ export default async function LeadsPage() {
       {/* Phase 36.2 (2026-06-18): Workspace sub-nav. /dashboard/leads is one
        * of the agent's three working surfaces; chips give a stable cross-link. */}
       <div className="mb-6">
-        <h1 className="font-serif text-2xl tracking-tight text-cream sm:text-4xl">Workspace</h1>
+        <h1 className="font-serif text-2xl tracking-tight text-ink sm:text-4xl">Workspace</h1>
         <WorkspaceSubNav active="leads" />
       </div>
       <div className="mb-6">
-        <h2 className="font-serif text-2xl tracking-tight text-cream sm:text-3xl">Leads</h2>
-        <p className="mt-1 text-xs text-cream/50">
+        <h2 className="font-serif text-2xl tracking-tight text-ink sm:text-3xl">Leads</h2>
+        <p className="mt-1 text-xs text-muted">
           Buyer inquiries from your published listings, in real time.
         </p>
       </div>

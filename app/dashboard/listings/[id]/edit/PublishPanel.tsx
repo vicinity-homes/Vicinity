@@ -131,13 +131,13 @@ export function PublishPanel({ listingId, status }: Props) {
   }
 
   return (
-    <div className="rounded border border-bronze/30 bg-ink2 px-4 py-3">
+    <div className="rounded border border-line bg-surface px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm">
-          <span className="text-cream/60">Status: </span>
+          <span className="text-ink2">Status: </span>
           <span
             className={`font-semibold uppercase tracking-wide ${
-              isPublished ? 'text-gold' : isArchived ? 'text-cream/40' : 'text-cream/80'
+              isPublished ? 'text-ink' : isArchived ? 'text-muted' : 'text-ink2'
             }`}
           >
             {status}
@@ -149,7 +149,7 @@ export function PublishPanel({ listingId, status }: Props) {
               type="button"
               onClick={handleUnarchive}
               disabled={isPending}
-              className="rounded border border-bronze/50 px-4 py-2 text-sm font-medium text-cream hover:bg-bronze/20 disabled:opacity-50"
+              className="rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-ink2/20 disabled:opacity-50"
             >
               {isPending ? 'Unarchiving…' : 'Unarchive'}
             </button>
@@ -160,7 +160,7 @@ export function PublishPanel({ listingId, status }: Props) {
                   type="button"
                   onClick={handleUnpublish}
                   disabled={isPending}
-                  className="rounded border border-bronze/50 px-4 py-2 text-sm font-medium text-cream hover:bg-bronze/20 disabled:opacity-50"
+                  className="rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-ink2/20 disabled:opacity-50"
                 >
                   {isPending ? 'Unpublishing…' : 'Unpublish'}
                 </button>
@@ -169,7 +169,7 @@ export function PublishPanel({ listingId, status }: Props) {
                   type="button"
                   onClick={handlePublish}
                   disabled={isPending}
-                  className="rounded bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold/90 disabled:opacity-50"
+                  className="rounded bg-ink px-4 py-2 text-sm font-semibold text-ink hover:bg-ink/90 disabled:opacity-50"
                 >
                   {isPending ? 'Publishing…' : 'Publish'}
                 </button>
@@ -178,7 +178,7 @@ export function PublishPanel({ listingId, status }: Props) {
                 type="button"
                 onClick={handleArchive}
                 disabled={isPending}
-                className="rounded border border-bronze/30 px-3 py-2 text-xs text-cream/60 hover:border-red-500/40 hover:text-red-300 disabled:opacity-50"
+                className="rounded border border-line px-3 py-2 text-xs text-ink2 hover:border-red-500/40 hover:text-red-300 disabled:opacity-50"
               >
                 Archive
               </button>
@@ -187,7 +187,7 @@ export function PublishPanel({ listingId, status }: Props) {
         </div>
       </div>
       {isArchived && (
-        <p className="mt-2 text-xs text-cream/60">
+        <p className="mt-2 text-xs text-ink2">
           Hidden from the public site and the dashboard's default view. Unarchive returns it to
           draft.
         </p>

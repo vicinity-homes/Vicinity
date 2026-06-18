@@ -166,13 +166,13 @@ export function CommunityPhotoPanel({ communityId, initialPhotos, category }: Pr
   );
 
   return (
-    <section className="rounded border border-bronze/30 bg-ink2 p-5">
+    <section className="rounded border border-line bg-surface p-5">
       <div className="mb-4 flex items-baseline justify-between">
         <h2 className="text-base font-semibold">Photo library (private)</h2>
-        <span className="text-cream/50 text-xs">{photos.length} uploaded</span>
+        <span className="text-muted text-xs">{photos.length} uploaded</span>
       </div>
-      <p className="mb-4 text-cream/60 text-xs">
-        Photos here are <span className="text-cream/80">not visible to buyers</span> — they're raw
+      <p className="mb-4 text-ink2 text-xs">
+        Photos here are <span className="text-ink2">not visible to buyers</span> — they're raw
         material the platform can use to generate community videos later. JPEG / PNG / WebP, up to
         10 MB each.
       </p>
@@ -200,7 +200,7 @@ export function CommunityPhotoPanel({ communityId, initialPhotos, category }: Pr
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="inline-flex items-center gap-2 rounded-md border border-bronze/40 bg-ink/40 px-4 py-2 text-cream/90 text-sm hover:border-bronze hover:text-cream"
+          className="inline-flex items-center gap-2 rounded-md border border-line bg-bg px-4 py-2 text-ink2 text-sm hover:border-bronze hover:text-ink"
         >
           <Upload size={16} aria-hidden="true" />
           Add photos as “{meta.label}”
@@ -212,10 +212,10 @@ export function CommunityPhotoPanel({ communityId, initialPhotos, category }: Pr
           {pending.map((p) => (
             <div
               key={p.tempId}
-              className="relative aspect-[4/3] overflow-hidden rounded border border-bronze/20 bg-ink"
+              className="relative aspect-[4/3] overflow-hidden rounded border border-line bg-bg"
             >
               <img src={p.preview} alt="" className="h-full w-full object-cover opacity-50" />
-              <div className="absolute inset-0 flex items-center justify-center text-cream/80 text-xs">
+              <div className="absolute inset-0 flex items-center justify-center text-ink2 text-xs">
                 {p.error ? <span className="text-red-300">{p.error}</span> : 'Uploading…'}
               </div>
             </div>
@@ -225,7 +225,7 @@ export function CommunityPhotoPanel({ communityId, initialPhotos, category }: Pr
 
       {photos.length > 0 ? (
         <details>
-          <summary className="cursor-pointer select-none text-xs uppercase tracking-wide text-cream/60 hover:text-cream">
+          <summary className="cursor-pointer select-none text-xs uppercase tracking-wide text-ink2 hover:text-ink">
             Already uploaded ({photos.length})
           </summary>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
@@ -236,7 +236,7 @@ export function CommunityPhotoPanel({ communityId, initialPhotos, category }: Pr
               return (
                 <div
                   key={photo.id}
-                  className="group relative aspect-[4/3] overflow-hidden rounded border border-bronze/20 bg-ink"
+                  className="group relative aspect-[4/3] overflow-hidden rounded border border-line bg-bg"
                 >
                   {photo.signed_url ? (
                     <img
@@ -246,12 +246,12 @@ export function CommunityPhotoPanel({ communityId, initialPhotos, category }: Pr
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-cream/40 text-xs">
+                    <div className="flex h-full w-full items-center justify-center text-muted text-xs">
                       (preview unavailable)
                     </div>
                   )}
                   {catLabel ? (
-                    <span className="absolute bottom-1 left-1 rounded bg-ink/80 px-1.5 py-0.5 text-[10px] text-cream/80">
+                    <span className="absolute bottom-1 left-1 rounded bg-bg px-1.5 py-0.5 text-[10px] text-ink2">
                       {catLabel}
                     </span>
                   ) : null}
@@ -259,7 +259,7 @@ export function CommunityPhotoPanel({ communityId, initialPhotos, category }: Pr
                     type="button"
                     onClick={() => handleDelete(photo.id)}
                     aria-label="Delete photo"
-                    className="absolute top-1.5 right-1.5 hidden rounded bg-ink/80 p-1.5 text-cream/80 hover:text-red-300 group-hover:block"
+                    className="absolute top-1.5 right-1.5 hidden rounded bg-bg p-1.5 text-ink2 hover:text-red-300 group-hover:block"
                   >
                     <Trash2 size={14} aria-hidden="true" />
                   </button>

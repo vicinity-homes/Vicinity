@@ -42,10 +42,10 @@ export function CommunityUploadShell({
       {/* Shared category picker — drives both video + photo upload below.
        * The picker now shows label / blurb / hard rule inline (chip cloud
        * + spec card), so we don't double up with our own callout box. */}
-      <section className="rounded border border-bronze/30 bg-ink2 p-4 sm:p-5">
-        <div className="mb-3 text-sm font-medium text-cream">Category</div>
+      <section className="rounded border border-line bg-surface p-4 sm:p-5">
+        <div className="mb-3 text-sm font-medium text-ink">Category</div>
         <CategoryPicker mode="create" selected={category} onPick={setCategory} />
-        <p className="mt-3 text-[11px] text-cream/50">
+        <p className="mt-3 text-[11px] text-muted">
           Applies to both video and photos uploaded below.
         </p>
       </section>

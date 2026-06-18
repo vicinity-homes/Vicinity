@@ -73,8 +73,8 @@ function Chip({
       className={[
         'inline-flex min-h-9 items-center rounded-full border px-3 text-xs transition',
         selected
-          ? 'border-gold bg-gold text-ink font-semibold'
-          : 'border-bronze/40 bg-ink2 text-cream/85 hover:border-gold/60 hover:text-cream',
+          ? 'border-line-strong bg-ink text-ink font-semibold'
+          : 'border-line bg-surface text-ink2 hover:border-line-strong hover:text-ink',
       ].join(' ')}
     >
       {meta.label}
@@ -84,11 +84,11 @@ function Chip({
 
 function SpecCard({ meta }: { meta: CommunityVideoCategoryMeta }) {
   return (
-    <div className="mt-3 rounded-lg border border-gold/40 bg-gold/[0.04] p-3">
-      <div className="text-sm font-semibold text-cream">{meta.label}</div>
-      <div className="mt-1 text-xs leading-snug text-cream/70">{meta.blurb}</div>
-      <div className="mt-2 text-[11px] leading-snug text-gold/90">
-        <span className="text-cream/55">Must include:</span> {meta.hardRule}
+    <div className="mt-3 rounded-lg border border-line-strong bg-ink/[0.04] p-3">
+      <div className="text-sm font-semibold text-ink">{meta.label}</div>
+      <div className="mt-1 text-xs leading-snug text-ink2">{meta.blurb}</div>
+      <div className="mt-2 text-[11px] leading-snug text-ink/90">
+        <span className="text-ink2">Must include:</span> {meta.hardRule}
       </div>
     </div>
   );

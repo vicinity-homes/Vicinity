@@ -17,8 +17,8 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
 const INPUT_BASE =
-  'w-full rounded border bg-ink2 px-3 py-2 text-sm text-cream placeholder:text-cream/40 focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:opacity-60';
-const INPUT_OK = 'border-bronze/30 focus:border-gold focus:ring-gold';
+  'w-full rounded border bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:opacity-60';
+const INPUT_OK = 'border-line focus:border-line-strong focus:ring-line-strong';
 const INPUT_ERR = 'border-red-500/70 focus:border-red-400 focus:ring-red-400';
 
 function inputCls(hasError: boolean) {
@@ -101,17 +101,17 @@ function MetadataSection({
   }
 
   return (
-    <section className="rounded border border-bronze/30 bg-ink2 p-6">
+    <section className="rounded border border-line bg-surface p-6">
       <div className="mb-4 flex items-baseline justify-between gap-2">
         <h2 className="text-base font-semibold">Community details</h2>
         {!canEdit && (
-          <span className="rounded-full border border-bronze/30 px-2 py-0.5 text-[10px] uppercase tracking-wider text-cream/60">
+          <span className="rounded-full border border-line px-2 py-0.5 text-[10px] uppercase tracking-wider text-ink2">
             View only
           </span>
         )}
       </div>
       {!canEdit && (
-        <p className="mb-4 rounded border border-bronze/20 bg-ink px-3 py-2 text-xs text-cream/60">
+        <p className="mb-4 rounded border border-line bg-bg px-3 py-2 text-xs text-ink2">
           Only the agent who created this community can edit metadata. You can still upload videos
           and photos.
         </p>
@@ -180,7 +180,7 @@ function MetadataSection({
             <button
               type="submit"
               disabled={isPending || saveState === 'saving'}
-              className="rounded bg-gold px-4 py-2 text-sm font-medium text-ink transition hover:opacity-90 disabled:opacity-50"
+              className="rounded bg-ink px-4 py-2 text-sm font-medium text-ink transition hover:opacity-90 disabled:opacity-50"
             >
               {saveState === 'saving' ? 'Saving…' : 'Save changes'}
             </button>
@@ -210,15 +210,15 @@ function Field({
 }) {
   return (
     <div className="block">
-      <span className="mb-1 block text-xs font-medium text-cream/70">
+      <span className="mb-1 block text-xs font-medium text-ink2">
         {label}
-        {required && <span className="ml-0.5 text-gold">*</span>}
+        {required && <span className="ml-0.5 text-ink">*</span>}
       </span>
       {children}
       {error ? (
         <span className="mt-1 block text-[11px] text-red-400">{error}</span>
       ) : hint ? (
-        <span className="mt-1 block text-[11px] text-cream/40">{hint}</span>
+        <span className="mt-1 block text-[11px] text-muted">{hint}</span>
       ) : null}
     </div>
   );

@@ -104,7 +104,7 @@ export default async function CommunityPage({
   return (
     <div className="mx-auto max-w-5xl">
       {/* Hero — 21:9 banner with cover + dark gradient overlay for text legibility */}
-      <div className="relative aspect-[21/9] w-full overflow-hidden bg-ink2 sm:rounded-b-xl">
+      <div className="relative aspect-[21/9] w-full overflow-hidden bg-surface sm:rounded-b-xl">
         {heroCover ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -117,10 +117,10 @@ export default async function CommunityPage({
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/60 to-ink/10" />
         <div className="absolute inset-x-0 bottom-0 px-4 py-4 sm:px-6 sm:py-5">
-          <h1 className="font-semibold text-2xl text-cream tracking-tight sm:text-3xl">
+          <h1 className="font-semibold text-2xl text-ink tracking-tight sm:text-3xl">
             {community.name}
           </h1>
-          <div className="mt-1 text-cream/70 text-sm">
+          <div className="mt-1 text-ink2 text-sm">
             {community.city ? `${community.city}, ${community.state}` : community.state}
           </div>
         </div>
@@ -129,17 +129,17 @@ export default async function CommunityPage({
       <div className="px-4 py-6">
         <header className="mb-6">
           {community.description ? (
-            <p className="max-w-2xl text-cream/70 text-sm">{community.description}</p>
+            <p className="max-w-2xl text-ink2 text-sm">{community.description}</p>
           ) : null}
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1 text-gold text-xs">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-ink/10 px-3 py-1 text-ink text-xs">
               <Film size={12} aria-hidden="true" />
               {videos.length} community {videos.length === 1 ? 'video' : 'videos'}
             </span>
             <Link
               href={`/browse?community=${community.slug}`}
               prefetch={false}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1 text-gold text-xs transition hover:bg-gold/20"
+              className="inline-flex items-center gap-1.5 rounded-full bg-ink/10 px-3 py-1 text-ink text-xs transition hover:bg-ink/20"
             >
               <Building2 size={12} aria-hidden="true" />
               {activeListings ?? 0} active{' '}
@@ -149,8 +149,8 @@ export default async function CommunityPage({
         </header>
 
       {videos.length === 0 ? (
-        <div className="rounded border border-bronze/30 border-dashed bg-ink2 px-6 py-12 text-center">
-          <p className="text-cream/60 text-sm">No videos in this community yet.</p>
+        <div className="rounded border border-line border-dashed bg-surface px-6 py-12 text-center">
+          <p className="text-ink2 text-sm">No videos in this community yet.</p>
         </div>
       ) : (
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
@@ -159,7 +159,7 @@ export default async function CommunityPage({
               <Link
                 href={`/c/${community.slug}/feed?start=${v.id}`}
                 prefetch={false}
-                className="group relative block aspect-[9/16] overflow-hidden rounded-lg bg-ink2"
+                className="group relative block aspect-[9/16] overflow-hidden rounded-lg bg-surface"
               >
                 {/* Cloudflare Stream auto-generated thumbnail */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -170,7 +170,7 @@ export default async function CommunityPage({
                   loading="lazy"
                 />
                 {v.category ? (
-                  <span className="absolute top-1.5 left-1.5 rounded bg-gold/90 px-1.5 py-0.5 font-medium text-[10px] text-ink">
+                  <span className="absolute top-1.5 left-1.5 rounded bg-ink/90 px-1.5 py-0.5 font-medium text-[10px] text-ink">
                     {v.category}
                   </span>
                 ) : null}

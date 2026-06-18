@@ -141,20 +141,20 @@ export function LeadModal({ open, onClose, agent, listing, listingId }: Props) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="lead-modal-title"
-        className="w-full max-w-md rounded-t-2xl border border-bronze/30 bg-ink2 p-6 shadow-2xl sm:rounded-2xl"
+        className="w-full max-w-md rounded-t-2xl border border-line bg-surface p-6 shadow-2xl sm:rounded-2xl"
       >
         <div className="mb-4 flex items-start justify-between">
           <div>
-            <h2 id="lead-modal-title" className="font-serif text-cream text-lg">
+            <h2 id="lead-modal-title" className="font-serif text-ink text-lg">
               Contact {firstName}
             </h2>
-            <p className="mt-0.5 text-cream/60 text-xs">{listing.address}</p>
+            <p className="mt-0.5 text-ink2 text-xs">{listing.address}</p>
           </div>
           <button
             type="button"
             aria-label="Close"
             onClick={onClose}
-            className="-m-2 p-2 text-cream/60 hover:text-cream"
+            className="-m-2 p-2 text-ink2 hover:text-ink"
           >
             <svg
               aria-hidden="true"
@@ -171,42 +171,42 @@ export function LeadModal({ open, onClose, agent, listing, listingId }: Props) {
         </div>
 
         {submitted ? (
-          <div className="rounded-md border border-gold/40 bg-gold/10 p-4 text-center">
-            <p className="font-medium text-cream text-sm">Thanks, {name.split(' ')[0]}!</p>
-            <p className="mt-1 text-cream/70 text-xs">{firstName} will reach out shortly.</p>
+          <div className="rounded-md border border-line-strong bg-ink/10 p-4 text-center">
+            <p className="font-medium text-ink text-sm">Thanks, {name.split(' ')[0]}!</p>
+            <p className="mt-1 text-ink2 text-xs">{firstName} will reach out shortly.</p>
           </div>
         ) : (
           <form onSubmit={onSubmit} className="space-y-3">
             <label className="block">
-              <span className="mb-1 block text-cream/80 text-xs">Name</span>
+              <span className="mb-1 block text-ink2 text-xs">Name</span>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-md border border-white/15 bg-ink px-3 py-2 text-cream text-sm placeholder:text-cream/40 focus:border-gold focus:outline-none"
+                className="w-full rounded-md border border-line bg-bg px-3 py-2 text-ink text-sm placeholder:text-muted focus:border-line-strong focus:outline-none"
                 placeholder="Jane Smith"
                 autoComplete="name"
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-cream/80 text-xs">Phone or email</span>
+              <span className="mb-1 block text-ink2 text-xs">Phone or email</span>
               <input
                 type="text"
                 value={contact}
                 onChange={(e) => setContact(e.target.value)}
-                className="w-full rounded-md border border-white/15 bg-ink px-3 py-2 text-cream text-sm placeholder:text-cream/40 focus:border-gold focus:outline-none"
+                className="w-full rounded-md border border-line bg-bg px-3 py-2 text-ink text-sm placeholder:text-muted focus:border-line-strong focus:outline-none"
                 placeholder="(555) 123-4567 or jane@example.com"
                 autoComplete="email"
                 inputMode="email"
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-cream/80 text-xs">Message</span>
+              <span className="mb-1 block text-ink2 text-xs">Message</span>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 rows={3}
-                className="w-full resize-none rounded-md border border-white/15 bg-ink px-3 py-2 text-cream text-sm placeholder:text-cream/40 focus:border-gold focus:outline-none"
+                className="w-full resize-none rounded-md border border-line bg-bg px-3 py-2 text-ink text-sm placeholder:text-muted focus:border-line-strong focus:outline-none"
               />
             </label>
 
@@ -219,11 +219,11 @@ export function LeadModal({ open, onClose, agent, listing, listingId }: Props) {
             <button
               type="submit"
               disabled={submitting}
-              className="mt-2 w-full rounded-md bg-gold px-4 py-2.5 font-semibold text-ink text-sm transition-colors hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-2 w-full rounded-md bg-ink px-4 py-2.5 font-semibold text-ink text-sm transition-colors hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? 'Sending…' : `Send to ${firstName}`}
             </button>
-            <p className="text-center text-[11px] text-cream/50">
+            <p className="text-center text-[11px] text-muted">
               By sending, you agree to be contacted about this listing.
             </p>
           </form>

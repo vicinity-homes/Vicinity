@@ -88,20 +88,20 @@ export function CommunitySheet({ open, data, onClose, onOpenCarousel }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={`${data.name} community`}
-        className={`fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-2xl border-cream/15 border-t bg-ink text-cream shadow-2xl transition-transform duration-300 ${
+        className={`fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-2xl border-line border-t bg-bg text-ink shadow-2xl transition-transform duration-300 ${
           open ? 'translate-y-0' : 'translate-y-full'
         }`}
       >
         {/* Grip */}
         <div className="flex justify-center pt-3 pb-1">
-          <div className="h-1 w-10 rounded-full bg-cream/30" />
+          <div className="h-1 w-10 rounded-full bg-surface/30" />
         </div>
 
         {/* Header */}
         <div className="flex items-start justify-between gap-3 px-4 pb-3">
           <div className="min-w-0">
             <h2 className="font-serif text-xl leading-tight">{data.name}</h2>
-            <p className="mt-0.5 text-[12px] text-cream/60">
+            <p className="mt-0.5 text-[12px] text-ink2">
               {locationLine}
               {' · '}
               <span>
@@ -121,7 +121,7 @@ export function CommunitySheet({ open, data, onClose, onOpenCarousel }: Props) {
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="-mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-cream/70 transition-colors hover:bg-cream/10 hover:text-cream"
+            className="-mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink2 transition-colors hover:bg-surface/10 hover:text-ink"
           >
             <svg
               width="20"
@@ -142,13 +142,13 @@ export function CommunitySheet({ open, data, onClose, onOpenCarousel }: Props) {
 
         {/* Description (real, optional) */}
         {data.description && (
-          <p className="px-4 text-[13px] text-cream/80 leading-relaxed">{data.description}</p>
+          <p className="px-4 text-[13px] text-ink2 leading-relaxed">{data.description}</p>
         )}
 
         {/* Community videos — horizontal preview strip. */}
         {data.videos.length > 0 ? (
           <>
-            <h3 className="mt-5 px-4 font-medium text-[11px] text-cream/55 uppercase tracking-widest">
+            <h3 className="mt-5 px-4 font-medium text-[11px] text-ink2 uppercase tracking-widest">
               Community videos · {data.videos.length}
             </h3>
             <div
@@ -167,7 +167,7 @@ export function CommunitySheet({ open, data, onClose, onOpenCarousel }: Props) {
                     key={`${v.cfVideoId}-${idx}`}
                     type="button"
                     onClick={() => onOpenCarousel(idx)}
-                    className="group relative aspect-[9/16] w-28 shrink-0 overflow-hidden rounded-lg bg-ink2 ring-1 ring-cream/10 transition hover:ring-gold/60"
+                    className="group relative aspect-[9/16] w-28 shrink-0 overflow-hidden rounded-lg bg-surface ring-1 ring-line transition hover:ring-line-strong"
                     aria-label={`Play ${v.line1}`}
                   >
                     {poster && (
@@ -180,10 +180,10 @@ export function CommunitySheet({ open, data, onClose, onOpenCarousel }: Props) {
                       />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                    <div className="absolute inset-0 flex items-center justify-center text-2xl text-cream/85 opacity-80 transition group-hover:opacity-100">
+                    <div className="absolute inset-0 flex items-center justify-center text-2xl text-ink2 opacity-80 transition group-hover:opacity-100">
                       ▶
                     </div>
-                    <div className="absolute right-1.5 bottom-1.5 left-1.5 truncate text-[10px] font-medium text-cream uppercase tracking-wider drop-shadow">
+                    <div className="absolute right-1.5 bottom-1.5 left-1.5 truncate text-[10px] font-medium text-ink uppercase tracking-wider drop-shadow">
                       {v.line1}
                     </div>
                   </button>
@@ -192,7 +192,7 @@ export function CommunitySheet({ open, data, onClose, onOpenCarousel }: Props) {
             </div>
           </>
         ) : (
-          <div className="px-4 pb-5 text-[12px] text-cream/50">No videos yet.</div>
+          <div className="px-4 pb-5 text-[12px] text-muted">No videos yet.</div>
         )}
       </div>
     </>

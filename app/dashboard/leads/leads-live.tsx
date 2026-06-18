@@ -247,11 +247,11 @@ export function LeadsLive({ initial }: { initial: LeadRow[] }) {
             placeholder="Search name, email, listing…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full rounded-full border border-bronze/40 bg-ink2 px-3 py-1.5 text-xs text-cream placeholder-cream/40 focus:border-gold focus:outline-none sm:w-64"
+            className="w-full rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-ink placeholder-cream/40 focus:border-line-strong focus:outline-none sm:w-64"
           />
           <a
             href="/api/leads/export"
-            className="shrink-0 rounded-full border border-bronze/40 px-3 py-1.5 text-xs text-cream/80 hover:border-gold hover:text-gold"
+            className="shrink-0 rounded-full border border-line px-3 py-1.5 text-xs text-ink2 hover:border-line-strong hover:text-ink"
             title="Download all leads as CSV"
           >
             Export CSV
@@ -260,15 +260,15 @@ export function LeadsLive({ initial }: { initial: LeadRow[] }) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-bronze/40 bg-ink2 px-8 py-16 text-center">
-          <p className="text-sm text-cream/70">
+        <div className="rounded-2xl border border-dashed border-line bg-surface px-8 py-16 text-center">
+          <p className="text-sm text-ink2">
             {rows.length === 0
               ? 'No leads yet. When a buyer submits the form on a published listing, it will appear here in real time.'
               : 'No leads match this filter.'}
           </p>
         </div>
       ) : (
-        <ul className="divide-y divide-bronze/20 rounded border border-bronze/30 bg-ink2">
+        <ul className="divide-y divide-bronze/20 rounded border border-line bg-surface">
           {filtered.map((l) => (
             <LeadItem
               key={l.id}
@@ -294,11 +294,11 @@ function Stat({ label, value, accent }: { label: string; value: number; accent?:
   return (
     <div
       className={`rounded-xl border px-3 py-2 ${
-        accent ? 'border-gold/30 bg-gold/5' : 'border-bronze/30 bg-ink2'
+        accent ? 'border-line-strong bg-ink/5' : 'border-line bg-surface'
       }`}
     >
-      <div className="text-[10px] uppercase tracking-widest text-cream/50">{label}</div>
-      <div className={`mt-0.5 font-serif text-2xl ${accent ? 'text-gold' : 'text-cream'}`}>
+      <div className="text-[10px] uppercase tracking-widest text-muted">{label}</div>
+      <div className={`mt-0.5 font-serif text-2xl ${accent ? 'text-ink' : 'text-ink'}`}>
         {value}
       </div>
     </div>
@@ -320,8 +320,8 @@ function Chip({
       onClick={onClick}
       className={`rounded-full px-3 py-1 transition ${
         active
-          ? 'bg-bronze/40 text-cream'
-          : 'border border-bronze/30 text-cream/60 hover:border-gold/40 hover:text-cream'
+          ? 'bg-ink2/40 text-ink'
+          : 'border border-line text-ink2 hover:border-line-strong hover:text-ink'
       }`}
     >
       {children}
@@ -352,36 +352,36 @@ function LeadItem({
 
   return (
     <li
-      className={`relative flex items-center justify-between gap-3 px-4 py-3 hover:bg-bronze/10 ${followed ? 'opacity-60' : ''}`}
+      className={`relative flex items-center justify-between gap-3 px-4 py-3 hover:bg-ink2/10 ${followed ? 'opacity-60' : ''}`}
     >
       <Link href={`/dashboard/leads/${lead.id}`} className="min-w-0 flex-1" prefetch={false}>
         <div className="flex flex-wrap items-center gap-2">
-          <p className="truncate text-sm font-medium text-cream">{lead.name}</p>
+          <p className="truncate text-sm font-medium text-ink">{lead.name}</p>
           <StatusPill sent={sent} followed={followed} followedAt={lead.followed_up_at} />
         </div>
-        <p className="truncate text-xs text-cream/60">
+        <p className="truncate text-xs text-ink2">
           {addr}
           {cityState ? ` · ${cityState}` : ''}
         </p>
         {lead.message ? (
-          <p className="mt-1 line-clamp-1 text-xs text-cream/50">{lead.message}</p>
+          <p className="mt-1 line-clamp-1 text-xs text-muted">{lead.message}</p>
         ) : null}
       </Link>
 
       <div className="flex shrink-0 items-center gap-3">
-        <div className="text-right text-[11px] text-cream/50">{timeAgo(lead.created_at)}</div>
+        <div className="text-right text-[11px] text-muted">{timeAgo(lead.created_at)}</div>
         <div className="relative">
           <button
             type="button"
             onClick={onToggleMenu}
-            className="rounded border border-bronze/40 px-2.5 py-1 text-[11px] text-cream/80 hover:border-gold hover:text-gold"
+            className="rounded border border-line px-2.5 py-1 text-[11px] text-ink2 hover:border-line-strong hover:text-ink"
           >
             Follow up ▾
           </button>
           {menuOpen ? (
             <div
               role="menu"
-              className="absolute right-0 top-full z-20 mt-1 w-48 rounded-md border border-bronze/40 bg-ink2 py-1 shadow-lg"
+              className="absolute right-0 top-full z-20 mt-1 w-48 rounded-md border border-line bg-surface py-1 shadow-lg"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => {
                 if (e.key === 'Escape') onMark(lead.followed_up_at ? null : 'now');
@@ -391,30 +391,30 @@ function LeadItem({
                 <a
                   href={mailto}
                   onClick={() => onMark('now')}
-                  className="block px-3 py-2 text-xs text-cream hover:bg-bronze/30"
+                  className="block px-3 py-2 text-xs text-ink hover:bg-ink2/30"
                 >
                   📧 Email reply
                 </a>
               ) : (
-                <span className="block px-3 py-2 text-xs text-cream/30">📧 No email</span>
+                <span className="block px-3 py-2 text-xs text-muted">📧 No email</span>
               )}
               {sms ? (
                 <a
                   href={sms}
                   onClick={() => onMark('now')}
-                  className="block px-3 py-2 text-xs text-cream hover:bg-bronze/30"
+                  className="block px-3 py-2 text-xs text-ink hover:bg-ink2/30"
                 >
                   💬 Text message
                 </a>
               ) : (
-                <span className="block px-3 py-2 text-xs text-cream/30">💬 No phone</span>
+                <span className="block px-3 py-2 text-xs text-muted">💬 No phone</span>
               )}
-              <div className="my-1 border-t border-bronze/20" />
+              <div className="my-1 border-t border-line" />
               {followed ? (
                 <button
                   type="button"
                   onClick={() => onMark(null)}
-                  className="block w-full px-3 py-2 text-left text-xs text-cream/80 hover:bg-bronze/30"
+                  className="block w-full px-3 py-2 text-left text-xs text-ink2 hover:bg-ink2/30"
                 >
                   ↺ Mark as new
                 </button>
@@ -422,7 +422,7 @@ function LeadItem({
                 <button
                   type="button"
                   onClick={() => onMark('now')}
-                  className="block w-full px-3 py-2 text-left text-xs text-cream/80 hover:bg-bronze/30"
+                  className="block w-full px-3 py-2 text-left text-xs text-ink2 hover:bg-ink2/30"
                 >
                   ✓ Mark as followed up
                 </button>
@@ -447,7 +447,7 @@ function StatusPill({
   if (followed) {
     return (
       <span
-        className="rounded border border-cream/20 bg-cream/5 px-2 py-0.5 text-[10px] font-medium uppercase text-cream/60"
+        className="rounded border border-line bg-surface/5 px-2 py-0.5 text-[10px] font-medium uppercase text-ink2"
         title={followedAt ? `Followed up ${timeAgo(followedAt)}` : 'Followed up'}
       >
         followed up
@@ -457,7 +457,7 @@ function StatusPill({
   return (
     <span
       className={`rounded border px-2 py-0.5 text-[10px] font-medium uppercase ${
-        sent ? 'border-gold/30 bg-gold/15 text-gold' : 'border-bronze/40 bg-bronze/10 text-cream/70'
+        sent ? 'border-line-strong bg-ink/15 text-ink' : 'border-line bg-ink2/10 text-ink2'
       }`}
       title={sent ? 'Email sent — awaiting follow-up' : 'Email pending'}
     >

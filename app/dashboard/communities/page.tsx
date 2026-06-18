@@ -76,13 +76,13 @@ export default async function CommunitiesListPage() {
        * page, not the Workspace label above it.
        */}
       <div>
-        <h1 className="font-serif text-2xl tracking-tight text-cream sm:text-4xl">Workspace</h1>
+        <h1 className="font-serif text-2xl tracking-tight text-ink sm:text-4xl">Workspace</h1>
         <WorkspaceSubNav
           active="communities"
           cta={
             <Link
               href="/dashboard/communities/new"
-              className="rounded-full border border-gold/40 bg-gold px-3 py-1.5 font-medium text-ink text-xs transition hover:opacity-90 sm:text-sm"
+              className="rounded-full border border-line-strong bg-ink px-3 py-1.5 font-medium text-ink text-xs transition hover:opacity-90 sm:text-sm"
             >
               + New community
             </Link>
@@ -92,7 +92,7 @@ export default async function CommunitiesListPage() {
       <header className="flex items-baseline justify-between">
         <div>
           <h2 className="text-2xl font-semibold tracking-tight">Communities</h2>
-          <p className="mt-1 text-sm text-cream/60">
+          <p className="mt-1 text-sm text-ink2">
             Shared across all agents. Add videos to any community; only the agent who created a
             community can edit its metadata.
           </p>
@@ -100,13 +100,13 @@ export default async function CommunitiesListPage() {
       </header>
 
       {communities.length === 0 ? (
-        <div className="rounded border border-dashed border-bronze/30 bg-ink2 px-6 py-12 text-center">
-          <p className="text-sm text-cream/60">
+        <div className="rounded border border-dashed border-line bg-surface px-6 py-12 text-center">
+          <p className="text-sm text-ink2">
             No communities yet. Create one to start adding schools and POIs.
           </p>
         </div>
       ) : (
-        <ul className="divide-y divide-bronze/20 rounded border border-bronze/30 bg-ink2">
+        <ul className="divide-y divide-bronze/20 rounded border border-line bg-surface">
           {communities.map((c) => {
             const canEdit = c.created_by == null || c.created_by === myAgentId;
             // Phase 35.2: whole row → editor link. The editor itself is now
@@ -118,37 +118,37 @@ export default async function CommunitiesListPage() {
               <li key={c.id} className="relative">
                 <Link
                   href={`/dashboard/communities/${c.id}`}
-                  className="flex flex-col gap-3 px-4 py-3 transition hover:bg-ink/40 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 px-4 py-3 transition hover:bg-bg sm:flex-row sm:items-center sm:justify-between"
                   aria-label={canEdit ? `Edit ${c.name}` : `View ${c.name}`}
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium text-cream">
+                    <div className="text-sm font-medium text-ink">
                       {c.name}
                       {(() => {
                         const n = videoCountById.get(c.id) ?? 0;
                         return n > 0 ? (
-                          <span className="ml-2 rounded-full bg-bronze/20 px-2 py-0.5 text-[10px] text-cream/70">
+                          <span className="ml-2 rounded-full bg-ink2/20 px-2 py-0.5 text-[10px] text-ink2">
                             {n} video{n === 1 ? '' : 's'}
                           </span>
                         ) : null;
                       })()}
                       {!canEdit ? (
-                        <span className="ml-2 text-[10px] uppercase tracking-wide text-cream/40">
+                        <span className="ml-2 text-[10px] uppercase tracking-wide text-muted">
                           view only
                         </span>
                       ) : null}
                     </div>
-                    <div className="truncate text-xs text-cream/50">
+                    <div className="truncate text-xs text-muted">
                       {c.city ? `${c.city}, ${c.state}` : c.state} ·{' '}
-                      <code className="text-cream/70">{c.slug}</code>
+                      <code className="text-ink2">{c.slug}</code>
                     </div>
                     {c.description ? (
-                      <p className="mt-1 line-clamp-2 text-xs text-cream/60">{c.description}</p>
+                      <p className="mt-1 line-clamp-2 text-xs text-ink2">{c.description}</p>
                     ) : (
-                      <p className="mt-1 text-xs text-cream/30 italic">No description yet</p>
+                      <p className="mt-1 text-xs text-muted italic">No description yet</p>
                     )}
                   </div>
-                  <div className="flex shrink-0 items-center gap-3 text-xs text-cream/55">
+                  <div className="flex shrink-0 items-center gap-3 text-xs text-ink2">
                     <span aria-hidden>→</span>
                   </div>
                 </Link>

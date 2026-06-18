@@ -11,24 +11,24 @@ export default function Loading() {
   return (
     <div className="mx-auto max-w-5xl">
       {/* Hero banner skeleton */}
-      <div className="relative aspect-[21/9] w-full animate-pulse bg-ink2 sm:rounded-b-xl">
+      <div className="relative aspect-[21/9] w-full animate-pulse bg-surface sm:rounded-b-xl">
         <div className="absolute inset-x-0 bottom-0 px-4 py-4 sm:px-6 sm:py-5">
-          <div className="h-7 w-2/3 rounded bg-bronze/20" />
-          <div className="mt-2 h-4 w-1/3 rounded bg-bronze/20" />
+          <div className="h-7 w-2/3 rounded bg-ink2/20" />
+          <div className="mt-2 h-4 w-1/3 rounded bg-ink2/20" />
         </div>
       </div>
 
       <div className="px-4 py-6">
         <div className="mb-6 flex flex-wrap items-center gap-2">
-          <div className="h-6 w-32 animate-pulse rounded-full bg-bronze/20" />
-          <div className="h-6 w-32 animate-pulse rounded-full bg-bronze/20" />
+          <div className="h-6 w-32 animate-pulse rounded-full bg-ink2/20" />
+          <div className="h-6 w-32 animate-pulse rounded-full bg-ink2/20" />
         </div>
 
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders
             <li key={i}>
-              <div className="aspect-[9/16] animate-pulse rounded-lg bg-ink2" />
+              <div className="aspect-[9/16] animate-pulse rounded-lg bg-surface" />
             </li>
           ))}
         </ul>

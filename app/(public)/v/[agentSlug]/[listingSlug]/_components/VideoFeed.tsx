@@ -27,7 +27,7 @@ export function VideoFeed({ listingId, cards }: Props) {
 
   if (cards.length === 0) {
     return (
-      <main className="flex h-[100dvh] items-center justify-center bg-ink text-cream/60 text-sm">
+      <main className="flex h-[100dvh] items-center justify-center bg-bg text-muted text-sm">
         No videos yet for this listing.
       </main>
     );

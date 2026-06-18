@@ -75,8 +75,8 @@ export function EditableAgentIdentity({
   }
 
   return (
-    <div className="rounded-xl border border-cream/10 bg-ink2/40 p-5">
-      <div className="text-cream/60 text-xs uppercase tracking-wider">Signed in as agent</div>
+    <div className="rounded-xl border border-line bg-surface p-5">
+      <div className="text-ink2 text-xs uppercase tracking-wider">Signed in as agent</div>
 
       <div className="mt-3">
         <AvatarPicker
@@ -103,17 +103,17 @@ export function EditableAgentIdentity({
                 setEditing(null);
               }
             }}
-            className="w-full rounded border border-bronze/30 bg-ink px-2 py-1 font-serif text-2xl text-cream focus:border-gold focus:outline-none"
+            className="w-full rounded border border-line bg-bg px-2 py-1 font-serif text-2xl text-ink focus:border-line-strong focus:outline-none"
           />
         ) : (
           <button
             type="button"
             onClick={() => setEditing('name')}
-            className="-mx-1 w-full rounded px-1 py-0.5 text-left font-serif text-2xl text-cream hover:bg-cream/5"
+            className="-mx-1 w-full rounded px-1 py-0.5 text-left font-serif text-2xl text-ink hover:bg-surface/5"
             title="Tap to edit"
           >
             {name}
-            <span className="ml-2 align-middle text-cream/30 text-xs">✎</span>
+            <span className="ml-2 align-middle text-muted text-xs">✎</span>
           </button>
         )}
       </div>
@@ -136,22 +136,22 @@ export function EditableAgentIdentity({
                 setEditing(null);
               }
             }}
-            className="w-full rounded border border-bronze/30 bg-ink px-2 py-1 text-cream text-sm focus:border-gold focus:outline-none"
+            className="w-full rounded border border-line bg-bg px-2 py-1 text-ink text-sm focus:border-line-strong focus:outline-none"
           />
         ) : (
           <button
             type="button"
             onClick={() => setEditing('brokerage')}
-            className="-mx-1 w-full rounded px-1 py-0.5 text-left text-cream/70 text-sm hover:bg-cream/5"
+            className="-mx-1 w-full rounded px-1 py-0.5 text-left text-ink2 text-sm hover:bg-surface/5"
             title="Tap to edit"
           >
-            {brokerage || <span className="text-cream/40">Add brokerage</span>}
-            <span className="ml-2 align-middle text-cream/30 text-xs">✎</span>
+            {brokerage || <span className="text-muted">Add brokerage</span>}
+            <span className="ml-2 align-middle text-muted text-xs">✎</span>
           </button>
         )}
       </div>
 
-      <div className="mt-3 text-cream/60 text-xs">{email}</div>
+      <div className="mt-3 text-ink2 text-xs">{email}</div>
 
       {error ? <div className="mt-2 text-rose-300/80 text-xs">{error}</div> : null}
     </div>

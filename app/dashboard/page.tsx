@@ -142,13 +142,13 @@ export default async function DashboardHomePage({ searchParams }: PageProps) {
          * not a Listings-tab action; layered next to the active chip the
          * scope is unambiguous.
          */}
-        <h1 className="font-serif text-2xl tracking-tight text-cream sm:text-4xl">Workspace</h1>
+        <h1 className="font-serif text-2xl tracking-tight text-ink sm:text-4xl">Workspace</h1>
         <WorkspaceSubNav
           active="listings"
           cta={
             <Link
               href="/dashboard/listings/new"
-              className="rounded-full border border-gold/40 bg-gold px-3 py-1.5 font-medium text-ink text-xs transition hover:opacity-90 sm:text-sm"
+              className="rounded-full border border-line-strong bg-ink px-3 py-1.5 font-medium text-ink text-xs transition hover:opacity-90 sm:text-sm"
             >
               + New listing
             </Link>

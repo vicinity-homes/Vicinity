@@ -45,8 +45,8 @@ export function FollowUpToggle({
 
   const label = followedUpAt ? '↺ Mark as new' : '✓ Mark as followed up';
   const cls = followedUpAt
-    ? 'border-cream/20 text-cream/70 hover:border-gold hover:text-gold'
-    : 'border-gold/40 bg-gold/10 text-gold hover:bg-gold/20';
+    ? 'border-line text-ink2 hover:border-line-strong hover:text-ink'
+    : 'border-line-strong bg-ink/10 text-ink hover:bg-ink/20';
   return (
     <button
       type="button"

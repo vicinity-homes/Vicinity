@@ -83,24 +83,24 @@ export default async function LeadDetailPage({ params }: PageProps) {
     <div className="mx-auto max-w-2xl px-4 py-8">
       <Link
         href="/dashboard/leads"
-        className="mb-4 inline-block text-xs text-cream/60 hover:text-cream"
+        className="mb-4 inline-block text-xs text-ink2 hover:text-ink"
       >
         ← All leads
       </Link>
 
-      <div className="rounded-2xl border border-bronze/30 bg-ink2 p-6">
+      <div className="rounded-2xl border border-line bg-surface p-6">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">{lead.name}</h1>
-            <p className="mt-1 text-sm text-cream/60">{formatDate(lead.created_at)}</p>
+            <p className="mt-1 text-sm text-ink2">{formatDate(lead.created_at)}</p>
           </div>
           <span
             className={`rounded border px-2 py-0.5 text-[10px] font-medium uppercase ${
               lead.followed_up_at != null
-                ? 'border-cream/20 bg-cream/5 text-cream/60'
+                ? 'border-line bg-surface/5 text-ink2'
                 : lead.notified_at != null
-                  ? 'border-gold/30 bg-gold/15 text-gold'
-                  : 'border-bronze/40 bg-bronze/10 text-cream/70'
+                  ? 'border-line-strong bg-ink/15 text-ink'
+                  : 'border-line bg-ink2/10 text-ink2'
             }`}
           >
             {lead.followed_up_at != null
@@ -112,26 +112,26 @@ export default async function LeadDetailPage({ params }: PageProps) {
         </div>
 
         <dl className="grid grid-cols-[120px_1fr] gap-y-3 text-sm">
-          <dt className="text-cream/50">Listing</dt>
+          <dt className="text-muted">Listing</dt>
           <dd>
             {lead.listings?.slug ? (
               <Link
                 href={`/dashboard/listings/${lead.listing_id}/edit`}
-                className="text-gold hover:underline"
+                className="text-ink hover:underline"
               >
                 {addr}
               </Link>
             ) : (
               <span>{addr}</span>
             )}
-            {cityState ? <span className="text-cream/60"> · {cityState}</span> : null}
+            {cityState ? <span className="text-ink2"> · {cityState}</span> : null}
           </dd>
 
           {lead.email ? (
             <>
-              <dt className="text-cream/50">Email</dt>
+              <dt className="text-muted">Email</dt>
               <dd>
-                <a href={`mailto:${lead.email}`} className="text-cream hover:underline">
+                <a href={`mailto:${lead.email}`} className="text-ink hover:underline">
                   {lead.email}
                 </a>
               </dd>
@@ -140,9 +140,9 @@ export default async function LeadDetailPage({ params }: PageProps) {
 
           {lead.phone ? (
             <>
-              <dt className="text-cream/50">Phone</dt>
+              <dt className="text-muted">Phone</dt>
               <dd>
-                <a href={`tel:${lead.phone}`} className="text-cream hover:underline">
+                <a href={`tel:${lead.phone}`} className="text-ink hover:underline">
                   {lead.phone}
                 </a>
               </dd>
@@ -151,16 +151,16 @@ export default async function LeadDetailPage({ params }: PageProps) {
 
           {lead.source ? (
             <>
-              <dt className="text-cream/50">Source</dt>
-              <dd className="text-cream/70">{lead.source}</dd>
+              <dt className="text-muted">Source</dt>
+              <dd className="text-ink2">{lead.source}</dd>
             </>
           ) : null}
         </dl>
 
         {lead.message ? (
-          <div className="mt-6 rounded border border-bronze/30 bg-ink p-4">
-            <p className="mb-2 text-xs uppercase tracking-wide text-cream/50">Message</p>
-            <p className="whitespace-pre-wrap text-sm text-cream/90">{lead.message}</p>
+          <div className="mt-6 rounded border border-line bg-bg p-4">
+            <p className="mb-2 text-xs uppercase tracking-wide text-muted">Message</p>
+            <p className="whitespace-pre-wrap text-sm text-ink2">{lead.message}</p>
           </div>
         ) : null}
 
@@ -168,7 +168,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
           {mailto ? (
             <a
               href={mailto}
-              className="rounded bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold/90"
+              className="rounded bg-ink px-4 py-2 text-sm font-semibold text-ink hover:bg-ink/90"
             >
               Reply by email
             </a>
@@ -176,7 +176,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
           {tel ? (
             <a
               href={tel}
-              className="rounded border border-bronze/50 px-4 py-2 text-sm text-cream hover:bg-bronze/20"
+              className="rounded border border-line px-4 py-2 text-sm text-ink hover:bg-ink2/20"
             >
               Call
             </a>

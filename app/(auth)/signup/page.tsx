@@ -26,11 +26,11 @@ export default async function SignupPage({
   return (
     <div className="space-y-5">
       <SignupForm redirect={safeRedirect} />
-      <p className="text-center text-sm text-cream/60">
+      <p className="text-center text-sm text-ink2">
         Already have an account?{' '}
         <a
           href={`/login${safeRedirect === '/dashboard' ? '' : `?redirect=${encodeURIComponent(safeRedirect)}`}`}
-          className="text-gold underline hover:text-gold/80"
+          className="text-ink underline hover:text-ink/80"
         >
           Sign in
         </a>

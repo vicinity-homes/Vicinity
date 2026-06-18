@@ -185,10 +185,10 @@ export function NewListingForm() {
         </label>
 
         {resolved ? (
-          <div className="flex items-center justify-between rounded border border-bronze/30 bg-ink2 p-3">
+          <div className="flex items-center justify-between rounded border border-line bg-surface p-3">
             <div className="text-sm">
-              <div className="font-medium text-cream">{resolved.formatted_address}</div>
-              <div className="mt-1 text-xs text-cream/60">
+              <div className="font-medium text-ink">{resolved.formatted_address}</div>
+              <div className="mt-1 text-xs text-ink2">
                 {resolved.city}, {resolved.state}
                 {resolved.zip ? ` ${resolved.zip}` : ''}
                 {resolved.neighborhood ? ` · ${resolved.neighborhood}` : ''} ·{' '}
@@ -198,7 +198,7 @@ export function NewListingForm() {
             <button
               type="button"
               onClick={clearResolved}
-              className="text-xs text-cream/60 underline hover:text-cream"
+              className="text-xs text-ink2 underline hover:text-ink"
             >
               change
             </button>
@@ -212,16 +212,16 @@ export function NewListingForm() {
               placeholder="Start typing an address..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none"
+              className="w-full rounded border border-line bg-bg px-3 py-2 text-ink placeholder:text-muted focus:border-line-strong focus:outline-none"
             />
             {predictions.length > 0 && (
-              <ul className="rounded border border-bronze/30 bg-ink2">
+              <ul className="rounded border border-line bg-surface">
                 {predictions.map((p) => (
                   <li key={p.place_id}>
                     <button
                       type="button"
                       onClick={() => pickPrediction(p)}
-                      className="block w-full px-3 py-2 text-left text-sm text-cream hover:bg-bronze/10"
+                      className="block w-full px-3 py-2 text-left text-sm text-ink hover:bg-ink2/10"
                     >
                       {p.description}
                     </button>
@@ -229,7 +229,7 @@ export function NewListingForm() {
                 ))}
               </ul>
             )}
-            {resolving && <p className="text-xs text-cream/60">Resolving address...</p>}
+            {resolving && <p className="text-xs text-ink2">Resolving address...</p>}
             {autocompleteErr && (
               <p className="text-xs text-red-400">Address lookup failed ({autocompleteErr}).</p>
             )}
@@ -237,7 +237,7 @@ export function NewListingForm() {
         )}
       </div>
 
-      <p className="rounded border border-bronze/20 bg-ink2/40 p-3 text-xs text-cream/60">
+      <p className="rounded border border-line bg-surface p-3 text-xs text-ink2">
         Address is required to create a draft. Price, beds, baths, and at least one ready video are
         required to publish — you can fill those here or on the next screen.
       </p>
@@ -255,7 +255,7 @@ export function NewListingForm() {
             placeholder="e.g. 1250000"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
-            className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none"
+            className="w-full rounded border border-line bg-bg px-3 py-2 text-ink placeholder:text-muted focus:border-line-strong focus:outline-none"
           />
         </div>
         <div className="space-y-1">
@@ -270,7 +270,7 @@ export function NewListingForm() {
             placeholder="e.g. 3200"
             value={sqft}
             onChange={(e) => setSqft(e.target.value)}
-            className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none"
+            className="w-full rounded border border-line bg-bg px-3 py-2 text-ink placeholder:text-muted focus:border-line-strong focus:outline-none"
           />
         </div>
         <div className="space-y-1">
@@ -282,7 +282,7 @@ export function NewListingForm() {
             id="beds"
             value={beds}
             onChange={(e) => setBeds(e.target.value)}
-            className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-cream focus:border-gold focus:outline-none"
+            className="w-full rounded border border-line bg-bg px-3 py-2 text-ink focus:border-line-strong focus:outline-none"
           >
             <option value="">— Select —</option>
             <option value="0">0 (studio)</option>
@@ -304,7 +304,7 @@ export function NewListingForm() {
             id="baths"
             value={baths}
             onChange={(e) => setBaths(e.target.value)}
-            className="w-full rounded border border-bronze/30 bg-ink px-3 py-2 text-cream focus:border-gold focus:outline-none"
+            className="w-full rounded border border-line bg-bg px-3 py-2 text-ink focus:border-line-strong focus:outline-none"
           >
             <option value="">— Select —</option>
             <option value="1">1</option>
@@ -349,12 +349,12 @@ export function NewListingForm() {
       <button
         type="submit"
         disabled={!resolved || isPending}
-        className="rounded bg-gold px-4 py-2 font-medium text-ink disabled:opacity-50"
+        className="rounded bg-ink px-4 py-2 font-medium text-ink disabled:opacity-50"
       >
         {isPending ? 'Creating...' : 'Create draft listing'}
       </button>
 
-      <p className="text-xs text-cream/60">
+      <p className="text-xs text-ink2">
         After creating the draft you'll upload videos, fine-tune details, and publish.
       </p>
     </form>
@@ -363,7 +363,7 @@ export function NewListingForm() {
 
 function OptionalBadge() {
   return (
-    <span className="rounded border border-cream/15 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-cream/40">
+    <span className="rounded border border-line px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted">
       Optional
     </span>
   );

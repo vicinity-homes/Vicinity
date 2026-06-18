@@ -58,9 +58,9 @@ export default async function ListingAnalyticsPage({
   const listing = rawListing as ListingRow | null;
   if (!listing) {
     return (
-      <div className="mx-auto max-w-3xl px-6 py-10 text-cream">
-        <p className="text-cream/60 text-sm">Listing not found.</p>
-        <Link href="/dashboard" className="mt-4 inline-block text-gold text-sm hover:underline">
+      <div className="mx-auto max-w-3xl px-6 py-10 text-ink">
+        <p className="text-ink2 text-sm">Listing not found.</p>
+        <Link href="/dashboard" className="mt-4 inline-block text-ink text-sm hover:underline">
           ← Back to dashboard
         </Link>
       </div>
@@ -83,9 +83,9 @@ export default async function ListingAnalyticsPage({
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10 text-cream">
+    <div className="mx-auto max-w-5xl px-6 py-10 text-ink">
       {/* Crumbs */}
-      <div className="mb-2 flex items-center gap-3 text-cream/50 text-xs">
+      <div className="mb-2 flex items-center gap-3 text-muted text-xs">
         <Link href={`/dashboard/listings/${listing.id}/edit`} className="hover:underline">
           ← Back to listing
         </Link>
@@ -93,7 +93,7 @@ export default async function ListingAnalyticsPage({
         <span className="uppercase tracking-wide">{listing.status}</span>
       </div>
       <h1 className="font-serif text-3xl">{listing.address}</h1>
-      <p className="mt-1 text-cream/60 text-sm">
+      <p className="mt-1 text-ink2 text-sm">
         {listing.city}, {listing.state}
       </p>
 
@@ -112,10 +112,10 @@ export default async function ListingAnalyticsPage({
       </section>
 
       {/* Funnel */}
-      <section className="mt-8 rounded-xl border border-bronze/30 bg-ink2/60 p-5">
+      <section className="mt-8 rounded-xl border border-line bg-surface p-5">
         <div className="mb-3 flex items-baseline justify-between">
           <h2 className="font-serif text-lg">Engagement funnel</h2>
-          <span className="text-cream/40 text-xs">
+          <span className="text-muted text-xs">
             % relative to {fmtNum(stats.pageViews)} page views
           </span>
         </div>
@@ -128,7 +128,7 @@ export default async function ListingAnalyticsPage({
           ]}
         />
         {stats.pageViews === 0 && (
-          <p className="mt-3 text-cream/40 text-xs">
+          <p className="mt-3 text-muted text-xs">
             No traffic yet. Share the listing URL on Facebook / Instagram / Email to start
             collecting data.
           </p>
@@ -136,13 +136,13 @@ export default async function ListingAnalyticsPage({
       </section>
 
       {/* Top cards */}
-      <section className="mt-8 rounded-xl border border-bronze/30 bg-ink2/60 p-5">
+      <section className="mt-8 rounded-xl border border-line bg-surface p-5">
         <div className="mb-3 flex items-baseline justify-between">
           <h2 className="font-serif text-lg">Top cards</h2>
-          <span className="text-cream/40 text-xs">By card_view events</span>
+          <span className="text-muted text-xs">By card_view events</span>
         </div>
         {stats.topCards.length === 0 ? (
-          <p className="text-cream/40 text-xs">
+          <p className="text-muted text-xs">
             No card views yet. (A card view is logged each time a viewer scrolls into a video card
             on the public listing page.)
           </p>
@@ -156,7 +156,7 @@ export default async function ListingAnalyticsPage({
       </section>
 
       {/* Footnote */}
-      <p className="mt-6 text-cream/30 text-xs">
+      <p className="mt-6 text-muted text-xs">
         Numbers update in real time from the public listing page (no caching).
       </p>
     </div>
@@ -173,8 +173,8 @@ function Stat({
   valueFormatter?: (v: number) => string;
 }) {
   return (
-    <div className="rounded-xl border border-bronze/30 bg-ink2/60 p-4">
-      <div className="text-cream/50 text-xs uppercase tracking-wide">{label}</div>
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <div className="text-muted text-xs uppercase tracking-wide">{label}</div>
       <div className="mt-1 font-serif text-2xl tabular-nums">
         {valueFormatter ? valueFormatter(value) : fmtNum(value)}
       </div>
@@ -192,23 +192,23 @@ function Funnel({ steps }: { steps: { label: string; value: number }[] }) {
         const widthPct = Math.max(2, Math.round((s.value / top) * 100));
         return (
           <div key={s.label} className="flex items-center gap-3">
-            <div className="w-32 shrink-0 text-cream/70 text-xs">{s.label}</div>
-            <div className="relative h-7 flex-1 overflow-hidden rounded bg-ink/80">
+            <div className="w-32 shrink-0 text-ink2 text-xs">{s.label}</div>
+            <div className="relative h-7 flex-1 overflow-hidden rounded bg-bg">
               <div
                 className="h-full bg-gradient-to-r from-gold/80 to-gold/40 transition-all"
                 style={{ width: `${widthPct}%` }}
               />
-              <div className="absolute inset-0 flex items-center justify-end px-2 font-mono text-cream text-xs">
+              <div className="absolute inset-0 flex items-center justify-end px-2 font-mono text-ink text-xs">
                 {fmtNum(s.value)}
               </div>
             </div>
-            <div className="w-16 shrink-0 text-right text-cream/40 text-xs tabular-nums">
+            <div className="w-16 shrink-0 text-right text-muted text-xs tabular-nums">
               {stepDrop != null ? `${stepDrop}%` : '—'}
             </div>
           </div>
         );
       })}
-      <p className="pt-1 text-cream/30 text-[10px]">
+      <p className="pt-1 text-muted text-[10px]">
         Right column = step-over-step retention. Use it to spot the biggest drop-off.
       </p>
     </div>
@@ -232,14 +232,14 @@ function TopCards({
         const widthPct = Math.max(4, Math.round((c.views / maxViews) * 100));
         return (
           <li key={c.cardId} className="flex items-center gap-3 text-xs">
-            <span className="w-5 shrink-0 text-cream/40 tabular-nums">{i + 1}.</span>
-            <span className="w-32 shrink-0 truncate text-cream/80">{label}</span>
-            <div className="relative h-5 flex-1 overflow-hidden rounded bg-ink/80">
+            <span className="w-5 shrink-0 text-muted tabular-nums">{i + 1}.</span>
+            <span className="w-32 shrink-0 truncate text-ink2">{label}</span>
+            <div className="relative h-5 flex-1 overflow-hidden rounded bg-bg">
               <div
-                className="h-full bg-bronze/50 transition-all"
+                className="h-full bg-ink2/50 transition-all"
                 style={{ width: `${widthPct}%` }}
               />
-              <div className="absolute inset-0 flex items-center justify-end px-2 font-mono text-cream">
+              <div className="absolute inset-0 flex items-center justify-end px-2 font-mono text-ink">
                 {fmtNum(c.views)}
               </div>
             </div>

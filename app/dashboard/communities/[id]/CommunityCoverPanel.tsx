@@ -135,10 +135,10 @@ export function CommunityCoverPanel({
   }
 
   return (
-    <section className="rounded-lg border border-bronze/30 bg-ink2 p-4">
+    <section className="rounded-lg border border-line bg-surface p-4">
       <header className="mb-3">
-        <h2 className="text-sm font-semibold text-cream">Cover</h2>
-        <p className="mt-0.5 text-xs text-cream/60">
+        <h2 className="text-sm font-semibold text-ink">Cover</h2>
+        <p className="mt-0.5 text-xs text-ink2">
           Shown on the buyer Communities grid, the community page header, and saved cards. Pick
           a video or upload an image; otherwise the first video&apos;s thumbnail is used.
         </p>
@@ -146,7 +146,7 @@ export function CommunityCoverPanel({
 
       <div className="flex gap-4">
         {/* Preview */}
-        <div className="aspect-[9/16] w-32 shrink-0 overflow-hidden rounded bg-ink">
+        <div className="aspect-[9/16] w-32 shrink-0 overflow-hidden rounded bg-bg">
           {previewUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -155,7 +155,7 @@ export function CommunityCoverPanel({
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-[11px] text-cream/40">
+            <div className="flex h-full w-full items-center justify-center text-[11px] text-muted">
               No cover
             </div>
           )}
@@ -167,7 +167,7 @@ export function CommunityCoverPanel({
             type="button"
             disabled={isPending || videos.length === 0}
             onClick={() => setShowPicker((v) => !v)}
-            className="rounded border border-bronze/40 px-3 py-1.5 text-xs text-cream transition hover:border-gold disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded border border-line px-3 py-1.5 text-xs text-ink transition hover:border-line-strong disabled:cursor-not-allowed disabled:opacity-50"
           >
             {videos.length === 0 ? 'No videos yet' : showPicker ? 'Cancel pick' : 'Pick from videos'}
           </button>
@@ -175,7 +175,7 @@ export function CommunityCoverPanel({
             type="button"
             disabled={isPending}
             onClick={() => fileInputRef.current?.click()}
-            className="rounded border border-bronze/40 px-3 py-1.5 text-xs text-cream transition hover:border-gold disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded border border-line px-3 py-1.5 text-xs text-ink transition hover:border-line-strong disabled:cursor-not-allowed disabled:opacity-50"
           >
             Upload image
           </button>
@@ -195,13 +195,13 @@ export function CommunityCoverPanel({
               type="button"
               disabled={isPending}
               onClick={clearCover}
-              className="rounded border border-bronze/40 px-3 py-1.5 text-xs text-cream/70 transition hover:border-red-500/60 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded border border-line px-3 py-1.5 text-xs text-ink2 transition hover:border-red-500/60 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Clear cover
             </button>
           )}
           {error && <p className="text-xs text-red-400">{error}</p>}
-          {isPending && <p className="text-xs text-cream/40">Saving…</p>}
+          {isPending && <p className="text-xs text-muted">Saving…</p>}
         </div>
       </div>
 
@@ -216,7 +216,7 @@ export function CommunityCoverPanel({
                 disabled={isPending}
                 onClick={() => pickVideo(v.id)}
                 className={`relative aspect-[9/16] overflow-hidden rounded transition ${
-                  selected ? 'ring-2 ring-gold' : 'ring-1 ring-bronze/30 hover:ring-gold/60'
+                  selected ? 'ring-2 ring-line-strong' : 'ring-1 ring-line hover:ring-line-strong'
                 }`}
                 title={v.title ?? 'Video'}
               >
@@ -228,7 +228,7 @@ export function CommunityCoverPanel({
                   loading="lazy"
                 />
                 {selected && (
-                  <span className="absolute right-1 top-1 rounded bg-gold px-1.5 py-0.5 text-[10px] font-medium text-ink">
+                  <span className="absolute right-1 top-1 rounded bg-ink px-1.5 py-0.5 text-[10px] font-medium text-ink">
                     Cover
                   </span>
                 )}

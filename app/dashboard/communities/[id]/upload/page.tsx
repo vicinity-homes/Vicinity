@@ -61,7 +61,7 @@ export default async function CommunityUploadPage({
   if (!community) {
     return (
       <div className="mx-auto max-w-2xl py-12 text-center">
-        <p className="text-sm text-cream/60">Community not found.</p>
+        <p className="text-sm text-ink2">Community not found.</p>
       </div>
     );
   }
@@ -128,11 +128,11 @@ export default async function CommunityUploadPage({
       <header className="flex items-baseline justify-between gap-3">
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-semibold tracking-tight">{community.name}</h1>
-          <p className="mt-1 text-sm text-cream/60">
+          <p className="mt-1 text-sm text-ink2">
             {community.city ? `${community.city}, ${community.state}` : community.state} ·{' '}
             <Link
               href={`/dashboard/communities/${community.id}`}
-              className="text-cream/70 underline-offset-2 hover:text-gold hover:underline"
+              className="text-ink2 underline-offset-2 hover:text-ink hover:underline"
             >
               edit details
             </Link>
@@ -140,7 +140,7 @@ export default async function CommunityUploadPage({
         </div>
         <Link
           href="/dashboard/communities"
-          className="shrink-0 text-xs text-cream/60 hover:text-cream"
+          className="shrink-0 text-xs text-ink2 hover:text-ink"
         >
           ← all communities
         </Link>

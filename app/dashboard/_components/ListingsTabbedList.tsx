@@ -59,10 +59,10 @@ function fmtBaths(n: number | null): string | null {
 function StatusBadge({ status }: { status: string }) {
   const cls =
     status === 'published'
-      ? 'bg-gold/15 text-gold border-gold/30'
+      ? 'bg-ink/15 text-ink border-line-strong'
       : status === 'archived'
-        ? 'bg-cream/5 text-cream/50 border-cream/10'
-        : 'bg-bronze/15 text-cream/80 border-bronze/30';
+        ? 'bg-surface/5 text-muted border-line'
+        : 'bg-ink2/15 text-ink2 border-line';
   return (
     <span
       className={`rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${cls}`}
@@ -90,7 +90,7 @@ export function ListingsTabbedList({ initialTab, agentSlug, rows, counts }: Prop
   return (
     <>
       <div className="mb-4 flex items-center justify-between">
-        <div className="text-[11px] uppercase tracking-widest text-gold">Your Listings</div>
+        <div className="text-[11px] uppercase tracking-widest text-ink">Your Listings</div>
         <div className="flex items-center gap-2 text-xs">
           {(['draft', 'published', 'archived'] as const).map((tab) => {
             const isActive = activeTab === tab;
@@ -101,12 +101,12 @@ export function ListingsTabbedList({ initialTab, agentSlug, rows, counts }: Prop
                 type="button"
                 onClick={() => setActiveTab(tab)}
                 className={`rounded-full px-3 py-1 transition ${
-                  isActive ? 'bg-bronze/30 text-cream' : 'text-cream/60 hover:text-cream'
+                  isActive ? 'bg-ink2/30 text-ink' : 'text-ink2 hover:text-ink'
                 }`}
               >
                 {label}
                 {counts[tab] > 0 && (
-                  <span className={`ml-1.5 ${isActive ? 'text-cream/70' : 'text-cream/40'}`}>
+                  <span className={`ml-1.5 ${isActive ? 'text-ink2' : 'text-muted'}`}>
                     {counts[tab]}
                   </span>
                 )}
@@ -117,8 +117,8 @@ export function ListingsTabbedList({ initialTab, agentSlug, rows, counts }: Prop
       </div>
 
       {filteredRows.length === 0 ? (
-        <div className="rounded-2xl border border-bronze/40 border-dashed bg-ink2 px-8 py-16 text-center">
-          <p className="text-cream/70 text-sm">
+        <div className="rounded-2xl border border-line border-dashed bg-surface px-8 py-16 text-center">
+          <p className="text-ink2 text-sm">
             {activeTab === 'draft'
               ? 'No drafts.'
               : activeTab === 'archived'
@@ -153,13 +153,13 @@ export function ListingsTabbedList({ initialTab, agentSlug, rows, counts }: Prop
             return (
               <li
                 key={l.id}
-                className="flex flex-col gap-4 rounded-2xl border border-cream/5 bg-ink2/60 p-3 sm:flex-row sm:p-4"
+                className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-3 sm:flex-row sm:p-4"
               >
                 <Link
                   href={coverHref}
                   target={isExternal ? '_blank' : undefined}
                   rel={isExternal ? 'noopener' : undefined}
-                  className="group relative h-40 w-full shrink-0 overflow-hidden rounded-xl bg-ink sm:h-28 sm:w-44"
+                  className="group relative h-40 w-full shrink-0 overflow-hidden rounded-xl bg-bg sm:h-28 sm:w-44"
                   title={titleAttr}
                 >
                   {cover ? (
@@ -173,12 +173,12 @@ export function ListingsTabbedList({ initialTab, agentSlug, rows, counts }: Prop
                       loading="lazy"
                     />
                   ) : (
-                    <div className="grid h-full w-full place-items-center text-cream/30 text-xs">
+                    <div className="grid h-full w-full place-items-center text-muted text-xs">
                       No cover
                     </div>
                   )}
                   <span
-                    className="pointer-events-none absolute right-2 top-2 rounded-full bg-ink/70 px-2 py-0.5 text-[10px] text-cream/80 opacity-0 transition group-hover:opacity-100"
+                    className="pointer-events-none absolute right-2 top-2 rounded-full bg-bg px-2 py-0.5 text-[10px] text-ink2 opacity-0 transition group-hover:opacity-100"
                     aria-hidden="true"
                   >
                     {overlayLabel}
@@ -187,17 +187,17 @@ export function ListingsTabbedList({ initialTab, agentSlug, rows, counts }: Prop
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="truncate font-serif text-cream text-xl">
+                    <h3 className="truncate font-serif text-ink text-xl">
                       {l.address ?? '(no address)'}
                     </h3>
                     <StatusBadge status={l.status} />
                   </div>
-                  <p className="mt-0.5 text-cream/60 text-sm">
+                  <p className="mt-0.5 text-ink2 text-sm">
                     {l.city && l.state ? `${l.city}, ${l.state}` : '—'}
                     {l.price != null && ` · ${fmtPrice(l.price)}`}
                   </p>
                   {meta.length > 0 && (
-                    <p className="mt-1 text-cream/50 text-xs">{meta.join(' · ')}</p>
+                    <p className="mt-1 text-muted text-xs">{meta.join(' · ')}</p>
                   )}
                   {isPub && publicPath && (
                     <div className="mt-3">
@@ -205,7 +205,7 @@ export function ListingsTabbedList({ initialTab, agentSlug, rows, counts }: Prop
                     </div>
                   )}
                   {!isPub && (
-                    <div className="mt-3 text-[11px] text-cream/40 uppercase tracking-widest">
+                    <div className="mt-3 text-[11px] text-muted uppercase tracking-widest">
                       Publish to get a public link
                     </div>
                   )}
@@ -217,14 +217,14 @@ export function ListingsTabbedList({ initialTab, agentSlug, rows, counts }: Prop
                       href={`${publicPath}?from=dashboard`}
                       target="_blank"
                       rel="noopener"
-                      className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-bronze/40 px-3 py-2 text-cream text-xs hover:border-gold hover:text-gold"
+                      className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-line px-3 py-2 text-ink text-xs hover:border-line-strong hover:text-ink"
                     >
                       View ↗
                     </Link>
                   ) : (
                     <Link
                       href={`/dashboard/listings/${l.id}/preview`}
-                      className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-bronze/40 px-3 py-2 text-cream text-xs hover:border-gold hover:text-gold"
+                      className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-line px-3 py-2 text-ink text-xs hover:border-line-strong hover:text-ink"
                       title={
                         l.status === 'archived'
                           ? 'Preview archived listing'
@@ -236,13 +236,13 @@ export function ListingsTabbedList({ initialTab, agentSlug, rows, counts }: Prop
                   )}
                   <Link
                     href={`/dashboard/listings/${l.id}/edit`}
-                    className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-bronze/40 px-3 py-2 text-cream text-xs hover:border-gold hover:text-gold"
+                    className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-line px-3 py-2 text-ink text-xs hover:border-line-strong hover:text-ink"
                   >
                     Edit
                   </Link>
                   <Link
                     href={`/dashboard/listings/${l.id}/analytics`}
-                    className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-bronze/40 px-3 py-2 text-cream text-xs hover:border-gold hover:text-gold"
+                    className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-line px-3 py-2 text-ink text-xs hover:border-line-strong hover:text-ink"
                   >
                     Analytics
                   </Link>

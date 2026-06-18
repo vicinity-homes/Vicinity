@@ -103,8 +103,8 @@ export function NearbyClient() {
   if (!coords && needsManual) {
     return (
       <div className="mx-auto max-w-md px-6 py-12">
-        <div className="rounded-xl border border-cream/10 bg-ink2/40 p-4 text-sm">
-          <p className="mb-3 text-cream/80">Couldn&apos;t read your location. Enter it manually:</p>
+        <div className="rounded-xl border border-line bg-surface p-4 text-sm">
+          <p className="mb-3 text-ink2">Couldn&apos;t read your location. Enter it manually:</p>
           <div className="grid grid-cols-2 gap-2">
             <input
               type="text"
@@ -112,7 +112,7 @@ export function NearbyClient() {
               value={manualLat}
               onChange={(e) => setManualLat(e.target.value)}
               placeholder="lat (e.g. 33.838)"
-              className="rounded border border-bronze/30 bg-ink px-2 py-1 text-cream"
+              className="rounded border border-line bg-bg px-2 py-1 text-ink"
             />
             <input
               type="text"
@@ -120,13 +120,13 @@ export function NearbyClient() {
               value={manualLng}
               onChange={(e) => setManualLng(e.target.value)}
               placeholder="lng (e.g. -84.378)"
-              className="rounded border border-bronze/30 bg-ink px-2 py-1 text-cream"
+              className="rounded border border-line bg-bg px-2 py-1 text-ink"
             />
           </div>
           <button
             type="button"
             onClick={applyManual}
-            className="mt-3 rounded border border-bronze/40 px-3 py-1 text-cream/80 text-xs hover:border-gold hover:text-cream"
+            className="mt-3 rounded border border-line px-3 py-1 text-ink2 text-xs hover:border-line-strong hover:text-ink"
           >
             Apply
           </button>
@@ -137,11 +137,11 @@ export function NearbyClient() {
   }
 
   if (!coords) {
-    return <p className="px-6 py-12 text-center text-cream/60 text-sm">Reading your location…</p>;
+    return <p className="px-6 py-12 text-center text-ink2 text-sm">Reading your location…</p>;
   }
 
   if (loading && !data) {
-    return <p className="px-6 py-12 text-center text-cream/60 text-sm">Searching nearby…</p>;
+    return <p className="px-6 py-12 text-center text-ink2 text-sm">Searching nearby…</p>;
   }
 
   if (error) {
@@ -153,9 +153,9 @@ export function NearbyClient() {
   if (cards.length === 0) {
     return (
       <div className="mx-auto max-w-md px-6 py-24 text-center">
-        <p className="text-cream/80">
+        <p className="text-ink2">
           No listings within {data?.radius ?? radius} mi.{' '}
-          <Link href="/profile" className="text-gold hover:underline">
+          <Link href="/profile" className="text-ink hover:underline">
             Adjust your search radius in Preferences
           </Link>{' '}
           or check back soon.
@@ -176,7 +176,7 @@ export function NearbyClient() {
                 : `/v/${card.agent.slug}/${card.listing.slug}`
             }
             prefetch={false}
-            className="group block overflow-hidden rounded-xl bg-ink/60 ring-1 ring-cream/10 transition-shadow hover:ring-gold/60"
+            className="group block overflow-hidden rounded-xl bg-bg ring-1 ring-line transition-shadow hover:ring-line-strong"
           >
             <div className="relative aspect-[3/4] w-full bg-black/40">
               <Image
@@ -193,16 +193,16 @@ export function NearbyClient() {
               />
               <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
               {typeof card.distance === 'number' && (
-                <div className="absolute top-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] text-cream/90 backdrop-blur-sm">
+                <div className="absolute top-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] text-ink2 backdrop-blur-sm">
                   {card.distance.toFixed(1)} mi
                 </div>
               )}
-              <div className="absolute right-2 bottom-2 left-2 text-cream">
+              <div className="absolute right-2 bottom-2 left-2 text-ink">
                 <div className="font-serif text-lg leading-tight tracking-tight drop-shadow">
                   {formatPrice(card.listing.price)}
                 </div>
-                <div className="truncate text-cream/85 text-xs">{card.listing.address}</div>
-                <div className="flex items-center gap-1.5 text-[10px] text-cream/70">
+                <div className="truncate text-ink2 text-xs">{card.listing.address}</div>
+                <div className="flex items-center gap-1.5 text-[10px] text-ink2">
                   {card.listing.beds != null && <span>{card.listing.beds} bd</span>}
                   {card.listing.baths != null && <span>· {card.listing.baths} ba</span>}
                   {card.listing.sqft != null && (

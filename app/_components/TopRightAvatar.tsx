@@ -85,7 +85,7 @@ export function TopRightAvatar({ authed, initial, avatarUrl }: TopRightAvatarPro
       >
         <Link
           href="/login"
-          className="inline-flex h-11 items-center rounded-full border-cream/20 border bg-ink/70 px-4 font-medium text-cream/90 text-xs backdrop-blur-md transition hover:border-cream/40"
+          className="inline-flex h-11 items-center rounded-full border-line border bg-bg px-4 font-medium text-ink2 text-xs backdrop-blur-md transition hover:border-line"
         >
           Sign in
         </Link>
@@ -105,7 +105,7 @@ export function TopRightAvatar({ authed, initial, avatarUrl }: TopRightAvatarPro
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Account menu"
-        className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-gold/60 bg-ink/80 font-medium text-cream text-sm backdrop-blur-md transition active:scale-95"
+        className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-line-strong bg-bg font-medium text-ink text-sm backdrop-blur-md transition active:scale-95"
       >
         {avatarUrl ? (
           // biome-ignore lint/a11y/useAltText: aria-label on the button covers it
@@ -117,22 +117,22 @@ export function TopRightAvatar({ authed, initial, avatarUrl }: TopRightAvatarPro
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl border-cream/15 border bg-ink/95 shadow-2xl shadow-black/40 backdrop-blur-md"
+          className="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl border-line border bg-bg shadow-2xl shadow-black/40 backdrop-blur-md"
         >
           <Link
             href="/profile"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-4 py-3 text-cream/90 text-sm transition hover:bg-cream/5"
+            className="flex items-center gap-2 px-4 py-3 text-ink2 text-sm transition hover:bg-surface/5"
           >
             <User size={16} aria-hidden="true" />
             Profile
           </Link>
-          <form action="/api/auth/signout" method="post" className="border-cream/10 border-t">
+          <form action="/api/auth/signout" method="post" className="border-line border-t">
             <button
               type="submit"
               role="menuitem"
-              className="flex w-full items-center gap-2 px-4 py-3 text-left text-cream/80 text-sm transition hover:bg-cream/5"
+              className="flex w-full items-center gap-2 px-4 py-3 text-left text-ink2 text-sm transition hover:bg-surface/5"
             >
               <LogOut size={16} aria-hidden="true" />
               Sign out

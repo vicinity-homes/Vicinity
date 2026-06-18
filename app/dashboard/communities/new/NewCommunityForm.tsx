@@ -16,8 +16,8 @@ import { createCommunity } from '@/app/dashboard/communities/actions';
 import { useState, useTransition } from 'react';
 
 const INPUT_BASE =
-  'w-full rounded border bg-ink2 px-3 py-2 text-sm text-cream placeholder:text-cream/40 focus:outline-none focus:ring-1';
-const INPUT_OK = 'border-bronze/30 focus:border-gold focus:ring-gold';
+  'w-full rounded border bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-1';
+const INPUT_OK = 'border-line focus:border-line-strong focus:ring-line-strong';
 const INPUT_ERR = 'border-red-500/70 focus:border-red-400 focus:ring-red-400';
 
 function inputCls(hasError: boolean) {
@@ -129,7 +129,7 @@ export function NewCommunityForm() {
         <button
           type="submit"
           disabled={isPending || name.trim() === ''}
-          className="rounded bg-gold px-4 py-2 text-sm font-medium text-ink transition hover:opacity-90 disabled:opacity-50"
+          className="rounded bg-ink px-4 py-2 text-sm font-medium text-ink transition hover:opacity-90 disabled:opacity-50"
         >
           {isPending ? 'Creating…' : 'Create community'}
         </button>
@@ -154,15 +154,15 @@ function Field({
 }) {
   return (
     <div className="block">
-      <span className="mb-1 block text-xs font-medium text-cream/70">
+      <span className="mb-1 block text-xs font-medium text-ink2">
         {label}
-        {required ? <span className="text-gold"> *</span> : null}
+        {required ? <span className="text-ink"> *</span> : null}
       </span>
       {children}
       {error ? (
         <span className="mt-1 block text-xs text-red-400">{error}</span>
       ) : hint ? (
-        <span className="mt-1 block text-xs text-cream/40">{hint}</span>
+        <span className="mt-1 block text-xs text-muted">{hint}</span>
       ) : null}
     </div>
   );

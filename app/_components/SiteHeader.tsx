@@ -49,7 +49,7 @@ function NavLink({ tab, active }: { tab: Tab; active: boolean }) {
       href={tab.href}
       aria-current={active ? 'page' : undefined}
       className={`text-sm transition-colors ${
-        active ? 'text-gold' : 'text-cream/70 hover:text-cream'
+        active ? 'text-ink' : 'text-ink2 hover:text-ink'
       }`}
     >
       {tab.label}
@@ -84,7 +84,7 @@ function NewDropdown() {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex h-11 items-center gap-1.5 rounded-full bg-gold px-4 font-medium text-ink text-sm transition hover:opacity-90"
+        className="inline-flex h-11 items-center gap-1.5 rounded-full bg-ink px-4 font-medium text-ink text-sm transition hover:opacity-90"
       >
         <Plus size={16} strokeWidth={2.5} aria-hidden="true" />
         New
@@ -93,34 +93,34 @@ function NewDropdown() {
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border-cream/15 border bg-ink/95 shadow-2xl shadow-black/40 backdrop-blur-md"
+          className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border-line border bg-bg shadow-2xl shadow-black/40 backdrop-blur-md"
         >
           <Link
             href="/dashboard/listings/new"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-3 transition hover:bg-cream/5"
+            className="flex items-center gap-3 px-4 py-3 transition hover:bg-surface/5"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/15 text-gold">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink/15 text-ink">
               <Building2 size={16} />
             </span>
             <span className="flex flex-col">
-              <span className="font-medium text-cream text-sm">List a Property</span>
-              <span className="text-cream/60 text-xs">Add a home to your portfolio</span>
+              <span className="font-medium text-ink text-sm">List a Property</span>
+              <span className="text-ink2 text-xs">Add a home to your portfolio</span>
             </span>
           </Link>
           <Link
             href="/dashboard/communities"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 border-cream/10 border-t px-4 py-3 transition hover:bg-cream/5"
+            className="flex items-center gap-3 border-line border-t px-4 py-3 transition hover:bg-surface/5"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/15 text-gold">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink/15 text-ink">
               <Video size={16} />
             </span>
             <span className="flex flex-col">
-              <span className="font-medium text-cream text-sm">Add Community Video</span>
-              <span className="text-cream/60 text-xs">Show what a place feels like</span>
+              <span className="font-medium text-ink text-sm">Add Community Video</span>
+              <span className="text-ink2 text-xs">Show what a place feels like</span>
             </span>
           </Link>
         </div>
@@ -175,7 +175,7 @@ function AvatarMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Account menu"
-        className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-gold/60 bg-ink/80 font-medium text-cream text-sm transition hover:border-gold active:scale-95"
+        className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-line-strong bg-bg font-medium text-ink text-sm transition hover:border-line-strong active:scale-95"
       >
         {avatarUrl ? (
           // biome-ignore lint/a11y/useAltText: aria-label on the button covers it
@@ -187,13 +187,13 @@ function AvatarMenu({
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-2 w-60 overflow-hidden rounded-xl border-cream/15 border bg-ink/95 shadow-2xl shadow-black/40 backdrop-blur-md"
+          className="absolute right-0 z-50 mt-2 w-60 overflow-hidden rounded-xl border-line border bg-bg shadow-2xl shadow-black/40 backdrop-blur-md"
         >
           {displayName ? (
-            <div className="border-cream/10 border-b px-4 py-3">
-              <div className="truncate font-medium text-cream text-sm">{displayName}</div>
+            <div className="border-line border-b px-4 py-3">
+              <div className="truncate font-medium text-ink text-sm">{displayName}</div>
               {brokerage ? (
-                <div className="truncate text-cream/60 text-xs">{brokerage}</div>
+                <div className="truncate text-ink2 text-xs">{brokerage}</div>
               ) : null}
             </div>
           ) : null}
@@ -201,7 +201,7 @@ function AvatarMenu({
             href="/profile"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-4 py-3 text-cream/90 text-sm transition hover:bg-cream/5"
+            className="flex items-center gap-2 px-4 py-3 text-ink2 text-sm transition hover:bg-surface/5"
           >
             <User size={16} aria-hidden="true" />
             Profile
@@ -212,7 +212,7 @@ function AvatarMenu({
                 href="/dashboard"
                 role="menuitem"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-2 border-cream/10 border-t px-4 py-3 text-cream/90 text-sm transition hover:bg-cream/5"
+                className="flex items-center gap-2 border-line border-t px-4 py-3 text-ink2 text-sm transition hover:bg-surface/5"
               >
                 <Building2 size={16} aria-hidden="true" />
                 Dashboard
@@ -221,18 +221,18 @@ function AvatarMenu({
                 href="/dashboard/listings/new"
                 role="menuitem"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-2 border-cream/10 border-t px-4 py-3 text-cream/90 text-sm transition hover:bg-cream/5"
+                className="flex items-center gap-2 border-line border-t px-4 py-3 text-ink2 text-sm transition hover:bg-surface/5"
               >
                 <Plus size={16} aria-hidden="true" />
                 New listing
               </Link>
             </>
           ) : null}
-          <form action="/api/auth/signout" method="post" className="border-cream/10 border-t">
+          <form action="/api/auth/signout" method="post" className="border-line border-t">
             <button
               type="submit"
               role="menuitem"
-              className="flex w-full items-center gap-2 px-4 py-3 text-left text-cream/80 text-sm transition hover:bg-cream/5"
+              className="flex w-full items-center gap-2 px-4 py-3 text-left text-ink2 text-sm transition hover:bg-surface/5"
             >
               <LogOut size={16} aria-hidden="true" />
               Sign out
@@ -259,14 +259,14 @@ export function SiteHeader({ role, initial, displayName, brokerage, avatarUrl }:
 
   return (
     <header
-      className="sticky top-0 z-40 hidden border-cream/10 border-b bg-ink/85 backdrop-blur-md md:block"
+      className="sticky top-0 z-40 hidden border-line border-b bg-bg backdrop-blur-md md:block"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-3">
         <div className="flex items-center gap-7">
           <Link
             href={role === 'agent' ? '/dashboard' : '/'}
-            className="font-serif text-cream text-xl tracking-tight transition hover:opacity-90"
+            className="font-serif text-ink text-xl tracking-tight transition hover:opacity-90"
           >
             Vicinity
           </Link>
@@ -283,13 +283,13 @@ export function SiteHeader({ role, initial, displayName, brokerage, avatarUrl }:
             <>
               <Link
                 href="/login"
-                className="text-cream/80 text-sm transition hover:text-cream"
+                className="text-ink2 text-sm transition hover:text-ink"
               >
                 Sign in
               </Link>
               <Link
                 href="/signup"
-                className="inline-flex h-11 items-center rounded-full bg-gold px-4 font-medium text-ink text-sm transition hover:opacity-90"
+                className="inline-flex h-11 items-center rounded-full bg-ink px-4 font-medium text-ink text-sm transition hover:opacity-90"
               >
                 Sign up
               </Link>

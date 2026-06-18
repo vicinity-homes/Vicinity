@@ -79,7 +79,7 @@ export default async function CommunityEditorPage({
   if (!community) {
     return (
       <div className="mx-auto max-w-2xl py-12 text-center">
-        <p className="text-sm text-cream/60">Community not found.</p>
+        <p className="text-sm text-ink2">Community not found.</p>
       </div>
     );
   }
@@ -149,14 +149,14 @@ export default async function CommunityEditorPage({
     <div className="mx-auto max-w-3xl space-y-6 py-4">
       <Link
         href="/dashboard/communities"
-        className="inline-flex items-center gap-1 text-xs text-cream/60 hover:text-gold"
+        className="inline-flex items-center gap-1 text-xs text-ink2 hover:text-ink"
       >
         ← Back to communities
       </Link>
       <header className="flex items-baseline justify-between gap-3">
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-semibold tracking-tight">{community.name}</h1>
-          <p className="mt-1 text-sm text-cream/60">
+          <p className="mt-1 text-sm text-ink2">
             {community.city ? `${community.city}, ${community.state}` : community.state}
           </p>
           {/*
@@ -166,7 +166,7 @@ export default async function CommunityEditorPage({
           */}
           <Link
             href={`/c/${community.slug}`}
-            className="mt-1 inline-flex items-center gap-1 text-xs text-cream/55 hover:text-gold"
+            className="mt-1 inline-flex items-center gap-1 text-xs text-ink2 hover:text-ink"
           >
             View public page →
           </Link>
@@ -174,7 +174,7 @@ export default async function CommunityEditorPage({
         <div className="flex shrink-0 gap-2">
           <Link
             href={`/dashboard/communities/${community.id}/upload`}
-            className="rounded bg-gold px-3 py-2 font-medium text-ink text-sm transition hover:opacity-90"
+            className="rounded bg-ink px-3 py-2 font-medium text-ink text-sm transition hover:opacity-90"
           >
             + Upload video
           </Link>
@@ -184,11 +184,11 @@ export default async function CommunityEditorPage({
       {/* Phase 35.2: Videos first — that's why agents come here. Inline manage
        * list lets them re-categorize / hide / archive / delete without bouncing
        * to /upload. The metadata editor and cover picker drop below. */}
-      <section className="rounded border border-bronze/30 bg-ink2 p-4 sm:p-5">
+      <section className="rounded border border-line bg-surface p-4 sm:p-5">
         <div className="mb-3 flex items-baseline justify-between gap-3">
           <h2 className="text-base font-semibold">
             Your videos{' '}
-            <span className="text-cream/50 text-xs font-normal">({manageVideos.length})</span>
+            <span className="text-muted text-xs font-normal">({manageVideos.length})</span>
           </h2>
         </div>
         <CommunityVideoManageList
@@ -220,12 +220,12 @@ export default async function CommunityEditorPage({
        * read-only form. Same reason CommunityCoverPanel returns null for
        * non-owners.) */}
       {canEditMetadata && (
-        <details className="rounded border border-bronze/30 bg-ink2">
-          <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium text-cream/85 hover:text-cream sm:px-5">
+        <details className="rounded border border-line bg-surface">
+          <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium text-ink2 hover:text-ink sm:px-5">
             Community details{' '}
-            <span className="ml-1 text-xs text-cream/50">(name, city, description)</span>
+            <span className="ml-1 text-xs text-muted">(name, city, description)</span>
           </summary>
-          <div className="border-t border-bronze/20 p-4 sm:p-5">
+          <div className="border-t border-line p-4 sm:p-5">
             <CommunityEditor community={community} canEditMetadata={canEditMetadata} />
           </div>
         </details>

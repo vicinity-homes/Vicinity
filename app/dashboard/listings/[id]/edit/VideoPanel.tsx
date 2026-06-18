@@ -195,7 +195,7 @@ export function VideoPanel({ listingId, initialVideos, initialCoverVideoId }: Pr
       ) : null}
 
       {videos.length === 0 ? (
-        <p className="text-sm text-cream/50">No videos yet. Use the uploader above.</p>
+        <p className="text-sm text-muted">No videos yet. Use the uploader above.</p>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={videos.map((v) => v.id)} strategy={verticalListSortingStrategy}>
@@ -256,40 +256,40 @@ function SortableVideoItem({
       ref={setNodeRef}
       style={style}
       className={`flex flex-wrap items-center gap-3 rounded border p-3 ${
-        isCover ? 'border-gold/60 bg-ink2' : 'border-bronze/30 bg-ink2'
+        isCover ? 'border-line-strong bg-surface' : 'border-line bg-surface'
       }`}
     >
       <button
         type="button"
         {...attributes}
         {...listeners}
-        className="cursor-grab select-none px-2 py-1 text-cream/40 hover:text-cream/70 active:cursor-grabbing"
+        className="cursor-grab select-none px-2 py-1 text-muted hover:text-ink2 active:cursor-grabbing"
         aria-label="Drag to reorder"
       >
         ⋮⋮
       </button>
-      <span className="w-6 text-xs text-cream/40">{index + 1}</span>
-      <div className="h-12 w-20 flex-shrink-0 overflow-hidden rounded bg-ink">
+      <span className="w-6 text-xs text-muted">{index + 1}</span>
+      <div className="h-12 w-20 flex-shrink-0 overflow-hidden rounded bg-bg">
         {thumb ? (
           // CF Stream thumbnails are external; using next/image needs remotePatterns
           // config and adds no win for a 80×48 dashboard preview. Plain <img> here.
           <img src={thumb} alt="" className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs text-cream/40">
+          <div className="flex h-full w-full items-center justify-center text-xs text-muted">
             {video.status === 'processing' ? '…' : '—'}
           </div>
         )}
       </div>
       <div className="min-w-0 flex-1 basis-[8rem]">
         <div className="flex items-center gap-2">
-          <span className="truncate text-sm text-cream">{video.title ?? video.cf_video_id}</span>
+          <span className="truncate text-sm text-ink">{video.title ?? video.cf_video_id}</span>
           {isCover ? (
-            <span className="flex-shrink-0 rounded bg-gold px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">
+            <span className="flex-shrink-0 rounded bg-ink px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">
               Cover
             </span>
           ) : null}
         </div>
-        <div className="truncate text-xs text-cream/50">
+        <div className="truncate text-xs text-muted">
           {video.kind}
           {video.status !== 'ready' ? (
             <>
@@ -305,7 +305,7 @@ function SortableVideoItem({
             type="button"
             onClick={() => onSetCover(null)}
             disabled={coverPending}
-            className="w-full whitespace-nowrap rounded border border-bronze/40 px-2 py-1 text-xs text-cream/70 hover:border-bronze/60 hover:text-cream disabled:opacity-50 sm:w-auto"
+            className="w-full whitespace-nowrap rounded border border-line px-2 py-1 text-xs text-ink2 hover:border-line hover:text-ink disabled:opacity-50 sm:w-auto"
           >
             Clear cover
           </button>
@@ -319,7 +319,7 @@ function SortableVideoItem({
                 ? 'Use this video as the listing cover'
                 : 'Available once processing finishes'
             }
-            className="w-full whitespace-nowrap rounded border border-bronze/40 px-2 py-1 text-xs text-cream/70 hover:border-gold hover:text-gold disabled:opacity-30 sm:w-auto"
+            className="w-full whitespace-nowrap rounded border border-line px-2 py-1 text-xs text-ink2 hover:border-line-strong hover:text-ink disabled:opacity-30 sm:w-auto"
           >
             Set as cover
           </button>
@@ -336,5 +336,5 @@ function StatusText({ status }: { status: string }) {
   // defensive rendering.
   if (status === 'ready') return <span className="text-emerald-400">Ready</span>;
   if (status === 'error') return <span className="text-red-400">Upload failed</span>;
-  return <span className="text-gold">Processing…</span>;
+  return <span className="text-ink">Processing…</span>;
 }

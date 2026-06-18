@@ -317,7 +317,7 @@ export function EditListingForm({ listingId, initial, communities, listingContex
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3 text-xs text-cream/50">
+      <div className="flex items-center justify-between gap-3 text-xs text-muted">
         <span>
           <span className="text-red-300">*</span> = required to publish
         </span>
@@ -388,7 +388,7 @@ export function EditListingForm({ listingId, initial, communities, listingContex
                   setBedsMode('list');
                   setBeds('');
                 }}
-                className="shrink-0 rounded border border-bronze/30 px-2 text-xs text-cream/60 hover:bg-bronze/10"
+                className="shrink-0 rounded border border-line px-2 text-xs text-ink2 hover:bg-ink2/10"
               >
                 Use list
               </button>
@@ -440,7 +440,7 @@ export function EditListingForm({ listingId, initial, communities, listingContex
                   setBathsMode('list');
                   setBaths('');
                 }}
-                className="shrink-0 rounded border border-bronze/30 px-2 text-xs text-cream/60 hover:bg-bronze/10"
+                className="shrink-0 rounded border border-line px-2 text-xs text-ink2 hover:bg-ink2/10"
               >
                 Use list
               </button>
@@ -532,7 +532,7 @@ export function EditListingForm({ listingId, initial, communities, listingContex
                   setStyleMode('list');
                   setStyle('');
                 }}
-                className="shrink-0 rounded border border-bronze/30 px-2 text-xs text-cream/60 hover:bg-bronze/10"
+                className="shrink-0 rounded border border-line px-2 text-xs text-ink2 hover:bg-ink2/10"
               >
                 Use list
               </button>
@@ -571,14 +571,14 @@ export function EditListingForm({ listingId, initial, communities, listingContex
             type="button"
             onClick={onGenerate}
             disabled={genState === 'loading'}
-            className="rounded border border-bronze/50 px-3 py-1 text-xs text-cream hover:bg-bronze/20 disabled:opacity-50"
+            className="rounded border border-line px-3 py-1 text-xs text-ink hover:bg-ink2/20 disabled:opacity-50"
           >
             {genState === 'loading' ? 'Generating…' : '✨ Generate description'}
           </button>
           {genState === 'error' && (
             <span className="text-xs text-red-400">Error: {genError ?? 'unknown'}</span>
           )}
-          <span className="text-xs text-cream/40">Overwrites current text.</span>
+          <span className="text-xs text-muted">Overwrites current text.</span>
         </div>
         <textarea
           value={description}
@@ -593,26 +593,26 @@ export function EditListingForm({ listingId, initial, communities, listingContex
 }
 
 const INPUT_CLASS =
-  'w-full rounded border border-bronze/30 bg-ink2 px-3 py-2 text-sm text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold';
+  'w-full rounded border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-line-strong focus:outline-none focus:ring-1 focus:ring-line-strong';
 
 function SaveBadge({ state, error }: { state: SaveState; error: string | null }) {
   if (state === 'idle') {
     return (
-      <span className="shrink-0 rounded border border-cream/15 px-2 py-1 text-[11px] text-cream/40">
+      <span className="shrink-0 rounded border border-line px-2 py-1 text-[11px] text-muted">
         Auto-save on
       </span>
     );
   }
   if (state === 'pending') {
     return (
-      <span className="shrink-0 rounded border border-cream/15 px-2 py-1 text-[11px] text-cream/60">
+      <span className="shrink-0 rounded border border-line px-2 py-1 text-[11px] text-ink2">
         Editing…
       </span>
     );
   }
   if (state === 'saving') {
     return (
-      <span className="shrink-0 rounded border border-bronze/40 bg-bronze/10 px-2 py-1 text-[11px] text-cream/80">
+      <span className="shrink-0 rounded border border-line bg-ink2/10 px-2 py-1 text-[11px] text-ink2">
         Saving…
       </span>
     );
@@ -649,7 +649,7 @@ function Field({
 }) {
   return (
     <div className="block">
-      <span className="mb-1 flex items-center gap-1 text-xs font-medium text-cream/70">
+      <span className="mb-1 flex items-center gap-1 text-xs font-medium text-ink2">
         <span>{label}</span>
         {required ? (
           <span className="text-red-300" aria-label="required">
@@ -658,7 +658,7 @@ function Field({
         ) : null}
       </span>
       {children}
-      {hint ? <span className="mt-1 block text-xs text-cream/40">{hint}</span> : null}
+      {hint ? <span className="mt-1 block text-xs text-muted">{hint}</span> : null}
     </div>
   );
 }

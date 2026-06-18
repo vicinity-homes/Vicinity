@@ -92,7 +92,7 @@ export function SocialCopyPanel({ listingId }: Props) {
     <div className="space-y-4">
       {/* Highlights input */}
       <div>
-        <label className="mb-1 block text-cream/70 text-xs" htmlFor="sc-highlights">
+        <label className="mb-1 block text-ink2 text-xs" htmlFor="sc-highlights">
           Selling points (optional)
         </label>
         <input
@@ -104,7 +104,7 @@ export function SocialCopyPanel({ listingId }: Props) {
           className={INPUT_CLASS}
           maxLength={500}
         />
-        <span className="mt-1 block text-cream/40 text-xs">
+        <span className="mt-1 block text-muted text-xs">
           Up to 5, comma-separated. Leave blank to let the model riff on listing details.
         </span>
       </div>
@@ -118,8 +118,8 @@ export function SocialCopyPanel({ listingId }: Props) {
             onClick={() => setTab(p)}
             className={`rounded-full border px-3 py-1.5 text-xs transition ${
               tab === p
-                ? 'border-gold bg-gold text-ink'
-                : 'border-white/15 text-cream/70 hover:border-gold/50 hover:text-cream'
+                ? 'border-line-strong bg-ink text-ink'
+                : 'border-line text-ink2 hover:border-line-strong hover:text-ink'
             }`}
           >
             {PLATFORM_LABELS[p]}
@@ -150,7 +150,7 @@ export function SocialCopyPanel({ listingId }: Props) {
           type="button"
           onClick={onGenerate}
           disabled={state === 'loading'}
-          className="inline-flex items-center gap-2 rounded-lg bg-gold px-4 py-2 font-medium text-ink text-sm transition hover:opacity-90 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2 font-medium text-ink text-sm transition hover:opacity-90 disabled:opacity-50"
         >
           {state === 'loading' ? (
             <>
@@ -169,18 +169,18 @@ export function SocialCopyPanel({ listingId }: Props) {
 
       {/* Compact preview of the other two tabs (collapsed) */}
       {output && (
-        <details className="rounded-lg border border-white/10 bg-ink2/40 p-3 text-xs">
-          <summary className="cursor-pointer text-cream/70 hover:text-gold">
+        <details className="rounded-lg border border-line bg-surface p-3 text-xs">
+          <summary className="cursor-pointer text-ink2 hover:text-ink">
             See all 3 platforms side-by-side
           </summary>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             {(Object.keys(PLATFORM_LABELS) as Platform[]).map((p) => (
               <div
                 key={p}
-                className="flex flex-col rounded-lg border border-white/10 bg-ink/60 p-2.5"
+                className="flex flex-col rounded-lg border border-line bg-bg p-2.5"
               >
                 <div className="mb-1.5 flex items-center justify-between">
-                  <span className="text-[10px] text-gold uppercase tracking-widest">
+                  <span className="text-[10px] text-ink uppercase tracking-widest">
                     {PLATFORM_LABELS[p]}
                   </span>
                   <CopyButton value={output[p]} small />
@@ -216,7 +216,7 @@ function CopyButton({ value, small = false }: { value: string; small?: boolean }
       <button
         type="button"
         onClick={onCopy}
-        className="rounded border border-bronze/50 px-1.5 py-0.5 text-[10px] text-cream hover:bg-bronze/20"
+        className="rounded border border-line px-1.5 py-0.5 text-[10px] text-ink hover:bg-ink2/20"
       >
         {copied ? '✓' : 'Copy'}
       </button>
@@ -226,7 +226,7 @@ function CopyButton({ value, small = false }: { value: string; small?: boolean }
     <button
       type="button"
       onClick={onCopy}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-bronze/50 px-3 py-2 text-cream text-sm hover:bg-bronze/20"
+      className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-ink text-sm hover:bg-ink2/20"
     >
       <Copy size={14} />
       {copied ? 'Copied' : 'Copy to clipboard'}
@@ -235,4 +235,4 @@ function CopyButton({ value, small = false }: { value: string; small?: boolean }
 }
 
 const INPUT_CLASS =
-  'w-full rounded border border-bronze/30 bg-ink2 px-3 py-2 text-sm text-cream placeholder:text-cream/40 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold';
+  'w-full rounded border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-line-strong focus:outline-none focus:ring-1 focus:ring-line-strong';

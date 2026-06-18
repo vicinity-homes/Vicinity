@@ -8,7 +8,7 @@ import { z } from 'zod';
 type Status = 'idle' | 'verifying' | 'error';
 
 const inputCls =
-  'mt-1 w-full rounded-lg border border-white/10 bg-ink px-3 py-2 text-sm text-cream placeholder:text-cream/30 focus:border-gold focus:outline-none disabled:opacity-50';
+  'mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-line-strong focus:outline-none disabled:opacity-50';
 
 const ResetSchema = z
   .object({
@@ -73,13 +73,13 @@ export function ResetPasswordForm({ initialEmail }: { initialEmail: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl border border-white/5 bg-ink2/60 p-8">
-      <h1 className="font-serif text-3xl text-cream">Reset password</h1>
-      <p className="mt-1 text-sm text-cream/50">
+    <form onSubmit={handleSubmit} className="rounded-2xl border border-line bg-surface p-8">
+      <h1 className="font-serif text-3xl text-ink">Reset password</h1>
+      <p className="mt-1 text-sm text-muted">
         Enter the 6-digit code from your email and choose a new password.
       </p>
       <label className="mt-6 block">
-        <span className="text-xs text-cream/60">Email</span>
+        <span className="text-xs text-ink2">Email</span>
         <input
           type="email"
           required
@@ -92,7 +92,7 @@ export function ResetPasswordForm({ initialEmail }: { initialEmail: string }) {
         />
       </label>
       <label className="mt-4 block">
-        <span className="text-xs text-cream/60">Verification code</span>
+        <span className="text-xs text-ink2">Verification code</span>
         <input
           type="text"
           inputMode="numeric"
@@ -108,7 +108,7 @@ export function ResetPasswordForm({ initialEmail }: { initialEmail: string }) {
         />
       </label>
       <label className="mt-4 block">
-        <span className="text-xs text-cream/60">New password</span>
+        <span className="text-xs text-ink2">New password</span>
         <input
           type="password"
           required
@@ -121,7 +121,7 @@ export function ResetPasswordForm({ initialEmail }: { initialEmail: string }) {
         />
       </label>
       <label className="mt-4 block">
-        <span className="text-xs text-cream/60">Confirm password</span>
+        <span className="text-xs text-ink2">Confirm password</span>
         <input
           type="password"
           required
@@ -146,9 +146,9 @@ export function ResetPasswordForm({ initialEmail }: { initialEmail: string }) {
       >
         {status === 'verifying' ? 'Verifying…' : 'Reset password'}
       </button>
-      <p className="mt-4 text-xs text-cream/40">
+      <p className="mt-4 text-xs text-muted">
         Didn&apos;t get a code?{' '}
-        <a href="/forgot-password" className="text-gold hover:underline">
+        <a href="/forgot-password" className="text-ink hover:underline">
           Request a new one
         </a>
         .

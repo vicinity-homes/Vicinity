@@ -43,13 +43,13 @@ export function NearbyRadiusPref() {
   }
 
   return (
-    <div className="rounded-xl border border-cream/10 bg-ink2/40 p-4">
-      <div className="font-medium text-cream/80 text-xs uppercase tracking-wider">Preferences</div>
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <div className="font-medium text-ink2 text-xs uppercase tracking-wider">Preferences</div>
       <div className="mt-3 flex items-center justify-between gap-3">
-        <label htmlFor="nearby-radius" className="text-cream/70 text-sm">
+        <label htmlFor="nearby-radius" className="text-ink2 text-sm">
           Nearby search radius
         </label>
-        <span className="font-medium text-cream text-sm tabular-nums">{radius} mi</span>
+        <span className="font-medium text-ink text-sm tabular-nums">{radius} mi</span>
       </div>
       <input
         id="nearby-radius"
@@ -61,14 +61,14 @@ export function NearbyRadiusPref() {
         onChange={(e) => update(Number(e.target.value))}
         className="mt-3 w-full accent-gold"
       />
-      <div className="mt-1 flex justify-between text-cream/40 text-[10px]">
+      <div className="mt-1 flex justify-between text-muted text-[10px]">
         <span>{MIN_RADIUS} mi</span>
         <span>{MAX_RADIUS} mi</span>
       </div>
-      <p className="mt-2 text-cream/50 text-xs">
-        Used by <span className="text-cream/70">Nearby</span> to decide which listings to show
+      <p className="mt-2 text-muted text-xs">
+        Used by <span className="text-ink2">Nearby</span> to decide which listings to show
         around your location.
-        {saved && <span className="ml-2 text-gold">Saved.</span>}
+        {saved && <span className="ml-2 text-ink">Saved.</span>}
       </p>
     </div>
   );

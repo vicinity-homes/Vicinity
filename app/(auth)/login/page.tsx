@@ -36,15 +36,15 @@ export default async function LoginPage({
       <LoginForm redirect={safeRedirect} />
       <div className="space-y-2 text-center text-sm">
         <p>
-          <a href="/forgot-password" className="text-cream/60 underline hover:text-cream">
+          <a href="/forgot-password" className="text-ink2 underline hover:text-ink">
             Forgot password?
           </a>
         </p>
-        <p className="text-cream/60">
+        <p className="text-ink2">
           Don&apos;t have an account?{' '}
           <a
             href={`/signup${safeRedirect === '/dashboard' ? '' : `?redirect=${encodeURIComponent(safeRedirect)}`}`}
-            className="text-gold underline hover:text-gold/80"
+            className="text-ink underline hover:text-ink/80"
           >
             Sign up
           </a>

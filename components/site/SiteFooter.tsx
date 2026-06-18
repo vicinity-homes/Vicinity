@@ -1,9 +1,9 @@
 export function SiteFooter() {
   return (
-    <footer className="border-t border-white/5 mt-16">
-      <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-cream/60">
-        <div className="font-serif text-xl text-cream">
-          Vicinity<span className="text-gold">.</span>
+    <footer className="border-t border-line mt-16">
+      <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-ink2">
+        <div className="font-serif text-xl text-ink">
+          Vicinity<span className="text-ink">.</span>
         </div>
         <div className="text-center sm:text-left">
           © {new Date().getFullYear()} Vicinity. Swipe-first home discovery.

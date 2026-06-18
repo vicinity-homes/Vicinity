@@ -21,7 +21,7 @@ export default async function NewListingPage() {
     <div className="mx-auto max-w-2xl space-y-8 py-4">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">New listing</h1>
-        <p className="mt-1 text-sm text-cream/60">
+        <p className="mt-1 text-sm text-ink2">
           Start with the address. We&apos;ll fill in the city, state, ZIP, and coordinates from
           Google. You can edit everything else on the next screen.
         </p>
