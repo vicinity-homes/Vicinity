@@ -136,17 +136,24 @@ export default async function DashboardHomePage({ searchParams }: PageProps) {
          * (duplicated sub-nav navigation) AND the global agent FAB
          * (duplicated this CTA + community upload). Each Workspace sub-nav
          * surface owns exactly one creation CTA in the same gold-pill style.
+         * Phase 36.3.1 (2026-06-18): Tianrou — CTA moved into the sub-nav row
+         * (right side, smaller pill matching chip dimensions). Putting it
+         * next to "Workspace" made it read like a Workspace-global action,
+         * not a Listings-tab action; layered next to the active chip the
+         * scope is unambiguous.
          */}
-        <div className="flex items-baseline justify-between gap-3">
-          <h1 className="font-serif text-2xl tracking-tight text-cream sm:text-4xl">Workspace</h1>
-          <Link
-            href="/dashboard/listings/new"
-            className="shrink-0 rounded bg-gold px-3 py-2 font-medium text-ink text-sm transition hover:opacity-90"
-          >
-            + New listing
-          </Link>
-        </div>
-        <WorkspaceSubNav active="listings" />
+        <h1 className="font-serif text-2xl tracking-tight text-cream sm:text-4xl">Workspace</h1>
+        <WorkspaceSubNav
+          active="listings"
+          cta={
+            <Link
+              href="/dashboard/listings/new"
+              className="rounded-full border border-gold/40 bg-gold px-3 py-1.5 font-medium text-ink text-xs transition hover:opacity-90 sm:text-sm"
+            >
+              + New listing
+            </Link>
+          }
+        />
       </div>
 
       {/* Metrics row — only meaningful once the agent has listings. With zero

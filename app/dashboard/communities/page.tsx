@@ -71,18 +71,23 @@ export default async function CommunitiesListPage() {
        * header so all three sub-nav surfaces share the same gold-pill CTA
        * pattern (Listings: + New listing; Communities: + New community;
        * Community detail: + Upload video; Leads: no CTA — inbox not creator).
+       * Phase 36.3.1 (2026-06-18): Tianrou — CTA moved into sub-nav row,
+       * matching chip dimensions, so the action's scope is the active sub-nav
+       * page, not the Workspace label above it.
        */}
       <div>
-        <div className="flex items-baseline justify-between gap-3">
-          <h1 className="font-serif text-2xl tracking-tight text-cream sm:text-4xl">Workspace</h1>
-          <Link
-            href="/dashboard/communities/new"
-            className="shrink-0 rounded bg-gold px-3 py-2 font-medium text-ink text-sm transition hover:opacity-90"
-          >
-            + New community
-          </Link>
-        </div>
-        <WorkspaceSubNav active="communities" />
+        <h1 className="font-serif text-2xl tracking-tight text-cream sm:text-4xl">Workspace</h1>
+        <WorkspaceSubNav
+          active="communities"
+          cta={
+            <Link
+              href="/dashboard/communities/new"
+              className="rounded-full border border-gold/40 bg-gold px-3 py-1.5 font-medium text-ink text-xs transition hover:opacity-90 sm:text-sm"
+            >
+              + New community
+            </Link>
+          }
+        />
       </div>
       <header className="flex items-baseline justify-between">
         <div>

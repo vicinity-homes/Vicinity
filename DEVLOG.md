@@ -2,6 +2,44 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-18 — phase36.3.1: move sub-nav CTAs into the chips row
+
+**Objective**: Tianrou flagged on the 36.3 push: "视觉上这个 cta 位置不对
+不好看. listing community lead 是 sub nav 这个 button 大 且在 sub nav 之上
+感觉逻辑不对". The header gold pill (`+ New listing` / `+ New community`)
+sat next to the "Workspace" h1 above the sub-nav chips, which made it read
+as a Workspace-global action — but Workspace isn't a creator, its sub-nav
+pages are. The pill was also visually heavier than the heading itself.
+
+**Decision**: move the CTA into the sub-nav chips row, right side
+(`justify-between`), at chip dimensions (`text-xs px-3 py-1.5`,
+`rounded-full` to match). Gold-filled (not just border) so it still reads
+as an action, not another nav chip — but no longer outweighs the page
+heading. `WorkspaceSubNav` grew an optional `cta` slot so this stays a
+single-component pattern.
+
+**Actions**:
+- `app/dashboard/_components/WorkspaceSubNav.tsx`: wrapped chip nav in a
+  `flex items-center justify-between` row, added optional `cta` ReactNode
+  slot on the right.
+- `app/dashboard/page.tsx`: passed `+ New listing` Link as the `cta`
+  prop, dropped the header-row flex wrapper.
+- `app/dashboard/communities/page.tsx`: same shape with `+ New community`.
+- Community detail page unchanged (it's a detail view with a "← Back to
+  communities" affordance, not a sub-nav surface; its header `+ Upload
+  video` pill is correct in the page-header position).
+- DEVLOG / RELEASE updated.
+
+**Verification**: `tsc --noEmit` clean; `next build` green.
+
+**Learnings**: the CTA's visual scope must match its functional scope.
+"Workspace" is a category container — it owns the sub-nav, not any
+creation action. A gold pill above the sub-nav reads as
+"Workspace-level" even when the click goes to a tab-specific route.
+Anchoring the CTA next to the active chip makes scope unambiguous.
+
+---
+
 ## 2026-06-18 — phase36.3: unified Workspace CTAs, drop FAB and onboarding cards
 
 **Objective**: Tianrou flagged three overlapping creation surfaces on the

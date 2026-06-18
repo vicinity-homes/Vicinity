@@ -7,7 +7,7 @@ Format matches the standard release template (Features / Improvements / Bug Fixe
 
 ### ✨ Improvements
 
-- **Workspace creation buttons are unified — one gold pill per page.** Each Workspace surface now has exactly one creation action in the same place and style: **+ New listing** on Listings, **+ New community** on Communities, **+ Upload video** inside a community. Leads has none — it's an inbox, not somewhere you create things. Before, the same actions were scattered across big "Add a property" cards, a floating gold "+" button on the bottom-right, an in-row "+ Upload" shortcut on each community, and a small "+ Add" text-link on the community page — all pointing at the same places, just stylistically inconsistent.
+- **Workspace creation buttons are unified — one gold pill per sub-nav page.** Each Workspace surface now has exactly one creation action in the same place and style — sitting in the chips row right next to the active sub-nav chip: **+ New listing** on Listings, **+ New community** on Communities. Inside a community, the existing **+ Upload video** stays in the page header. Leads has none — it's an inbox, not somewhere you create things. Before, the same actions were scattered across big "Add a property" cards, a floating gold "+" button on the bottom-right, an in-row "+ Upload" shortcut on each community, and a small "+ Add" text-link on the community page — all pointing at the same places, just stylistically inconsistent.
 
 ### 🐛 Bug Fixes
 

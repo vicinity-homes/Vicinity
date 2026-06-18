@@ -13,6 +13,7 @@
  */
 
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 type Section = 'listings' | 'communities' | 'leads';
 
@@ -22,28 +23,31 @@ const SECTIONS: { key: Section; label: string; href: string }[] = [
   { key: 'leads', label: 'Leads', href: '/dashboard/leads' },
 ];
 
-export function WorkspaceSubNav({ active }: { active: Section }) {
+export function WorkspaceSubNav({ active, cta }: { active: Section; cta?: ReactNode }) {
   return (
-    <nav aria-label="Workspace sections" className="mt-3 flex gap-2 text-xs sm:mt-4 sm:text-sm">
-      {SECTIONS.map((s) =>
-        s.key === active ? (
-          <span
-            key={s.key}
-            aria-current="page"
-            className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 font-medium text-gold"
-          >
-            {s.label}
-          </span>
-        ) : (
-          <Link
-            key={s.key}
-            href={s.href}
-            className="rounded-full border border-cream/15 px-3 py-1.5 text-cream/70 transition hover:border-gold/40 hover:text-cream"
-          >
-            {s.label}
-          </Link>
-        ),
-      )}
-    </nav>
+    <div className="mt-3 flex items-center justify-between gap-3 sm:mt-4">
+      <nav aria-label="Workspace sections" className="flex gap-2 text-xs sm:text-sm">
+        {SECTIONS.map((s) =>
+          s.key === active ? (
+            <span
+              key={s.key}
+              aria-current="page"
+              className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 font-medium text-gold"
+            >
+              {s.label}
+            </span>
+          ) : (
+            <Link
+              key={s.key}
+              href={s.href}
+              className="rounded-full border border-cream/15 px-3 py-1.5 text-cream/70 transition hover:border-gold/40 hover:text-cream"
+            >
+              {s.label}
+            </Link>
+          ),
+        )}
+      </nav>
+      {cta ? <div className="shrink-0">{cta}</div> : null}
+    </div>
   );
 }
