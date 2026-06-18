@@ -10,6 +10,7 @@
  */
 import Link from 'next/link';
 import type { CommunityListCard } from '@/lib/communities/list';
+import { demoCoverFor } from '@/lib/demo-media';
 
 export function CommunityGrid({ communities }: { communities: CommunityListCard[] }) {
   if (communities.length === 0) {
@@ -22,16 +23,22 @@ export function CommunityGrid({ communities }: { communities: CommunityListCard[
 
   return (
     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-      {communities.map((c) => (
+      {communities.map((c) => {
+        // Phase 38 (2026-06-18): /communities grid was missing demo-media
+        // override — agents who hadn't picked a cover got their real
+        // bucket cover (or storefront photo) instead of the curated demo
+        // luxury still. Wrap here like every other community surface does.
+        const coverUrl = demoCoverFor(c.id, c.cover?.url ?? null);
+        return (
         <li key={c.id}>
           <Link
             href={`/c/${c.slug}`}
             className="group relative block aspect-[9/16] overflow-hidden rounded-xl bg-surface ring-1 ring-line transition hover:ring-line-strong"
           >
-            {c.cover ? (
+            {coverUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={c.cover.url}
+                src={coverUrl}
                 alt={c.name}
                 className="h-full w-full object-cover transition group-hover:scale-[1.02]"
                 loading="lazy"
@@ -60,7 +67,8 @@ export function CommunityGrid({ communities }: { communities: CommunityListCard[
             </div>
           </Link>
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }
