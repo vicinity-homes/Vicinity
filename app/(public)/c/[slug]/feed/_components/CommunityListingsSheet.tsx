@@ -19,6 +19,7 @@
 
 import { useEffect } from 'react';
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
+import { demoCoverFor } from '@/lib/demo-media';
 import type { CommunityListingItem } from '../CommunityVideoFeed';
 
 interface Props {
@@ -133,6 +134,7 @@ export function CommunityListingsSheet({
                   }
                 }
                 if (!poster && l.heroPhotoUrl) poster = l.heroPhotoUrl;
+                poster = demoCoverFor(l.id, poster);
 
                 return (
                   <li key={l.id}>

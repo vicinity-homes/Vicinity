@@ -16,6 +16,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
+import { demoCoverFor } from '@/lib/demo-media';
 import { resolveCommunityCoverWithCfIds } from '@/lib/community/cover';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -108,7 +109,7 @@ export default async function CommunityPage({
         {heroCover ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={heroCover.url}
+            src={demoCoverFor(community.slug, heroCover.url) ?? heroCover.url}
             alt={community.name}
             className="absolute inset-0 h-full w-full object-cover"
           />
@@ -164,7 +165,7 @@ export default async function CommunityPage({
                 {/* Cloudflare Stream auto-generated thumbnail */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={thumbnailUrl(v.cf_video_id)}
+                  src={demoCoverFor(v.cf_video_id, thumbnailUrl(v.cf_video_id)) ?? thumbnailUrl(v.cf_video_id)}
                   alt={v.title ?? 'Community video'}
                   className="h-full w-full object-cover transition group-hover:scale-[1.02]"
                   loading="lazy"

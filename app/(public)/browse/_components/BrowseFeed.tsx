@@ -2,7 +2,7 @@
 import { listSavedListingIds, saveListing, unsaveListing } from '@/app/_actions/saved-listings';
 import { getOrCreateDeviceId } from '@/lib/buyer/device-id';
 import { hlsUrl, thumbnailUrl } from '@/lib/cloudflare/stream';
-import { demoCoverFor, demoVideoFor, type DemoVideoPool } from '@/lib/demo-media';
+import { demoCoverFor, demoPhotosFor, demoVideoFor, type DemoVideoPool } from '@/lib/demo-media';
 import Hls from 'hls.js';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -369,12 +369,16 @@ function PhotoCard({
   poolSize: number;
 }) {
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-  const photos =
+  const realPhotos =
     card.photos && card.photos.length > 0
       ? card.photos
       : card.heroPhotoUrl
         ? [card.heroPhotoUrl]
         : [];
+  // Demo override: same kill-switch as covers + headshots + videos. Replaces
+  // the photo-only carousel with a curated luxury album so e.g. "888 Rhonda
+  // Place" doesn't show its real DB photos in the demo build.
+  const photos = demoPhotosFor(card.listing.id, realPhotos);
   const total = photos.length;
   const idx = total > 0 ? cycleIdx % total : 0;
   const current = photos[idx];

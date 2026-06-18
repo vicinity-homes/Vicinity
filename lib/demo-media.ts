@@ -126,3 +126,19 @@ export function demoVideoFor(seed: string, pool: DemoVideoPool): string | null {
   const list = pool === 'home' ? DEMO_HOME_VIDEOS : DEMO_NEARBY_VIDEOS;
   return list[stableIndex(seed, list.length)] ?? null;
 }
+
+/**
+ * Curated 4-photo album for photo-only listings (e.g. 888 Rhonda Place).
+ * Walks the cover pool starting at `stableIndex(seed)` so the album feels
+ * like one cohesive shoot, and different listings get distinct sets.
+ */
+export function demoPhotosFor(seed: string, real: string[]): string[] {
+  if (!DEMO_MEDIA_ENABLED) return real;
+  const start = stableIndex(seed, DEMO_COVERS.length);
+  const album: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    const url = DEMO_COVERS[(start + i) % DEMO_COVERS.length];
+    if (url) album.push(url);
+  }
+  return album;
+}

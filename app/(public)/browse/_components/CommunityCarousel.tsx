@@ -28,6 +28,7 @@
 import Hls from 'hls.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { hlsUrl, thumbnailUrl } from '@/lib/cloudflare/stream';
+import { demoCoverFor, demoVideoFor } from '@/lib/demo-media';
 import type { BrowseSourceVideo } from './BrowseFeed';
 
 interface Props {
@@ -205,30 +206,39 @@ function CarouselSlide({
   const ref = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
 
+  const demoVideoUrl = demoVideoFor(video.cfVideoId, 'nearby');
+  const isDemoVideo = demoVideoUrl !== null;
+
   const poster = useMemo(() => {
+    let p: string | null = null;
     try {
-      return thumbnailUrl(video.cfVideoId);
+      p = thumbnailUrl(video.cfVideoId);
     } catch {
-      return null;
+      p = null;
     }
+    return demoCoverFor(video.cfVideoId, p);
   }, [video.cfVideoId]);
 
   useEffect(() => {
     if (!shouldMount) return;
     const v = ref.current;
     if (!v) return;
-    let src: string;
-    try {
-      src = hlsUrl(video.cfVideoId);
-    } catch {
-      return;
-    }
     if (hlsRef.current) {
       hlsRef.current.destroy();
       hlsRef.current = null;
     }
     v.removeAttribute('src');
     v.load();
+    if (isDemoVideo && demoVideoUrl) {
+      v.src = demoVideoUrl;
+      return;
+    }
+    let src: string;
+    try {
+      src = hlsUrl(video.cfVideoId);
+    } catch {
+      return;
+    }
     if (v.canPlayType('application/vnd.apple.mpegurl')) {
       v.src = src;
     } else if (Hls.isSupported()) {
@@ -243,7 +253,7 @@ function CarouselSlide({
         hlsRef.current = null;
       }
     };
-  }, [shouldMount, video.cfVideoId]);
+  }, [shouldMount, video.cfVideoId, isDemoVideo, demoVideoUrl]);
 
   // Play only the active slide; pause siblings to save battery.
   // Sound: the carousel is opened by an explicit chip tap (user gesture),

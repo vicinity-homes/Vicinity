@@ -27,6 +27,7 @@
 import Hls from 'hls.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { hlsUrl, thumbnailUrl } from '@/lib/cloudflare/stream';
+import { demoCoverFor, demoVideoFor } from '@/lib/demo-media';
 import type { CommunityListingItem } from '../CommunityVideoFeed';
 
 interface Props {
@@ -204,33 +205,46 @@ function ListingSlide({
   const ref = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
 
+  // Demo override (NEXT_PUBLIC_DEMO_MEDIA). Listing-level video card inside
+  // the community feed: home pool (luxury tour clips), not nearby.
+  const demoSeed = listing.heroCfVideoId ?? listing.id;
+  const demoVideoUrl = demoVideoFor(demoSeed, 'home');
+  const isDemoVideo = demoVideoUrl !== null;
+
   const poster = useMemo(() => {
+    let p: string | null = null;
     if (listing.heroCfVideoId) {
       try {
-        return thumbnailUrl(listing.heroCfVideoId);
+        p = thumbnailUrl(listing.heroCfVideoId);
       } catch {
         /* fall through */
       }
     }
-    return listing.heroPhotoUrl ?? null;
-  }, [listing.heroCfVideoId, listing.heroPhotoUrl]);
+    if (!p) p = listing.heroPhotoUrl ?? null;
+    return demoCoverFor(listing.id, p);
+  }, [listing.id, listing.heroCfVideoId, listing.heroPhotoUrl]);
 
   useEffect(() => {
-    if (!shouldMount || !listing.heroCfVideoId) return;
+    if (!shouldMount) return;
     const v = ref.current;
     if (!v) return;
-    let src: string;
-    try {
-      src = hlsUrl(listing.heroCfVideoId);
-    } catch {
-      return;
-    }
     if (hlsRef.current) {
       hlsRef.current.destroy();
       hlsRef.current = null;
     }
     v.removeAttribute('src');
     v.load();
+    if (isDemoVideo && demoVideoUrl) {
+      v.src = demoVideoUrl;
+      return;
+    }
+    if (!listing.heroCfVideoId) return;
+    let src: string;
+    try {
+      src = hlsUrl(listing.heroCfVideoId);
+    } catch {
+      return;
+    }
     if (v.canPlayType('application/vnd.apple.mpegurl')) {
       v.src = src;
     } else if (Hls.isSupported()) {
@@ -245,7 +259,7 @@ function ListingSlide({
         hlsRef.current = null;
       }
     };
-  }, [shouldMount, listing.heroCfVideoId]);
+  }, [shouldMount, listing.heroCfVideoId, isDemoVideo, demoVideoUrl]);
 
   // Sound: chip tap is a user gesture, so unmuted autoplay should be
   // permitted. Try with sound first; fall back to muted if the browser
@@ -267,7 +281,7 @@ function ListingSlide({
     }
   }, [isActive]);
 
-  const hasVideo = !!listing.heroCfVideoId;
+  const hasVideo = !!listing.heroCfVideoId || isDemoVideo;
   const bbs: string[] = [];
   if (listing.beds != null) bbs.push(`${listing.beds} bd`);
   if (listing.baths != null) bbs.push(`${listing.baths} ba`);
