@@ -116,14 +116,41 @@ const DEMO_NEARBY_VIDEOS: readonly string[] = [
 export type DemoVideoPool = 'home' | 'nearby';
 
 /**
+ * Listing-id → curated demo video override. Used to pin a specific listing
+ * to a specific clip (e.g. the one demo listing that has ambient music muxed
+ * in, for testing audio playback in the swipe feed). Pool-based hashing for
+ * everything else.
+ *
+ * Pexels stock footage is silent; this video was built locally by ffmpeg
+ * mux-ing a Satie Gymnopédie No.3 (Wikimedia Commons, CC-BY-SA, soprano sax
+ * arrangement by David Hernando Vitores) onto the modern villa drone clip.
+ * Hosted under /public/demo/, served by Vercel statically.
+ */
+const DEMO_LISTING_VIDEO_OVERRIDE: Record<string, string> = {
+  // 12300 Sunrise Valley Drive — first listing wired up with ambient music
+  // for the audio-playback test (2026-06-18).
+  '655c43c6-40d5-453b-aa5f-b47260dd9b9d': '/demo/villa-music.mp4',
+};
+
+/**
  * Returns a curated MP4 URL for the given seed, or null if demo mode off.
  *
  * Callers (BrowseFeed / VideoFeed / CommunityVideoFeed) check this first;
  * if non-null, mount a plain `<video src=mp4>` instead of attaching HLS.
  * That keeps the override logic out of the HLS path entirely.
+ *
+ * `listingId` is optional: when provided and present in the per-listing
+ * override map, that wins over the pool-based hash.
  */
-export function demoVideoFor(seed: string, pool: DemoVideoPool): string | null {
+export function demoVideoFor(
+  seed: string,
+  pool: DemoVideoPool,
+  listingId?: string,
+): string | null {
   if (!DEMO_MEDIA_ENABLED) return null;
+  if (listingId && DEMO_LISTING_VIDEO_OVERRIDE[listingId]) {
+    return DEMO_LISTING_VIDEO_OVERRIDE[listingId];
+  }
   const list = pool === 'home' ? DEMO_HOME_VIDEOS : DEMO_NEARBY_VIDEOS;
   return list[stableIndex(seed, list.length)] ?? null;
 }

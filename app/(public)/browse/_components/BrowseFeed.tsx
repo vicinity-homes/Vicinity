@@ -547,7 +547,7 @@ function Card({
   // of attaching HLS to the real Cloudflare Stream id. Production launch
   // flips the flag to false and the real video shows through verbatim.
   const demoPool: DemoVideoPool = source === 'nearby' ? 'nearby' : 'home';
-  const demoVideoUrl = demoVideoFor(sel.cfVideoId, demoPool);
+  const demoVideoUrl = demoVideoFor(sel.cfVideoId, demoPool, card.listing.id);
   const isDemoVideo = demoVideoUrl !== null;
 
   let poster: string | null = null;
