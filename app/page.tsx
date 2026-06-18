@@ -39,14 +39,20 @@ export default async function HomePage() {
           muted
           loop
           playsInline
+          // WeChat X5 inline-autoplay hints — without these, X5 swaps the video
+          // for a system play button and the hero appears static (poster only).
+          webkit-playsinline="true"
+          x5-playsinline="true"
+          x5-video-player-type="h5-page"
+          x5-video-player-fullscreen="false"
           poster={LANDING_HERO_POSTER}
           className="absolute inset-0 h-full w-full object-cover"
         >
           <source src={LANDING_HERO_VIDEO} type="video/mp4" />
         </video>
-        {/* Cream wash — top fully translucent so video shows; bottom fades to bg
-            so the text panel reads on cream. */}
-        <div className="absolute inset-0 bg-gradient-to-b from-bg/0 via-bg/40 to-bg" />
+        {/* Bottom-only cream fade — keeps the video readable up top (no grey haze
+            from a mid-screen cream wash) while the text panel still lands on cream. */}
+        <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-b from-bg/0 via-bg/60 to-bg" />
 
         <div className="relative z-10 flex h-full flex-col items-center justify-end px-6 pb-20 text-center md:pb-28">
           <div className="eyebrow mb-6">Vicinity</div>

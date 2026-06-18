@@ -25,6 +25,7 @@
 
 import { useEffect } from 'react';
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
+import { demoCoverFor } from '@/lib/demo-media';
 import type { BrowseSourceVideo } from './BrowseFeed';
 
 export type CommunitySheetData = {
@@ -162,6 +163,9 @@ export function CommunitySheet({ open, data, onClose, onOpenCarousel }: Props) {
                 } catch {
                   poster = null;
                 }
+                // Phase38: route through demo-media override so curated luxury covers
+                // win over Cloudflare thumbnails on demo listings (matches CommunityGrid + sheet on /c/[slug]).
+                poster = demoCoverFor(v.cfVideoId, poster);
                 return (
                   <button
                     key={`${v.cfVideoId}-${idx}`}
