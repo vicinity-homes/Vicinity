@@ -107,6 +107,41 @@ export function communityBlurb(description: string | null): string | null {
   return `${clean.slice(0, 137).trimEnd()}…`;
 }
 
+/**
+ * Demo "About this home" blurb — phase 40.3/40.4 info density.
+ * Used when listing.description is empty. Single shared luxury-toned blurb;
+ * stable per-listing variation could come later if needed.
+ */
+const ABOUT_VARIANTS: readonly string[] = [
+  'A serene retreat tucked among mature trees, this home blends quiet craftsmanship with a layout designed for both everyday rhythm and effortless entertaining. Light pours through oversized glazing, oak floors run wall to wall, and the kitchen opens onto a covered terrace built for slow mornings and long evenings.',
+  'Set behind a hedged drive, the residence balances architectural restraint with warm, lived-in materiality. White-oak millwork, Venetian plaster, and chef-grade appliances anchor the main level; upstairs, a primary suite with dual closets and a stone-clad spa bath looks out over the gardens.',
+  'A thoughtful renovation pairs original bones with modern systems — new HVAC, refreshed roof, and seismic-retrofit foundation. The result feels timeless rather than trendy: gracious proportions, soft natural light, and an indoor-outdoor flow that quietly elevates the daily routine.',
+];
+
+export function aboutBlurbFor(seed: string, real: string[] | null): string {
+  const realText = (real ?? []).filter((s) => s && s.trim().length > 0).join(' ').trim();
+  if (realText.length > 80) return realText;
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+  return ABOUT_VARIANTS[Math.abs(h) % ABOUT_VARIANTS.length] ?? ABOUT_VARIANTS[0]!;
+}
+
+/**
+ * Fake nearby landmarks for the community block. Real schema doesn't carry
+ * "0.3 mi to X" structured data yet — this is demo-only fluff to show the
+ * shape of the eventual feature.
+ */
+export const DEMO_LANDMARKS: readonly { distance: string; name: string }[] = [
+  { distance: '0.3 mi', name: 'Lincoln Elementary' },
+  { distance: '0.5 mi', name: 'Whole Foods Market' },
+  { distance: '8 min walk', name: 'BART station' },
+];
+
+/** One-line agent bio for the contact card. Demo placeholder. */
+export function agentBlurbFor(name: string): string {
+  return `${name.split(' ')[0]} represents distinctive homes across the Peninsula and East Bay.`;
+}
+
 export function listingFullUrl(agentSlug: string, listingSlug: string): string {
   return `/v/${agentSlug}/${listingSlug}`;
 }
