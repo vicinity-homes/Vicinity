@@ -3,6 +3,22 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.40.0 — 2026-06-20
+
+### ✨ Improvements
+
+- **Editorial showcase reworked into "Listing Dossier"** — the default showcase style (Style 1) now reads like an information-dense single-page dossier with five numbered panels: ① The Home (with hero video + about), ② Inside (interior photo grid + specs), ③ The Neighborhood (community photo + landmarks), ④ The Numbers (price / $/sqft / HOA / status), ⑤ Represented by (agent + tour CTA). Top band masthead, footer band, burgundy-on-paper accent on the price chip. Designed for agents who want a "fact sheet" feel that differentiates from typical Zillow-style platforms.
+- **Matching dossier poster** — the downloadable poster for Style 1 mirrors the same identity (top band → masthead → numbered photo panels → agent footer), so the poster you download visually matches the page you share.
+
+### 🐛 Bug Fixes
+
+- The three downloadable posters (Editorial / Cinematic / Luxury) were too visually similar at thumbnail size — Style 1's Dossier rework restores a clear at-a-glance distinction between all three.
+
+### 🔧 Technical
+
+- Added an internal `dossier` design token (burgundy `#8a2a23`) scoped strictly to Style 1's price chip — does not bleed into other surfaces.
+- Two static prototype HTML files live under `public/prototypes/dossier.html` and `public/prototypes/spec-sheet.html` — used for visual sign-off; they are not wired into the app router.
+
 ## v0.39.0 — 2026-06-19
 
 ### 🚀 Features

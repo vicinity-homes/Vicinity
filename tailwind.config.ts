@@ -28,6 +28,11 @@ const config: Config = {
         },
         gold: '#313131',     // any text-gold / bg-gold now reads as ink
         bronze: '#5a5651',   // any text-bronze now reads as ink2
+
+        // Dossier accent — Style 1 only. Burgundy, NOT gold/chromatic-everywhere.
+        // Used on price, numbered badges (occasional), the "this home" $/sqft chip.
+        // Do not bleed into other surfaces.
+        dossier: '#8a2a23',
       },
       fontFamily: {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
