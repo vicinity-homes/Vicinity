@@ -18,6 +18,7 @@ import { type ListingPhotoRow, PhotoPanel } from './PhotoPanel';
 import { PublishPanel } from './PublishPanel';
 import { SocialCopyPanel } from './SocialCopyPanel';
 import { type ListingVideoRow, VideoPanel } from './VideoPanel';
+import { SharePosterButton } from './_components/SharePosterButton';
 
 interface ListingRow {
   id: string;
@@ -66,9 +67,7 @@ export default async function EditListingPage({
   if (!listing) {
     return (
       <div className="mx-auto max-w-2xl py-12 text-center">
-        <p className="text-sm text-ink2">
-          Listing not found, or you don&apos;t have access to it.
-        </p>
+        <p className="text-sm text-ink2">Listing not found, or you don&apos;t have access to it.</p>
       </div>
     );
   }
@@ -166,6 +165,9 @@ export default async function EditListingPage({
               Public URL ↗
             </a>
           ) : null}
+          {agent?.slug ? (
+            <SharePosterButton agentSlug={agent.slug} listingSlug={listing.slug} />
+          ) : null}
           <a
             href={`/dashboard/listings/${listing.id}/analytics`}
             className="inline-flex items-center gap-2 rounded-full border border-line bg-bg px-3 py-1.5 text-xs text-ink2 transition hover:border-line-strong hover:text-ink"
@@ -234,9 +236,7 @@ export default async function EditListingPage({
       <section className="rounded border border-line bg-surface p-6">
         <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
           <h2 className="text-base font-semibold">Social copy</h2>
-          <span className="text-xs text-muted">
-            Facebook + Instagram drafts, copy to clipboard
-          </span>
+          <span className="text-xs text-muted">Facebook + Instagram drafts, copy to clipboard</span>
         </div>
         <SocialCopyPanel listingId={listing.id} />
       </section>
