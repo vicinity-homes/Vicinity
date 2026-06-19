@@ -8,10 +8,15 @@
  *   Tier 2 (cards/panels): #fbf8f3 surface
  *   Tier 3 (text/lines): #313131 ink + line/line-strong hairlines
  * NO gold, NO chromatic accents — segment coherence per playbook §1.
+ *
+ * Phase 40.4 added: About / Community block w/ landmarks / Agent contact card.
  */
 
 import {
+  DEMO_LANDMARKS,
   type ShowcaseData,
+  aboutBlurbFor,
+  agentBlurbFor,
   agentFullUrl,
   communityBlurb,
   communityFullUrl,
@@ -32,6 +37,9 @@ export function Style4LuxuryBrochure({
   const price = formatPrice(listing.price);
   const specs = formatSpecs(listing.beds, listing.baths, listing.sqft);
   const blurb = communityBlurb(community?.description ?? null);
+  const about = aboutBlurbFor(listing.id, listing.description ?? null);
+  const agentInitial = agent.name.trim().charAt(0).toUpperCase() || 'V';
+  const agentBio = agentBlurbFor(agent.name);
 
   return (
     <main className="min-h-screen bg-bg text-ink">
@@ -53,8 +61,8 @@ export function Style4LuxuryBrochure({
           {price ? <p className="mt-3 font-serif text-2xl text-ink2 sm:text-3xl">{price}</p> : null}
         </header>
 
-        {/* Two-column: framed video card + spec list */}
-        <div className="mt-10 grid gap-8 sm:mt-14 sm:grid-cols-[3fr_2fr] sm:items-start">
+        {/* Two-column: framed video card + spec list + about */}
+        <div className="mt-10 grid gap-8 sm:mt-14 md:grid-cols-[3fr_2fr] md:items-start">
           <figure className="rounded-sm border border-line bg-surface p-2 shadow-sm">
             {heroVideo ? (
               <video
@@ -78,7 +86,7 @@ export function Style4LuxuryBrochure({
             )}
           </figure>
 
-          <div>
+          <div className="space-y-6">
             {specs.length > 0 ? (
               <dl className="divide-y divide-line border-line border-y">
                 {specs.map((s) => (
@@ -90,20 +98,33 @@ export function Style4LuxuryBrochure({
               </dl>
             ) : null}
 
-            {listing.description && listing.description.length > 0 ? (
-              <div className="mt-6 space-y-3 text-ink2 text-sm leading-relaxed">
-                {listing.description
-                  .filter((s) => s && s.trim().length > 0)
-                  .slice(0, 2)
-                  .map((p) => (
-                    <p key={p.slice(0, 32)}>{p}</p>
-                  ))}
+            <div>
+              <p className="text-[11px] uppercase tracking-eyebrow text-ink2">About this home</p>
+              <p className="mt-2 text-ink2 text-sm leading-relaxed">{about}</p>
+            </div>
+
+            {/* Agent contact card */}
+            <div className="flex items-center gap-3 rounded-sm border border-line bg-surface p-4">
+              <div
+                aria-hidden
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-ink font-serif text-cream text-lg"
+              >
+                {agentInitial}
               </div>
-            ) : null}
+              <div className="min-w-0">
+                <a
+                  href={agentFullUrl(agent.slug)}
+                  className="block truncate font-serif text-base text-ink hover:underline"
+                >
+                  {agent.name}
+                </a>
+                <p className="mt-0.5 truncate text-ink2 text-xs">{agentBio}</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Community panel */}
+        {/* Community panel w/ landmarks */}
         {community ? (
           <section className="mt-14 rounded-sm border border-line bg-surface p-6 sm:mt-20 sm:p-10">
             <div className="grid gap-6 sm:grid-cols-[2fr_3fr] sm:items-center">
@@ -118,11 +139,23 @@ export function Style4LuxuryBrochure({
               <div>
                 <p className="text-[11px] uppercase tracking-eyebrow text-ink2">Neighborhood</p>
                 <h2 className="mt-2 font-serif text-2xl text-ink sm:text-3xl">{community.name}</h2>
-                {blurb ? <p className="mt-3 text-ink2 text-sm leading-relaxed">{blurb}</p> : null}
+                {blurb ? (
+                  <p className="mt-3 text-ink2 text-sm leading-relaxed">{blurb}</p>
+                ) : null}
+                <ul className="mt-4 space-y-1.5 text-ink text-sm">
+                  {DEMO_LANDMARKS.map((l) => (
+                    <li key={l.name} className="flex items-baseline gap-2">
+                      <span className="text-[11px] uppercase tracking-eyebrow text-ink2">
+                        {l.distance}
+                      </span>
+                      <span>{l.name}</span>
+                    </li>
+                  ))}
+                </ul>
                 {communitySlug ? (
                   <a
                     href={communityFullUrl(communitySlug)}
-                    className="mt-4 inline-block text-ink text-sm underline decoration-line-strong underline-offset-4 hover:text-ink"
+                    className="mt-5 inline-block text-ink text-sm underline decoration-line-strong underline-offset-4 hover:text-ink"
                   >
                     View community details →
                   </a>
