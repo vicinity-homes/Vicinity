@@ -13,7 +13,6 @@ import { loadListingFeedBySlug } from '@/lib/listing-feed/load';
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const contentType = 'image/png';
 
 const SIZE = { width: 1080, height: 1920 };
 
