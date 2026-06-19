@@ -45,6 +45,8 @@ export function SharePosterButton({ agentSlug, listingSlug }: Props) {
   }, [open]);
 
   const urlFor = (n: number) => `${origin}/s/${agentSlug}/${listingSlug}?style=${n}`;
+  const posterUrlFor = (n: number) => `/s/${agentSlug}/${listingSlug}/poster-${n}.png`;
+  const posterFilenameFor = (n: number) => `${listingSlug}-poster-${n}.png`;
 
   const onCopy = async (n: number) => {
     try {
@@ -87,7 +89,8 @@ export function SharePosterButton({ agentSlug, listingSlug }: Props) {
               <div>
                 <h3 className="text-lg font-semibold">Share as poster</h3>
                 <p className="mt-1 text-sm text-ink2">
-                  Pick a visual style. Copy the link or preview it in a new tab.
+                  Pick a visual style. Copy the link to share, or download the poster image
+                  to post directly to WeChat moments, Instagram, or any image-friendly channel.
                 </p>
               </div>
               <button
@@ -107,7 +110,7 @@ export function SharePosterButton({ agentSlug, listingSlug }: Props) {
                     <div className="text-sm font-semibold">{s.name}</div>
                     <div className="mt-1 text-xs text-ink2">{s.desc}</div>
                   </div>
-                  <div className="mt-2 flex items-center gap-2">
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => onCopy(s.n)}
@@ -115,6 +118,13 @@ export function SharePosterButton({ agentSlug, listingSlug }: Props) {
                     >
                       {copiedStyle === s.n ? 'Copied!' : 'Copy link'}
                     </button>
+                    <a
+                      href={posterUrlFor(s.n)}
+                      download={posterFilenameFor(s.n)}
+                      className="inline-flex items-center rounded-full border border-line bg-surface px-3 py-1 text-xs text-ink transition hover:border-line-strong"
+                    >
+                      Download poster
+                    </a>
                     <a
                       href={urlFor(s.n)}
                       target="_blank"
