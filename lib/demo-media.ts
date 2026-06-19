@@ -39,7 +39,7 @@ const DEMO_COVERS: readonly string[] = [
   'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1600&q=80', // suburban estate twilight
   'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=80', // architectural pool
   'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1600&q=80', // wood-warm interior living
-  'https://images.unsplash.com/photo-1605114704324-4f4d2cf41b32?auto=format&fit=crop&w=1600&q=80', // mid-century glass
+  'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1600&q=80', // mid-century glass
   'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1600&q=80', // classic mansion
 ];
 
@@ -159,14 +159,22 @@ export function demoVideoFor(
  * Curated 4-photo album for photo-only listings (e.g. 888 Rhonda Place).
  * Walks the cover pool starting at `stableIndex(seed)` so the album feels
  * like one cohesive shoot, and different listings get distinct sets.
+ *
+ * Always returns AT LEAST 4 working URLs — gallery grids assume that many
+ * slots and would render broken `<img>` tags otherwise (phase 40.2).
  */
 export function demoPhotosFor(seed: string, real: string[]): string[] {
-  if (!DEMO_MEDIA_ENABLED) return real;
   const start = stableIndex(seed, DEMO_COVERS.length);
-  const album: string[] = [];
+  const padded: string[] = [];
   for (let i = 0; i < 6; i++) {
     const url = DEMO_COVERS[(start + i) % DEMO_COVERS.length];
-    if (url) album.push(url);
+    if (url) padded.push(url);
   }
-  return album;
+  if (!DEMO_MEDIA_ENABLED) {
+    // Production: prefer real photos; pad with curated stock if fewer than 4
+    // so gallery grids never render an empty slot.
+    if (real.length >= 4) return real;
+    return [...real, ...padded].slice(0, Math.max(4, real.length));
+  }
+  return padded;
 }
