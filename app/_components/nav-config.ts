@@ -27,7 +27,7 @@
  *   swipe-feed-as-primary signal moves to the Explore page itself (cards
  *   click straight into vertical feed) rather than the nav.
  */
-import { Briefcase, Building2, Compass, Heart, type LucideIcon, User } from 'lucide-react';
+import { Briefcase, Building2, Compass, Heart, LogIn, type LucideIcon, Plus, User } from 'lucide-react';
 
 export type ViewerRole = 'anon' | 'buyer' | 'agent';
 
@@ -37,35 +37,39 @@ export type Tab = {
   icon: LucideIcon;
   /** Pathname is "active" if it equals href OR starts with `${href}/`. */
   matchPrefix?: boolean;
+  /** When true, this slot renders as a center FAB instead of a regular tab. */
+  fab?: boolean;
 };
 
 /**
- * Build the role's primary tabs. 4 slots, mobile + desktop share the set.
+ * Build the role's primary tabs.
  *
- * Order: Community · Explore · {Saved|Workspace} · Me
- *
- * - Community is leftmost: the platform's signature asset (12-category
- *   neighborhood video taxonomy lives here).
- * - Explore is the listings consumption surface. Sub-tabs inside the page:
- *   Recommended (default) and Nearby (radius-filtered). Both grids click
- *   through into the same vertical swipe feed.
- * - Slot 3 swaps by role: buyers save listings, agents work leads. These
- *   are the equivalent "what you keep coming back to" verbs for each role.
- *   For agents this is "Workspace" → /dashboard (single canonical entry to
- *   listings management + leads + community uploads).
- * - Me is rightmost (universal convention).
+ * - anon:  For You · Community · Favorites · Sign in
+ * - buyer: For You · Community · Favorites · Me
+ * - agent: Agent Hub · For You · +(FAB) · Community · Me  (5 slots, center FAB
+ *   opens the upload action sheet — see UploadFAB)
  */
 export function getPrimaryTabs(role: ViewerRole): Tab[] {
-  const slot3: Tab =
-    role === 'agent'
-      ? { href: '/dashboard', label: 'Workspace', icon: Briefcase, matchPrefix: true }
-      : { href: '/saved', label: 'Saved', icon: Heart };
+  if (role === 'agent') {
+    return [
+      { href: '/dashboard', label: 'Agent Hub', icon: Briefcase, matchPrefix: true },
+      { href: '/browse', label: 'For You', icon: Compass, matchPrefix: true },
+      { href: '/upload', label: 'Upload', icon: Plus, fab: true },
+      { href: '/communities', label: 'Community', icon: Building2, matchPrefix: true },
+      { href: '/profile', label: 'Me', icon: User },
+    ];
+  }
+
+  const slot4: Tab =
+    role === 'buyer'
+      ? { href: '/profile', label: 'Me', icon: User }
+      : { href: '/login', label: 'Sign in', icon: LogIn };
 
   return [
+    { href: '/browse', label: 'For You', icon: Compass, matchPrefix: true },
     { href: '/communities', label: 'Community', icon: Building2, matchPrefix: true },
-    { href: '/browse', label: 'Explore', icon: Compass, matchPrefix: true },
-    slot3,
-    { href: '/profile', label: 'Me', icon: User },
+    { href: '/saved', label: 'Favorites', icon: Heart },
+    slot4,
   ];
 }
 
