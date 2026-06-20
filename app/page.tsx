@@ -1,5 +1,4 @@
 import { SiteFooter } from '@/components/site/SiteFooter';
-import { BrandMark } from '@/components/site/BrandMark';
 import {
   LANDING_HERO_POSTER,
   LANDING_HERO_VIDEO,
@@ -48,11 +47,19 @@ export default async function HomePage() {
             frames in the loop — kept very subtle (10%). */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-transparent" />
 
-        {/* Top-left brand wordmark — global pattern, but landing hides
-            <SiteHeader> (isChromeHidden), so we render it inline here. */}
-        <BrandMark className="absolute top-5 left-5 z-20 sm:top-7 sm:left-9" />
-
         <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center">
+          {/* Brand eyebrow — centered above H1 per截图 idiom. Not a link;
+              chrome routes use <BrandMark> for that. */}
+          <div
+            className="mb-6 font-medium uppercase"
+            style={{
+              color: '#c9a24a',
+              letterSpacing: '0.32em',
+              fontSize: '12px',
+            }}
+          >
+            VICINITY
+          </div>
           <h1 className="display-xl max-w-4xl text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.5)]">
             {LANDING_TAGLINE}
           </h1>
