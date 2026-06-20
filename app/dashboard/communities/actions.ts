@@ -174,6 +174,43 @@ export async function updateCommunity(id: string, raw: unknown): Promise<ActionR
   return { ok: false, error: 'update_failed' };
 }
 
+/**
+ * Phase 45.14 (2026-06-20): permanent community delete.
+ *
+ * Hard-deletes a community row. Schools, POIs, photos, videos, saved-rows
+ * all cascade via FKs (`on delete cascade`). Listings reference communities
+ * with `on delete set null`, so listings survive the teardown with their
+ * `community_id` cleared.
+ *
+ * Cloudflare Stream videos and Supabase storage photos are NOT scrubbed —
+ * V1 trade-off, same as deleteListing. RLS gates this to the creator.
+ */
+export async function deleteCommunity(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'unauthorized' };
+
+  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+  const { error, count } = (await (supabase as any)
+    .from('communities')
+    .delete({ count: 'exact' })
+    .eq('id', id)) as { error: { message?: string } | null; count: number | null };
+
+  if (error) {
+    console.error('[deleteCommunity] delete failed', error);
+    return { ok: false, error: 'delete_failed' };
+  }
+  // RLS may silently filter the row when the caller isn't the creator —
+  // surface that as a clear forbidden so the UI can react.
+  if (count === 0) return { ok: false, error: 'forbidden' };
+
+  revalidatePath('/dashboard/communities');
+  revalidatePath('/communities');
+  return { ok: true };
+}
+
 // ─── schools ─────────────────────────────────────────────────────
 
 async function getAgentId(): Promise<string | null> {

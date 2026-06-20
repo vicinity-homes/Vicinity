@@ -12,7 +12,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { archiveListing, unarchiveListing } from './archive-actions';
+import { archiveListing, deleteListing, unarchiveListing } from './archive-actions';
 import { flushPending } from './flush-registry';
 import { publishListing, unpublishListing } from './publish-actions';
 
@@ -130,6 +130,26 @@ export function PublishPanel({ listingId, status }: Props) {
     });
   }
 
+  function handleDelete() {
+    if (
+      !confirm(
+        'Permanently delete this listing? Videos, photos, leads and analytics for it will be removed. This cannot be undone.',
+      )
+    )
+      return;
+    setMissing(null);
+    setErr(null);
+    startTransition(async () => {
+      const res = await deleteListing(listingId);
+      if (res.ok) {
+        // Editor route is now invalid — bounce back to the dashboard.
+        router.replace('/dashboard');
+      } else {
+        setErr(res.error);
+      }
+    });
+  }
+
   return (
     <div className="rounded border border-line bg-surface px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -145,14 +165,24 @@ export function PublishPanel({ listingId, status }: Props) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {isArchived ? (
-            <button
-              type="button"
-              onClick={handleUnarchive}
-              disabled={isPending}
-              className="rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-ink2/20 disabled:opacity-50"
-            >
-              {isPending ? 'Unarchiving…' : 'Unarchive'}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleUnarchive}
+                disabled={isPending}
+                className="rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-ink2/20 disabled:opacity-50"
+              >
+                {isPending ? 'Unarchiving…' : 'Unarchive'}
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isPending}
+                className="rounded border border-line px-3 py-2 text-xs text-ink2 hover:border-red-500/40 hover:text-red-300 disabled:opacity-50"
+              >
+                Delete
+              </button>
+            </>
           ) : (
             <>
               {isPublished ? (
@@ -181,6 +211,14 @@ export function PublishPanel({ listingId, status }: Props) {
                 className="rounded border border-line px-3 py-2 text-xs text-ink2 hover:border-red-500/40 hover:text-red-300 disabled:opacity-50"
               >
                 Archive
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isPending}
+                className="rounded border border-line px-3 py-2 text-xs text-ink2 hover:border-red-500/40 hover:text-red-300 disabled:opacity-50"
+              >
+                Delete
               </button>
             </>
           )}

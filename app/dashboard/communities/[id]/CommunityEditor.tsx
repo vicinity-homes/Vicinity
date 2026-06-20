@@ -12,7 +12,7 @@
  * with the input border turning red — same pattern as NewCommunityForm.
  */
 
-import { updateCommunity } from '@/app/dashboard/communities/actions';
+import { deleteCommunity, updateCommunity } from '@/app/dashboard/communities/actions';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
@@ -43,7 +43,56 @@ export function CommunityEditor({
   return (
     <div className="space-y-6">
       <MetadataSection community={community} canEdit={canEditMetadata} />
+      {canEditMetadata && <DangerZone communityId={community.id} />}
     </div>
+  );
+}
+
+function DangerZone({ communityId }: { communityId: string }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [err, setErr] = useState<string | null>(null);
+
+  function handleDelete() {
+    if (
+      !confirm(
+        'Permanently delete this community? Schools, POIs, photos, videos and saved entries for it will be removed. Listings will be detached but not deleted. This cannot be undone.',
+      )
+    )
+      return;
+    setErr(null);
+    startTransition(async () => {
+      const res = await deleteCommunity(communityId);
+      if (res.ok) {
+        router.replace('/dashboard/communities');
+      } else {
+        setErr(res.error);
+      }
+    });
+  }
+
+  return (
+    <section className="rounded border border-line bg-surface px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-sm">
+          <div className="font-medium text-ink">Danger zone</div>
+          <p className="text-ink2 text-xs">Permanently delete this community.</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={isPending}
+          className="rounded border border-line px-3 py-2 text-xs text-ink2 hover:border-red-500/40 hover:text-red-300 disabled:opacity-50"
+        >
+          {isPending ? 'Deleting…' : 'Delete community'}
+        </button>
+      </div>
+      {err && (
+        <p className="mt-2 rounded border border-red-500/40 bg-red-500/10 p-2 text-red-300 text-xs">
+          Error: {err}
+        </p>
+      )}
+    </section>
   );
 }
 
