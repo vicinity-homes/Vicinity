@@ -48,7 +48,14 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-transparent" />
 
         <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center">
-          <div className="eyebrow mb-6" style={{ color: '#c9a24a', letterSpacing: '0.32em' }}>
+          <div
+            className="mb-8 font-medium uppercase"
+            style={{
+              color: '#c9a24a',
+              letterSpacing: '0.42em',
+              fontSize: '18px',
+            }}
+          >
             VICINITY
           </div>
           <h1 className="display-xl max-w-4xl text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.5)]">
