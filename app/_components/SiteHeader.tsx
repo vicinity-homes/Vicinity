@@ -24,6 +24,7 @@ import { Building2, ChevronDown, LogOut, Plus, User, Video } from 'lucide-react'
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { BrandMark } from '@/components/site/BrandMark';
 import {
   getPrimaryTabs,
   isChromeHidden,
@@ -264,18 +265,7 @@ export function SiteHeader({ role, initial, displayName, brokerage, avatarUrl }:
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-3">
         <div className="flex items-center gap-7">
-          <Link
-            href={role === 'agent' ? '/dashboard' : '/'}
-            aria-label="Vicinity — home"
-            className="font-medium uppercase transition hover:brightness-110"
-            style={{
-              color: '#c9a24a',
-              letterSpacing: '0.32em',
-              fontSize: '14px',
-            }}
-          >
-            VICINITY
-          </Link>
+          <BrandMark href={role === 'agent' ? '/dashboard' : '/'} />
           <nav aria-label="Primary" className="flex items-center gap-5">
             {tabs.map((tab) => (
               <NavLink key={tab.href} tab={tab} active={isTabActive(pathname, tab)} />

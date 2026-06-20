@@ -1,4 +1,5 @@
 import { SiteFooter } from '@/components/site/SiteFooter';
+import { BrandMark } from '@/components/site/BrandMark';
 import {
   LANDING_HERO_POSTER,
   LANDING_HERO_VIDEO,
@@ -49,18 +50,7 @@ export default async function HomePage() {
 
         {/* Top-left brand wordmark — global pattern, but landing hides
             <SiteHeader> (isChromeHidden), so we render it inline here. */}
-        <Link
-          href="/"
-          aria-label="Vicinity — home"
-          className="absolute top-6 left-6 z-20 font-medium uppercase transition hover:brightness-110 sm:top-8 sm:left-10"
-          style={{
-            color: '#c9a24a',
-            letterSpacing: '0.32em',
-            fontSize: '14px',
-          }}
-        >
-          VICINITY
-        </Link>
+        <BrandMark className="absolute top-5 left-5 z-20 sm:top-7 sm:left-9" />
 
         <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center">
           <h1 className="display-xl max-w-4xl text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.5)]">
