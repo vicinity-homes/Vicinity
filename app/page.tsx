@@ -38,26 +38,36 @@ export default async function HomePage() {
         >
           <source src={LANDING_HERO_VIDEO} type="video/mp4" />
         </video>
-        {/* Bottom-only cream fade — keeps the video readable up top (no grey haze
-            from a mid-screen cream wash) while the text panel still lands on cream. */}
-        <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-b from-bg/0 via-bg/60 to-bg" />
+        {/* Bottom-only cream fade — narrow band so the video stays the
+            actual background; needed for white H1 + gold eyebrow legibility.
+            Wider wash washes out the dark Pexels footage and white text
+            falls onto cream → unreadable. */}
+        <div className="absolute inset-x-0 bottom-0 h-[25%] bg-gradient-to-b from-bg/0 via-bg/40 to-bg" />
+        {/* Slight top-down dim so center text reads against any stray bright
+            frames in the loop — kept very subtle (10%). */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-transparent" />
 
         <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center">
-          <div className="eyebrow mb-6 !text-ink">Vicinity</div>
-          <h1 className="display-xl max-w-4xl text-ink">{LANDING_TAGLINE}</h1>
-          <p className="mx-auto mt-6 max-w-xl text-base text-ink leading-[1.7] sm:text-lg">
+          <div className="eyebrow mb-6" style={{ color: '#c9a24a', letterSpacing: '0.32em' }}>
+            VICINITY
+          </div>
+          <h1 className="display-xl max-w-4xl text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.5)]">
+            {LANDING_TAGLINE}
+          </h1>
+          <p className="mx-auto mt-6 max-w-xl text-base leading-[1.7] text-white/90 drop-shadow-[0_1px_12px_rgba(0,0,0,0.4)] sm:text-lg">
             {LANDING_SUBTITLE}
           </p>
           <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
               href="/browse"
-              className="inline-flex items-center justify-center bg-ink px-8 py-4 text-[12px] tracking-[0.22em] text-surface uppercase transition hover:bg-[#1f1f1f]"
+              className="inline-flex items-center justify-center rounded-full px-9 py-4 text-[12px] font-medium uppercase tracking-[0.22em] text-[#1a1410] transition hover:brightness-110"
+              style={{ backgroundColor: '#c9a24a' }}
             >
               Explore
             </Link>
             <Link
               href="/login"
-              className="inline-flex items-center justify-center border border-line-strong px-8 py-4 text-[12px] tracking-[0.22em] text-ink uppercase transition hover:border-ink"
+              className="inline-flex items-center justify-center rounded-full border border-white/70 px-9 py-4 text-[12px] font-medium uppercase tracking-[0.22em] text-white transition hover:border-white hover:bg-white/10"
             >
               Sign In
             </Link>
