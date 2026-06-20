@@ -8,11 +8,10 @@ import { createClient } from '@/lib/supabase/server';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { NearbyClient } from '../nearby/NearbyClient';
 
 export const metadata: Metadata = {
-  title: 'Explore Listings · Vicinity',
-  description: 'Explore homes for sale. Tap a listing to start a video tour.',
+  title: 'For You · Vicinity',
+  description: 'Listings recommended for you. Tap a card to start a video tour.',
 };
 
 export const dynamic = 'force-dynamic';
@@ -20,74 +19,34 @@ export const dynamic = 'force-dynamic';
 /**
  * Browse — grid landing.
  *
- * Phase 9 (2026-06-12) pivot: instead of dropping the user straight into a
- * vertical swipe feed (which felt aggressive on first impression), we show
- * a Pinterest-style grid first. Tapping any card launches the swipe feed
- * starting at that listing — Xiaohongshu / Douyin "explore → detail" pattern.
+ * Phase 9 (2026-06-12) pivot: Pinterest-style grid first; tapping a card
+ * launches the swipe feed starting at that listing.
  *
  * Phase 27.5 (2026-06-16): also accepts `?community=<slug>` to scope the
- * grid to active (published) listings inside a single community. Linked
- * from the "N active listings" badge on `/c/[slug]`. Unknown / empty slug
- * silently falls through to the global grid so the page is never empty.
+ * grid to a single community.
  *
- * Phase 34b.1 (2026-06-17): the `?tab=communities` segmented control was
- * removed — it duplicated `/communities`. One way to do each thing.
- *
- * Phase 37 (2026-06-18): introduced Recommended / Nearby sub-tabs (Douyin
- * 推荐/同城 model). The standalone /nearby route now 308-redirects here
- * with `?tab=nearby`. Both sub-tabs render Pinterest-style grids that click
- * through into the same vertical swipe feed — consumption shape stays
- * uniform across sub-tabs.
- *
- * Sub-tab visibility rules:
- *   - Hidden when `?community=<slug>` is set: that mode is a community-
- *     scoped grid where "nearby" has no meaning (the grid is already
- *     location-anchored to the community).
- *   - Default tab is `recommended`. Unknown values fall back to recommended.
+ * Phase 43.7 (2026-06-20): dropped the Recommended / Nearby sub-tabs.
+ * The page is now a single "For You" grid (always 2-up). The standalone
+ * /nearby route still 308-redirects here.
  */
-type BrowseTab = 'recommended' | 'nearby';
-
-function parseTab(raw: string | undefined): BrowseTab {
-  return raw === 'nearby' ? 'nearby' : 'recommended';
-}
-
 export default async function BrowsePage({
   searchParams,
 }: {
-  searchParams: Promise<{ community?: string; tab?: string }>;
+  searchParams: Promise<{ community?: string }>;
 }) {
-  const { community: communitySlug, tab: rawTab } = await searchParams;
-  const activeTab = parseTab(rawTab);
-
-  const isCommunityScoped = Boolean(communitySlug);
-  const showSubTabs = !isCommunityScoped;
+  const { community: communitySlug } = await searchParams;
 
   return (
     <main className="min-h-dvh bg-bg pb-20 text-ink md:pb-0">
-      <BrowseHeader
-        activeTab={activeTab}
-        showSubTabs={showSubTabs}
-        communitySlug={communitySlug ?? null}
-      />
-
-      {/* Sub-tab content. Nearby is a client component (geolocation).
-       * Recommended (and community-scoped) is server-rendered. */}
-      {showSubTabs && activeTab === 'nearby' ? (
-        <NearbyClient />
-      ) : (
-        <RecommendedGrid communitySlug={communitySlug ?? null} />
-      )}
+      <BrowseHeader communitySlug={communitySlug ?? null} />
+      <RecommendedGrid communitySlug={communitySlug ?? null} />
     </main>
   );
 }
 
 async function BrowseHeader({
-  activeTab,
-  showSubTabs,
   communitySlug,
 }: {
-  activeTab: BrowseTab;
-  showSubTabs: boolean;
   communitySlug: string | null;
 }) {
   let communityLabel: string | null = null;
@@ -104,44 +63,14 @@ async function BrowseHeader({
 
   return (
     <header className="sticky top-0 z-20 border-line border-b bg-bg/85 backdrop-blur-md md:hidden">
-      {communitySlug && communityLabel ? (
-        <div className="flex items-center justify-center px-4 py-3">
-          <div className="text-ink2 text-[11px] tracking-[0.22em] uppercase">
-            {`Listings in ${communityLabel}`}
-          </div>
+      <div className="flex items-center justify-center px-4 py-3">
+        <div className="text-ink2 text-[11px] tracking-[0.22em] uppercase">
+          {communitySlug && communityLabel
+            ? `Listings in ${communityLabel}`
+            : 'For You'}
         </div>
-      ) : showSubTabs ? (
-        <nav aria-label="Explore sub-nav" className="flex items-center justify-center gap-8 px-4 py-3">
-          <SubTabLink href="/browse" label="Recommended" active={activeTab === 'recommended'} />
-          <SubTabLink href="/browse?tab=nearby" label="Nearby" active={activeTab === 'nearby'} />
-        </nav>
-      ) : (
-        <div className="flex items-center justify-center px-4 py-3">
-          <div className="text-ink2 text-[11px] tracking-[0.22em] uppercase">Explore</div>
-        </div>
-      )}
+      </div>
     </header>
-  );
-}
-
-function SubTabLink({ href, label, active }: { href: string; label: string; active: boolean }) {
-  return (
-    <Link
-      href={href}
-      aria-current={active ? 'page' : undefined}
-      prefetch={false}
-      className={`relative pb-1 text-[12px] tracking-[0.18em] uppercase transition-colors ${
-        active ? 'text-ink' : 'text-muted hover:text-ink'
-      }`}
-    >
-      {label}
-      {active ? (
-        <span
-          aria-hidden="true"
-          className="absolute inset-x-0 -bottom-0.5 h-px bg-ink"
-        />
-      ) : null}
-    </Link>
   );
 }
 
@@ -164,7 +93,7 @@ async function RecommendedGrid({ communitySlug }: { communitySlug: string | null
 
   return (
     <div className={`mx-auto max-w-6xl px-3 sm:px-6 ${isCommunityScoped ? 'py-6' : 'pb-6'}`}>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-12 md:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-12">
         {cards.map((card, idx) => (
           <Link
             key={card.listing.id}
@@ -190,7 +119,7 @@ async function RecommendedGrid({ communitySlug }: { communitySlug: string | null
                       src={src}
                       alt={card.listing.address}
                       fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      sizes="(max-width: 640px) 50vw, 50vw"
                       priority={idx < 4}
                       className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
                     />

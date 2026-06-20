@@ -15,5 +15,5 @@ import { permanentRedirect } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 
 export default function NearbyPage() {
-  permanentRedirect('/browse?tab=nearby');
+  permanentRedirect('/browse');
 }
