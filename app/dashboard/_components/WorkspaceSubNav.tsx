@@ -15,12 +15,13 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-type Section = 'listings' | 'communities' | 'leads';
+type Section = 'listings' | 'communities' | 'leads' | 'analytics';
 
 const SECTIONS: { key: Section; label: string; href: string }[] = [
   { key: 'listings', label: 'Listings', href: '/dashboard' },
   { key: 'communities', label: 'Communities', href: '/dashboard/communities' },
   { key: 'leads', label: 'Leads', href: '/dashboard/leads' },
+  { key: 'analytics', label: 'Analytics', href: '/dashboard/analytics' },
 ];
 
 export function WorkspaceSubNav({ active, cta }: { active: Section; cta?: ReactNode }) {

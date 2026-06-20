@@ -41,6 +41,9 @@ type Props = {
   /** All listings for the calling agent across draft/published/archived. */
   rows: ListingRow[];
   counts: Record<StatusTab, number>;
+  /** Phase 43.10: 'grid' renders 2-up cards (mobile-friendly).
+   * Default 'list' keeps the existing wide-row layout. */
+  view?: 'list' | 'grid';
 };
 
 function fmtPrice(n: number | null): string | null {
@@ -72,7 +75,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export function ListingsTabbedList({ initialTab, agentSlug, rows, counts }: Props) {
+export function ListingsTabbedList({ initialTab, agentSlug, rows, counts, view = 'list' }: Props) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<StatusTab>(initialTab);
 
@@ -125,6 +128,56 @@ export function ListingsTabbedList({ initialTab, agentSlug, rows, counts }: Prop
                 ? 'No archived listings.'
                 : 'No listings yet — tap + New listing above to add one.'}
           </p>
+        </div>
+      ) : view === 'grid' ? (
+        <div className="grid grid-cols-2 gap-3">
+          {filteredRows.map((l) => {
+            const cover = l.cover_url ?? l.fallback_cover_url;
+            const price = fmtPrice(l.price);
+            return (
+              <Link
+                key={l.id}
+                href={`/dashboard/listings/${l.id}/edit`}
+                className="group relative block overflow-hidden rounded-xl border border-line bg-surface"
+              >
+                <div className="relative aspect-[3/4] w-full bg-bg">
+                  {cover ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={cover}
+                      alt=""
+                      className={`h-full w-full object-cover transition group-hover:opacity-90 ${
+                        l.status === 'archived' ? 'opacity-60' : ''
+                      }`}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="grid h-full w-full place-items-center text-muted text-xs">
+                      No cover
+                    </div>
+                  )}
+                  <div className="absolute right-2 top-2">
+                    <StatusBadge status={l.status} />
+                  </div>
+                </div>
+                <div className="p-3">
+                  {price && (
+                    <div className="font-serif text-ink text-base leading-tight tracking-[-0.012em]">
+                      {price}
+                    </div>
+                  )}
+                  <div className="mt-1 truncate text-ink2 text-[12px]">
+                    {l.address ?? '(no address)'}
+                  </div>
+                  <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted tracking-wide">
+                    {l.beds != null && <span>{l.beds} bd</span>}
+                    {l.baths != null && <span>· {fmtBaths(l.baths)} ba</span>}
+                    {l.sqft != null && <span>· {l.sqft.toLocaleString()} sqft</span>}
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       ) : (
         <ul className="space-y-3">

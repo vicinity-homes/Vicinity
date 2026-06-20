@@ -106,19 +106,19 @@ export default async function CommunitiesListPage() {
           </p>
         </div>
       ) : (
-        <ul className="divide-y divide-bronze/20 rounded border border-line bg-surface">
+        <ul className="grid grid-cols-2 gap-3">
           {communities.map((c) => {
             const canEdit = c.created_by == null || c.created_by === myAgentId;
             // Phase 35.2: whole row → editor link. The editor itself is now
             // the manage surface (videos + metadata + cover all live there),
             // so a single tap from the list lands you in the right place.
-            // Upload stays as a visible secondary action (with stopPropagation
-            // wrapper) for agents whose primary intent is "add another video".
+            // Phase 43.10 (2026-06-20): list → grid-cols-2 cards to match the
+            // buyer-facing communities surface.
             return (
-              <li key={c.id} className="relative">
+              <li key={c.id} className="relative rounded border border-line bg-surface">
                 <Link
                   href={`/dashboard/communities/${c.id}`}
-                  className="flex flex-col gap-3 px-4 py-3 transition hover:bg-bg sm:flex-row sm:items-center sm:justify-between"
+                  className="flex h-full flex-col gap-2 px-4 py-3 transition hover:bg-bg"
                   aria-label={canEdit ? `Edit ${c.name}` : `View ${c.name}`}
                 >
                   <div className="min-w-0 flex-1">
@@ -147,9 +147,6 @@ export default async function CommunitiesListPage() {
                     ) : (
                       <p className="mt-1 text-xs text-muted italic">No description yet</p>
                     )}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-3 text-xs text-ink2">
-                    <span aria-hidden>→</span>
                   </div>
                 </Link>
               </li>

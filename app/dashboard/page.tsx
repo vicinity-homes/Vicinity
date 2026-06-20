@@ -166,6 +166,7 @@ export default async function DashboardHomePage({ searchParams }: PageProps) {
         agentSlug={agentSlug}
         rows={rows}
         counts={counts}
+        view="grid"
       />
     </div>
   );
