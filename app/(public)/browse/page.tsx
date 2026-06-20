@@ -25,6 +25,12 @@ export const dynamic = 'force-dynamic';
  * Phase 43.7 (2026-06-20): dropped the Recommended / Nearby sub-tabs.
  * The page is now a single "For You" grid (always 2-up). The standalone
  * /nearby route still 308-redirects here.
+ *
+ * Phase 45 (2026-06-20): Nearby is back, but as a top-bar sub-tab pinned
+ * by the global TopBar (see app/_components/nav-config.ts → getSubTabs).
+ * `/browse/nearby` renders the radius-bound grid; `/browse` is still the
+ * "Explore" / For You feed. The mobile-only sticky header below was
+ * removed because TopBar now owns that surface (sub-tabs live there).
  */
 export default async function BrowsePage({
   searchParams,
@@ -34,18 +40,13 @@ export default async function BrowsePage({
   const { community: communitySlug } = await searchParams;
 
   return (
-    <main className="min-h-dvh bg-bg pb-20 text-ink md:pb-0">
-      <BrowseHeader communitySlug={communitySlug ?? null} />
+    <div className="min-h-dvh bg-bg pb-20 text-ink md:pb-0">
       <RecommendedGrid communitySlug={communitySlug ?? null} />
-    </main>
+    </div>
   );
 }
 
-async function BrowseHeader({
-  communitySlug,
-}: {
-  communitySlug: string | null;
-}) {
+async function RecommendedGrid({ communitySlug }: { communitySlug: string | null }) {
   let communityLabel: string | null = null;
   if (communitySlug) {
     const supabase = await createClient();
@@ -57,19 +58,8 @@ async function BrowseHeader({
       .maybeSingle()) as { data: { name: string } | null };
     communityLabel = data?.name ?? null;
   }
+  void communityLabel; // not currently rendered — header moved to TopBar
 
-  return (
-    <header className="sticky top-0 z-20 border-line border-b bg-bg/85 backdrop-blur-md md:hidden">
-      <div className="flex items-center justify-center px-4 py-3">
-        <div className="text-ink2 text-[11px] tracking-[0.22em] uppercase">
-          {communitySlug && communityLabel ? `Listings in ${communityLabel}` : 'For You'}
-        </div>
-      </div>
-    </header>
-  );
-}
-
-async function RecommendedGrid({ communitySlug }: { communitySlug: string | null }) {
   const scopedCards = communitySlug ? await fetchBrowseCardsByCommunitySlug(communitySlug) : null;
   const cards = scopedCards && scopedCards.length > 0 ? scopedCards : await fetchBrowseCards();
   const isCommunityScoped = Boolean(scopedCards && scopedCards.length > 0);
