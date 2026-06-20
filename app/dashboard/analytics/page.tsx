@@ -137,7 +137,10 @@ export default async function DashboardAnalyticsPage() {
     for (const ev of events ?? []) {
       const day = ev.created_at.slice(0, 10);
       const i = idx.get(day);
-      if (i !== undefined) buckets[i].views += 1;
+      if (i !== undefined) {
+        const b = buckets[i];
+        if (b) b.views += 1;
+      }
     }
   }
 
@@ -162,8 +165,8 @@ export default async function DashboardAnalyticsPage() {
           <Sparkline buckets={buckets} />
         </div>
         <div className="mt-2 flex justify-between text-[10px] uppercase tracking-wide text-ink2">
-          <span>{buckets[0].date.slice(5)}</span>
-          <span>{buckets[buckets.length - 1].date.slice(5)}</span>
+          <span>{buckets[0]?.date.slice(5) ?? ''}</span>
+          <span>{buckets[buckets.length - 1]?.date.slice(5) ?? ''}</span>
         </div>
       </div>
     </div>

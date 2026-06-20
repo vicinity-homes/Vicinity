@@ -90,7 +90,7 @@ export async function listLiked(input: z.infer<typeof LIST_INPUT>): Promise<stri
     error: unknown;
   };
   if (error || !data) return [];
-  return data.map((r) => r[col]);
+  return data.map((r) => r[col]).filter((v): v is string => typeof v === 'string');
 }
 
 /**
