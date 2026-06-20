@@ -32,6 +32,7 @@ import {
 import Hls from 'hls.js';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { LeadModal } from '../../../_components/LeadModal';
 import { CommunityListingCarousel } from './_components/CommunityListingCarousel';
 import { CommunityListingsSheet } from './_components/CommunityListingsSheet';
 
@@ -108,6 +109,27 @@ function ShareIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" width={22} height={22} fill="currentColor">
       <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" />
+    </svg>
+  );
+}
+
+// Phase 45.18: Contact button — same speech-bubble glyph used in BrowseFeed
+// right rail so the three feeds (listing / community-from-listing /
+// community-direct) read identically.
+function CommentIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width={26}
+      height={26}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   );
 }
@@ -368,12 +390,19 @@ function VideoCard({
 
 export function CommunityVideoFeed({
   community,
+  owner = null,
   videos,
   initialIndex = 0,
   activeListingsCount = 0,
   listings = [],
 }: {
   community: CommunityFeedCommunity;
+  /**
+   * Phase 45.18: community owner — `created_by` agent. When present,
+   * the right-rail Contact button opens a LeadModal that lands a lead
+   * on this agent. Null for legacy / unowned communities (no Contact).
+   */
+  owner?: { id: string; name: string } | null;
   videos: CommunityFeedVideo[];
   initialIndex?: number;
   activeListingsCount?: number;
@@ -389,6 +418,8 @@ export function CommunityVideoFeed({
   const [listingsSheetOpen, setListingsSheetOpen] = useState(false);
   const [listingCarouselOpen, setListingCarouselOpen] = useState(false);
   const [listingCarouselStartIdx, setListingCarouselStartIdx] = useState(0);
+  // Phase 45.18: Contact-the-community-owner LeadModal state.
+  const [leadOpen, setLeadOpen] = useState(false);
   // Phase 27.9 (2026-06-16): infinite swipe — render the videos array
   // multiple times. Start at 2 copies; whenever the user enters the last
   // copy we append another. Capped at 50 copies (~hundreds of cards) to
@@ -659,6 +690,22 @@ export function CommunityVideoFeed({
         >
           <BookmarkIcon filled={saved} />
         </button>
+        {/* Phase 45.18 (2026-06-20): Contact button → community owner.
+         * Owner rule: "if exploring community directly, contact community
+         * owner". Hidden for legacy/unowned communities (no owner to
+         * route to). Same speech-bubble glyph as BrowseFeed Contact so
+         * the three feeds read as one product. */}
+        {owner && (
+          <button
+            type="button"
+            onClick={() => setLeadOpen(true)}
+            aria-label={`Contact ${owner.name}`}
+            className="flex h-12 w-12 items-center justify-center rounded-full border border-cream/20 bg-ink/40 text-cream backdrop-blur transition hover:border-cream/50"
+            style={{ touchAction: 'manipulation' }}
+          >
+            <CommentIcon />
+          </button>
+        )}
         {/* Phase 34b.1 (V1 redo, 2026-06-17): the right-rail HouseIcon was
          * removed in favor of a top-left "🏠 N homes here" chip that
          * opens an in-place listings sheet (L2) instead of navigating
@@ -718,6 +765,18 @@ export function CommunityVideoFeed({
           setListingsSheetOpen(false);
         }}
       />
+      {/* Phase 45.18: lead capture modal — community-targeted. Mounts only
+       * when an owner exists; LeadModal fans out to /api/leads with
+       * community_id and the route resolves agent_id server-side. */}
+      {owner && (
+        <LeadModal
+          open={leadOpen}
+          onClose={() => setLeadOpen(false)}
+          agent={{ name: owner.name }}
+          community={{ name: community.name }}
+          communityId={community.id}
+        />
+      )}
     </div>
   );
 }

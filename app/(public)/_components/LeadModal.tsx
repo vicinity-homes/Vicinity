@@ -17,22 +17,36 @@ import { useEffect, useRef, useState } from 'react';
 
 type LeadAgent = { name: string };
 type LeadListing = { address: string };
+type LeadCommunity = { name: string };
 
 type Props = {
   open: boolean;
   onClose: () => void;
   agent: LeadAgent;
-  listing: LeadListing;
-  listingId: string;
+  /** Listing-targeted lead. Mutually exclusive with `community`. */
+  listing?: LeadListing;
+  listingId?: string;
+  /** Community-targeted lead (Phase 45.18 — direct community feed). */
+  community?: LeadCommunity;
+  communityId?: string;
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Loose phone match: 7+ digits, allows +, spaces, dashes, parens.
 const PHONE_RE = /^[\d+\-\s()]{7,}$/;
 
-export function LeadModal({ open, onClose, agent, listing, listingId }: Props) {
+export function LeadModal({
+  open,
+  onClose,
+  agent,
+  listing,
+  listingId,
+  community,
+  communityId,
+}: Props) {
   const firstName = agent.name.split(' ')[0] ?? agent.name;
-  const defaultMessage = `Hi ${firstName}, I'm interested in ${listing.address}.`;
+  const target = listing?.address ?? community?.name ?? '';
+  const defaultMessage = `Hi ${firstName}, I'm interested in ${target}.`;
 
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
@@ -92,12 +106,13 @@ export function LeadModal({ open, onClose, agent, listing, listingId }: Props) {
     const c = contact.trim();
     const isEmail = EMAIL_RE.test(c);
     const payload = {
-      listing_id: listingId,
+      listing_id: listingId ?? null,
+      community_id: communityId ?? null,
       name: name.trim(),
       email: isEmail ? c : null,
       phone: isEmail ? null : c,
       message: message.trim() || null,
-      source: 'listing-page',
+      source: communityId ? 'community-feed' : 'listing-page',
     };
 
     fetch('/api/leads', {
@@ -148,7 +163,7 @@ export function LeadModal({ open, onClose, agent, listing, listingId }: Props) {
             <h2 id="lead-modal-title" className="font-serif text-ink text-lg">
               Contact {firstName}
             </h2>
-            <p className="mt-0.5 text-ink2 text-xs">{listing.address}</p>
+            <p className="mt-0.5 text-ink2 text-xs">{target}</p>
           </div>
           <button
             type="button"

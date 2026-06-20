@@ -29,6 +29,7 @@ interface CommunityRow {
   slug: string;
   city: string | null;
   state: string;
+  created_by: string | null;
 }
 
 interface VideoRow {
@@ -65,11 +66,26 @@ export default async function CommunityFeedPage({
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
   const { data: community } = (await (supabase as any)
     .from('communities')
-    .select('id, name, slug, city, state')
+    .select('id, name, slug, city, state, created_by')
     .eq('slug', slug)
     .maybeSingle()) as { data: CommunityRow | null };
 
   if (!community) notFound();
+
+  // Phase 45.18 (2026-06-20): community owner — Contact button on the
+  // direct community feed routes leads to `communities.created_by` per
+  // the owner rule. Legacy / unowned communities (created_by NULL) get
+  // no Contact button (nobody to route to).
+  let ownerName: string | null = null;
+  if (community.created_by) {
+    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+    const { data: owner } = (await (supabase as any)
+      .from('agents')
+      .select('name')
+      .eq('id', community.created_by)
+      .maybeSingle()) as { data: { name: string } | null };
+    ownerName = owner?.name ?? null;
+  }
 
   // Membership view: primary community_id UNION extra links.
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
@@ -214,6 +230,11 @@ export default async function CommunityFeedPage({
         city: community.city,
         state: community.state,
       }}
+      owner={
+        community.created_by && ownerName
+          ? { id: community.created_by, name: ownerName }
+          : null
+      }
       videos={feedVideos}
       initialIndex={initialIndex}
       activeListingsCount={activeListings ?? 0}

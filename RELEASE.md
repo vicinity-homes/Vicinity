@@ -3,6 +3,16 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.45.2 — 2026-06-20
+
+### 🐛 Bug Fixes
+
+- **Liking a community video now sticks.** Previously the heart would light up briefly and then snap back — the save was failing in the background. Fixed.
+
+### ✨ Improvements
+
+- **Contact button added to the community video feed.** When you're browsing a community's videos directly (not coming in from a specific listing), the right-side rail now has a Contact button that lets you reach out to the community's owner. Communities without a registered owner won't show the button.
+
 ## v0.45.1 — 2026-06-20
 
 ### 🐛 Bug Fixes

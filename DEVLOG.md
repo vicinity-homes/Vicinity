@@ -2,6 +2,37 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-20 16:30 UTC — Phase 45.18: Community-feed Like fix + Contact-to-owner
+
+**Objective**: Two owner-flagged bugs on `/c/[slug]/feed` (the community video feed reached directly, not from a listing): (1) Like button auto-reverts on click — never persists; (2) no Contact button in the right rail, so buyers exploring a community directly cannot reach the community owner.
+
+**Actions**: single commit on `main`.
+
+- **Like fix (DB-only)**: root cause was migration drift — `0028_favorites_split.sql` (phase 43.3, splits `favorites` into `community_likes` + `listing_likes`) was committed to the repo months ago but never `db push --linked` to remote. `lib/buyer/likes.ts` upserts into `community_likes` which didn't exist on prod, the call silently failed, and the optimistic state rolled back. Pushed 0028 to remote — Like now persists. Independent of the rest of phase 45.18; refresh-only fix.
+- **Contact-to-owner**: extended the `leads` table to support community-targeted contacts.
+  - `supabase/migrations/0029_leads_community.sql`: `leads.listing_id` becomes nullable, adds nullable `community_id` (FK communities), adds check constraint `(listing_id is not null and community_id is null) or (listing_id is null and community_id is not null)` so every lead points at exactly one of {listing, community}. RLS policies unchanged — anon insert still works for both shapes.
+  - `lib/zod/leads.ts`: `LeadCreate` now accepts either `listing_id` or `community_id` (both optional, server-side validates exactly-one).
+  - `app/api/leads/route.ts`: when `community_id` is provided, derives `agent_id` from `communities.created_by` instead of `listings.agent_id`. Same insert path otherwise.
+  - `app/(public)/_components/LeadModal.tsx`: props now accept either `listing` or `community` (both optional). The display target (modal title's "Contact X about Y") and the default message template both pull from whichever is provided. POST payload includes `community_id` when in community mode.
+  - `app/(public)/c/[slug]/feed/page.tsx`: server page now selects `created_by` on the community row and looks up the owning agent's `id`+`name`. Passes the owner down to `<CommunityVideoFeed>`. Communities with `created_by = NULL` (legacy) get `owner = null` and no Contact button is rendered for them.
+  - `app/(public)/c/[slug]/feed/CommunityVideoFeed.tsx`: imports `LeadModal`, adds `owner` prop, adds `leadOpen` state, adds a fourth right-rail button (speech-bubble icon, between Save and the existing rail items) that opens the modal. Modal mounts at the feed root with `agent={{ name: owner.name }}` + `community={{ name }}` + `communityId`.
+
+**Decisions**:
+- **Single `leads` table with check constraint** rather than a parallel `community_leads` table. Agent-side inbox stays unified — one query, one notification path. Schema migration is small and reversible.
+- **Optional listing/community on `LeadModal`** rather than a separate `CommunityLeadModal`. Both modals would have shared 200+ lines of form logic, validation, and submit state — fork-by-prop is cheaper to maintain.
+- **No Contact button when `created_by = NULL`** (legacy communities pre-phase-13). Showing a disabled button suggests "we'll add this later" — hiding it is honest about the data we have. Future migration can backfill `created_by` for legacy rows; until then, no false affordance.
+- **Owner rule reaffirmed**: from a listing → community video → contact targets the *listing's* agent (the buyer's anchor); from a community feed directly → contact targets the *community's* owner. Two paths, two scopes, one mental model: "contact whoever brought you here."
+
+**Issues / Resolution**:
+- Found the migration drift only by running `supabase migration list --linked` — file existed locally but wasn't on remote. Standard `db push --linked --include-all` re-applied it cleanly. Adding "check `migration list --linked` before assuming a migration is live" to vicinity skill pitfalls — silent failure mode, easy to miss.
+- LeadModal previously assumed `listing.address` for both display and payload; had to thread a unified `target` string through the component to keep the existing listing-mode rendering byte-identical while adding the community branch. Verified by re-reading the listing flow paths.
+
+**Learnings**:
+- DB schema changes that go through Supabase CLI need `db push` as a *separate explicit step* from `git commit`. The migration file existing in the repo is necessary but not sufficient. Need to either treat `db push` as part of the commit ritual for any phase touching `supabase/migrations/`, or add a pre-deploy CI check that diffs `local` vs `linked` migration lists.
+- "Optional dual-target prop" pattern (LeadModal accepting either listing or community) generalises — the same shape will work for the next agent-targeted action that needs a community variant (e.g. "request tour" → "request community walkthrough").
+
+**Next steps**: owner verification on `/c/peachtree-corners/feed` — Like persists after refresh, Contact button appears in the rail, modal shows "Contact Qiaoxuan" + "Peachtree Corners", submission lands a `leads` row with `community_id` filled and `listing_id = NULL`. (Note: Peachtree Corners' `created_by` is the owner's own account, so the test contact emails the owner themselves — semantically correct, but switching to a community owned by a different agent will give a cleaner end-to-end signal.)
+
 ## 2026-06-20 14:00 UTC — Phase 45.17: Community-video carousel parity with listing feed
 
 **Objective**: Owner-flagged delta — the community-video carousel reached from the listing feed (`/v/.../...` → top-left community chip → CommunitySheet → CommunityCarousel) was rendering full-screen on desktop instead of the phone-column shape used by the listing feed and the standalone community feed (`/c/[slug]/feed`). It also lacked the Share/Like/Save/Contact rail that the surrounding feeds have. Bring all three feeds to visual + functional parity.
