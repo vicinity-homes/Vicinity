@@ -92,8 +92,7 @@ export function ListingsTabbedList({ initialTab, agentSlug, rows, counts, view =
 
   return (
     <>
-      <div className="mb-4 flex items-center justify-between">
-        <div className="text-[11px] uppercase tracking-widest text-ink">Your Listings</div>
+      <div className="mb-4 flex items-center justify-end">
         <div className="flex items-center gap-2 text-xs">
           {(['draft', 'published', 'archived'] as const).map((tab) => {
             const isActive = activeTab === tab;
@@ -131,7 +130,7 @@ export function ListingsTabbedList({ initialTab, agentSlug, rows, counts, view =
           </p>
         </div>
       ) : view === 'grid' ? (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-4 md:gap-x-5 md:gap-y-12">
           {filteredRows.map((l) => {
             const cover = l.cover_url ?? l.fallback_cover_url;
             const price = fmtPrice(l.price);
@@ -139,15 +138,15 @@ export function ListingsTabbedList({ initialTab, agentSlug, rows, counts, view =
               <Link
                 key={l.id}
                 href={`/dashboard/listings/${l.id}/edit`}
-                className="group relative block overflow-hidden rounded-xl border border-line bg-surface"
+                className="group block"
               >
-                <div className="relative aspect-[3/4] w-full bg-bg">
+                <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface">
                   {cover ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={cover}
                       alt=""
-                      className={`h-full w-full object-cover transition group-hover:opacity-90 ${
+                      className={`h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02] ${
                         l.status === 'archived' ? 'opacity-60' : ''
                       }`}
                       loading="lazy"
@@ -161,7 +160,7 @@ export function ListingsTabbedList({ initialTab, agentSlug, rows, counts, view =
                     <StatusBadge status={l.status} />
                   </div>
                 </div>
-                <div className="p-3">
+                <div className="pt-3">
                   {price && (
                     <div className="font-serif text-ink text-base leading-tight tracking-[-0.012em]">
                       {price}

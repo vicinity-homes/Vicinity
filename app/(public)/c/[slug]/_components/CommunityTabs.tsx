@@ -4,11 +4,13 @@
  * CommunityTabs — client island that toggles between "Community Videos" and
  * "Active Listings" inside a single community page.
  *
- * Phase 45.10 (2026-06-20). Owner: "when you enter into a community, reduce
- * the height of the community pic. in the same page, have another sub tab
- * section for Community Videos and Active Listing". Both grids reuse the
- * unified /browse card style (3:4 frame, caption below image, gallery gap)
- * so cross-surface visual parity holds.
+ * Phase 45.10 (2026-06-20): introduced.
+ * Phase 45.11 (2026-06-20): owner round 3 —
+ *   - Width matches the rest of the page (`max-w-6xl px-3 sm:px-6`) so the
+ *     grid below the hero aligns with /browse / /communities.
+ *   - Tab pills use square (1:1) thumbs visually via the toggle row, and the
+ *     content cards inside each tab now use a 1:1 frame.
+ *   - Counts dropped from the tab labels per owner.
  */
 
 import type { BrowseCard } from '@/app/(public)/browse/_components/BrowseFeed';
@@ -39,16 +41,14 @@ export function CommunityTabs({
   const [tab, setTab] = useState<Tab>('videos');
 
   return (
-    <div className="px-4 py-4 md:px-6">
+    <div className="mx-auto max-w-6xl px-3 sm:px-6 py-4">
       {/* Pill row — same shape as TopBar sub-tabs / SavedClient pills. */}
       <div className="-mx-1 mb-5 flex items-center gap-1 overflow-x-auto">
         <TabButton active={tab === 'videos'} onClick={() => setTab('videos')}>
           Community Videos
-          <span className="ml-1.5 text-[11px] text-ink2">{videos.length}</span>
         </TabButton>
         <TabButton active={tab === 'listings'} onClick={() => setTab('listings')}>
           Active Listings
-          <span className="ml-1.5 text-[11px] text-ink2">{listings.length}</span>
         </TabButton>
       </div>
 
@@ -109,7 +109,7 @@ function VideosGrid({
           prefetch={false}
           className="group block"
         >
-          <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface">
+          <div className="relative aspect-square w-full overflow-hidden bg-surface">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={demoCoverFor(v.cf_video_id, thumbnailUrl(v.cf_video_id)) ?? thumbnailUrl(v.cf_video_id)}
@@ -157,7 +157,7 @@ function ListingsGrid({ listings }: { listings: BrowseCard[] }) {
           prefetch={false}
           className="group block"
         >
-          <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface">
+          <div className="relative aspect-square w-full overflow-hidden bg-surface">
             <Image
               src={
                 demoCoverFor(

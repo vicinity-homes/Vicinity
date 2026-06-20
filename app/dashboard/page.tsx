@@ -117,7 +117,7 @@ export default async function DashboardHomePage({ searchParams }: PageProps) {
   const totalRows = rows.length;
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-6 sm:px-8 sm:py-12">
+    <div className="mx-auto max-w-6xl px-3 sm:px-6 py-6 sm:py-8">
       {/* Phase 45.9 (2026-06-20): H1 + stats + per-page CTA removed per
        * owner. TopBar sub-tab "Listings" labels the surface; "+ New" lives
        * in the sidebar (desktop) or BottomNav center FAB (mobile). */}

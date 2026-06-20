@@ -95,9 +95,9 @@ export default async function CommunityPage({
 
   return (
     <div className="mx-auto max-w-6xl">
-      {/* Hero — phase 45.10 reduced from 21:9 to 16:7 (mobile) / 21:7 (md+).
-        * Owner: \"reduce the height of the community pic\". */}
-      <div className="relative aspect-[16/7] w-full overflow-hidden bg-surface md:aspect-[21/7] sm:rounded-b-xl">
+      {/* Hero — phase 45.11 (owner round 3): desktop slims further to 21:5;
+        * mobile keeps 16:7 (~half-height) so portrait readability holds. */}
+      <div className="relative aspect-[16/7] w-full overflow-hidden bg-surface md:aspect-[21/5] sm:rounded-b-xl">
         {heroCover ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img

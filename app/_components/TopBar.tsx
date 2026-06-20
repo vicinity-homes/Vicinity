@@ -148,11 +148,22 @@ function SearchExpanded({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const [q, setQ] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const formId = useId();
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Phase 45.11 (2026-06-20, owner round 3): outside-click collapses the
+  // search box. Listening on `mousedown` matches the avatar menu pattern.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (formRef.current && !formRef.current.contains(e.target as Node)) onClose();
+    };
+    window.addEventListener('mousedown', onClick);
+    return () => window.removeEventListener('mousedown', onClick);
+  }, [onClose]);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -164,12 +175,18 @@ function SearchExpanded({ onClose }: { onClose: () => void }) {
 
   return (
     <form
+      ref={formRef}
       id={formId}
       onSubmit={onSubmit}
       role="search"
       className="flex w-full items-center gap-2"
     >
       <Search size={18} aria-hidden="true" className="shrink-0 text-ink2" />
+      {/*
+        * Phase 45.11 (2026-06-20, owner round 3): font-size pinned to 16px
+        * (`text-base`) so iOS Safari does not auto-zoom on focus. Anything
+        * <16px on a text input triggers the OS zoom behaviour.
+        */}
       <input
         ref={inputRef}
         type="search"
@@ -177,7 +194,7 @@ function SearchExpanded({ onClose }: { onClose: () => void }) {
         onChange={(e) => setQ(e.target.value)}
         placeholder="Search homes, communities…"
         aria-label="Search"
-        className="min-w-0 flex-1 bg-transparent text-ink text-sm outline-none placeholder:text-muted"
+        className="min-w-0 flex-1 bg-transparent text-ink text-base outline-none placeholder:text-muted"
         onKeyDown={(e) => {
           if (e.key === 'Escape') onClose();
         }}

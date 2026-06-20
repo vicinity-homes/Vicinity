@@ -1,14 +1,10 @@
 import type { Metadata } from 'next';
 /**
- * /saved — Buyer's saved listings.
+ * /saved — Buyer's saved listings (Favorites · Listings sub-tab).
  *
  * Phase 21 (2026-06-13): persistent saves keyed by anonymous device id.
- * Reads `vicinity_device_id` from localStorage, calls `listSavedListings`
- * server action, renders the same Pinterest-style grid as `/browse`.
- *
- * Future buyer-login phase: when a user is authenticated, this page
- * also pulls saves keyed on `user_id` (server-side, no localStorage)
- * and displays a unified set.
+ * Phase 45.11 (2026-06-20): Listings/Communities split into route segments
+ * so the global TopBar can host them as sub-tabs (see nav-config.getSubTabs).
  */
 import { SavedClient } from './_components/SavedClient';
 
@@ -18,5 +14,5 @@ export const metadata: Metadata = {
 };
 
 export default function SavedPage() {
-  return <SavedClient />;
+  return <SavedClient kind="listings" />;
 }

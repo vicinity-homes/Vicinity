@@ -1,14 +1,16 @@
 'use client';
 
 /**
- * SavedClient — Phase 21 (2026-06-13), extended Phase 27.7 (2026-06-17),
- * Phase 43.4 (2026-06-20).
+ * SavedClient — Phase 21 (2026-06-13), extended Phase 27.7 / 43.4 / 45.9.
  *
  * Buyer Favorites surface (saves only).
  *
- * Phase 45.9 (2026-06-20): owner dropped the Likes mode + page header per
- * "Favorites only show saves, and its sub tab are listing and community"
- * — was a 2-row pill control, now a single Listings/Communities row.
+ * Phase 45.11 (2026-06-20): owner round 3 — the Listings / Communities pill
+ * row was lifted out of this client and into the global TopBar as the page's
+ * sub-tabs. SavedClient now takes a `kind` prop driven by the route segment
+ * (/saved → listings, /saved/communities → communities). When the bucket is
+ * empty we render a centered call-to-action (Explore listings · Explore
+ * communities) without the "Tap the bookmark…" hint.
  *
  * device_id lives in browser storage — pure client component.
  */
@@ -33,8 +35,7 @@ type Bucket = {
   savesCommunities: SavedCommunityCard[] | null;
 };
 
-export function SavedClient() {
-  const [kind, setKind] = useState<Kind>('listings');
+export function SavedClient({ kind }: { kind: Kind }) {
   const [data, setData] = useState<Bucket>({
     savesListings: null,
     savesCommunities: null,
@@ -57,27 +58,11 @@ export function SavedClient() {
   }, []);
 
   const loading = data.savesListings === null || data.savesCommunities === null;
-
   const cards = data.savesListings ?? [];
   const communities = data.savesCommunities ?? [];
 
   return (
     <main className="min-h-dvh bg-bg pb-20 text-ink md:pb-0">
-      <div className="mx-auto flex max-w-5xl items-center justify-center gap-1 px-4 py-3">
-        <PillButton
-          active={kind === 'listings'}
-          onClick={() => setKind('listings')}
-          label="Listings"
-          count={cards.length}
-        />
-        <PillButton
-          active={kind === 'communities'}
-          onClick={() => setKind('communities')}
-          label="Communities"
-          count={communities.length}
-        />
-      </div>
-
       {loading ? (
         <div className="mx-auto max-w-md px-6 py-24 text-center text-muted">Loading…</div>
       ) : kind === 'listings' ? (
@@ -89,48 +74,38 @@ export function SavedClient() {
   );
 }
 
-function PillButton({
-  active,
-  onClick,
-  label,
-  count,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  count?: number;
-}) {
+function FavoritesEmpty() {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`relative rounded-full px-4 py-1.5 font-medium text-sm transition ${
-        active ? 'bg-ink/15 text-ink' : 'text-ink2 hover:text-ink'
-      }`}
-    >
-      {label}
-      {typeof count === 'number' && count > 0 && (
-        <span className="ml-1.5 text-xs tabular-nums opacity-70">{count}</span>
-      )}
-    </button>
+    <div className="mx-auto min-h-[60vh] max-w-2xl px-5 pt-10 pb-24 md:pb-10">
+      <div className="mt-10 flex flex-col items-center justify-center rounded-2xl border border-dashed border-line bg-bg px-6 py-16 text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-ink/10 text-ink">
+          <Bookmark size={26} aria-hidden="true" />
+        </span>
+        <h2 className="mt-4 font-serif text-ink text-xl">Nothing saved yet</h2>
+        <div className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-center">
+          <Link
+            href="/browse"
+            className="rounded-full bg-ink px-5 py-2 font-medium text-cream text-sm transition hover:opacity-90"
+          >
+            Explore listings
+          </Link>
+          <Link
+            href="/communities"
+            className="rounded-full border border-line-strong px-5 py-2 font-medium text-ink text-sm transition hover:bg-surface/30"
+          >
+            Explore communities
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }
 
 function ListingsView({ cards }: { cards: BrowseCard[] }) {
-  if (cards.length === 0) {
-    return (
-      <EmptyState
-        icon={<Bookmark size={26} aria-hidden="true" />}
-        title="No saved listings yet"
-        body="Tap the bookmark while browsing to save a listing for later."
-        ctaHref="/browse"
-        ctaLabel="Start browsing"
-      />
-    );
-  }
+  if (cards.length === 0) return <FavoritesEmpty />;
   return (
-    <div className="mx-auto max-w-5xl px-2 py-4">
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
+    <div className="mx-auto max-w-6xl px-3 sm:px-6 py-4">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-4 md:gap-x-5 md:gap-y-12">
         {cards.map((card, idx) => (
           <Link
             key={card.listing.id}
@@ -140,9 +115,9 @@ function ListingsView({ cards }: { cards: BrowseCard[] }) {
                 : `/v/${card.agent.slug}/${card.listing.slug}`
             }
             prefetch={false}
-            className="group block overflow-hidden rounded-xl bg-bg ring-1 ring-line transition-shadow hover:ring-line-strong"
+            className="group block"
           >
-            <div className="relative aspect-[3/4] w-full bg-black/40">
+            <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface">
               <Image
                 src={
                   card.mediaKind === 'video'
@@ -151,23 +126,22 @@ function ListingsView({ cards }: { cards: BrowseCard[] }) {
                 }
                 alt={card.listing.address}
                 fill
-                sizes="50vw"
+                sizes="(max-width: 640px) 50vw, 25vw"
                 priority={idx < 4}
-                className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
               />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-              <div className="absolute right-2 bottom-2 left-2 text-cream">
-                <div className="font-serif text-lg leading-tight tracking-tight drop-shadow">
-                  {formatPrice(card.listing.price)}
-                </div>
-                <div className="truncate text-ink2 text-xs">{card.listing.address}</div>
-                <div className="flex items-center gap-1.5 text-[10px] text-ink2">
-                  {card.listing.beds != null && <span>{card.listing.beds} bd</span>}
-                  {card.listing.baths != null && <span>· {card.listing.baths} ba</span>}
-                  {card.listing.sqft != null && (
-                    <span>· {card.listing.sqft.toLocaleString()} sqft</span>
-                  )}
-                </div>
+            </div>
+            <div className="pt-3">
+              <div className="font-serif text-base text-ink leading-tight tracking-[-0.012em]">
+                {formatPrice(card.listing.price)}
+              </div>
+              <div className="mt-1 truncate text-ink2 text-[12px]">{card.listing.address}</div>
+              <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted tracking-wide">
+                {card.listing.beds != null && <span>{card.listing.beds} bd</span>}
+                {card.listing.baths != null && <span>· {card.listing.baths} ba</span>}
+                {card.listing.sqft != null && (
+                  <span>· {card.listing.sqft.toLocaleString()} sqft</span>
+                )}
               </div>
             </div>
           </Link>
@@ -178,91 +152,43 @@ function ListingsView({ cards }: { cards: BrowseCard[] }) {
 }
 
 function CommunitiesView({ communities }: { communities: SavedCommunityCard[] }) {
-  if (communities.length === 0) {
-    return (
-      <EmptyState
-        icon={<Bookmark size={26} aria-hidden="true" />}
-        title="No saved communities yet"
-        body="Tap the bookmark on any community's swipe feed to save the neighborhood — schools, walks, food."
-        ctaHref="/communities"
-        ctaLabel="Browse communities"
-      />
-    );
-  }
+  if (communities.length === 0) return <FavoritesEmpty />;
   return (
-    <div className="mx-auto max-w-5xl px-2 py-4">
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
+    <div className="mx-auto max-w-6xl px-3 sm:px-6 py-4">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-4 md:gap-x-5 md:gap-y-12">
         {communities.map((c, idx) => (
           <Link
             key={c.id}
             href={`/c/${c.slug}/feed`}
             prefetch={false}
-            className="group block overflow-hidden rounded-xl bg-bg ring-1 ring-line transition-shadow hover:ring-line-strong"
+            className="group block"
           >
-            <div className="relative aspect-[9/16] w-full bg-black/40">
+            <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface">
               {c.coverUrl ? (
                 <Image
                   src={c.coverUrl}
                   alt={c.name}
                   fill
-                  sizes="50vw"
+                  sizes="(max-width: 640px) 50vw, 25vw"
                   priority={idx < 4}
-                  className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-muted">
-                  <Bookmark size={32} aria-hidden="true" />
+                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-bronze/20 to-ink">
+                  <span className="font-semibold text-3xl text-cream/70">{c.name.charAt(0)}</span>
                 </div>
               )}
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
-              <div className="absolute right-2 bottom-2 left-2 text-cream">
-                <div className="font-serif text-lg leading-tight tracking-tight drop-shadow">
-                  {c.name}
-                </div>
-                <div className="text-ink2 text-xs">
-                  {c.city ? `${c.city}, ${c.state}` : c.state}
-                </div>
-                <div className="text-[10px] text-ink2">
-                  {c.videoCount} {c.videoCount === 1 ? 'video' : 'videos'}
-                </div>
+            </div>
+            <div className="pt-3">
+              <div className="font-serif text-base text-ink leading-tight tracking-[-0.012em]">
+                {c.name}
+              </div>
+              <div className="mt-1 truncate text-ink2 text-[12px]">
+                {c.city ? `${c.city}, ${c.state}` : c.state}
               </div>
             </div>
           </Link>
         ))}
-      </div>
-    </div>
-  );
-}
-
-function EmptyState({
-  icon,
-  title,
-  body,
-  ctaHref,
-  ctaLabel,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-  ctaHref: string;
-  ctaLabel: string;
-}) {
-  return (
-    <div className="mx-auto min-h-[60vh] max-w-2xl px-5 pt-10 pb-24 md:pb-10">
-      <div className="mt-10 flex flex-col items-center justify-center rounded-2xl border border-dashed border-line bg-bg px-6 py-16 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-ink/10 text-ink">
-          {icon}
-        </span>
-        <h2 className="mt-4 font-serif text-ink text-xl">{title}</h2>
-        <p className="mt-2 max-w-sm text-ink2 text-sm">{body}</p>
-        <div className="mt-6">
-          <Link
-            href={ctaHref}
-            className="rounded-full bg-ink px-5 py-2 font-medium text-cream text-sm transition hover:opacity-90"
-          >
-            {ctaLabel}
-          </Link>
-        </div>
       </div>
     </div>
   );

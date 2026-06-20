@@ -5,7 +5,7 @@
 export default function Loading() {
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="relative aspect-[16/7] w-full animate-pulse bg-surface md:aspect-[21/7] sm:rounded-b-xl">
+      <div className="relative aspect-[16/7] w-full animate-pulse bg-surface md:aspect-[21/5] sm:rounded-b-xl">
         <div className="absolute inset-x-0 bottom-0 px-4 py-3 sm:px-6 sm:py-4">
           <div className="h-7 w-2/3 rounded bg-ink2/20" />
           <div className="mt-2 h-4 w-1/3 rounded bg-ink2/20" />

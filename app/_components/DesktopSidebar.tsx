@@ -90,7 +90,7 @@ function NewButton() {
         className="flex w-full items-center gap-3 rounded-lg bg-ink px-3 py-2.5 font-medium text-cream text-sm transition-colors hover:opacity-90"
       >
         <Plus size={18} aria-hidden="true" strokeWidth={1.75} />
-        <span>+ New</span>
+        <span>New</span>
       </button>
       {portal}
     </>

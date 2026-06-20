@@ -6,20 +6,13 @@
  * definitions so chrome can't drift across breakpoints. Add or rename a tab
  * once here; every surface picks it up.
  *
- * Phase 26 (2026-06-14): introduced when porting mobile-only chrome to desktop.
- * Phase 27 (2026-06-16): drop "Home" tab, promote "Community" to leftmost slot.
- * Phase 36 (2026-06-18): unified IA. One nav for all roles — agents and buyers
- *   share the same 5-slot bar with Explore as the center FAB.
- * Phase 37 (2026-06-18): collapse "Nearby" tab into Explore as a sub-tab,
- *   drop the center FAB. Bottom nav is now a flat 4-icon bar.
- * Phase 43.7 (2026-06-20): drop the Recommended/Nearby split inside /browse.
- * Phase 45 (2026-06-20): ground-up nav redesign — left vertical sidebar on
- *   desktop, top bar with [search · sub-tabs · avatar] on every breakpoint.
- *   `getSubTabs(pathname, role)` is the SSOT for the contextual second-level nav.
- * Phase 45.9 (2026-06-20): owner round 1 — Favorites dropped, anon Me ->
- *   /login direct. Phase 45.10 (2026-06-20): owner round 2 — Favorites
- *   restored; anon Me now points at /profile (which renders the Log in /
- *   Sign up CTA + NearbyRadiusPref) instead of /login directly.
+ * Phase 45.11 (2026-06-20): owner round 3 —
+ *   - Favorites: stays primary for buyer/anon, dropped from agent primary
+ *     (agents reach saves via the avatar menu under Me).
+ *   - /saved sub-tabs: Listings | Communities now live in the global TopBar
+ *     middle slot (was an internal pill row inside SavedClient).
+ *   - Agent "+ New" label loses the leading "+" (icon already shows the plus).
+ *   - /dashboard sub-tabs renamed singular: Listing / Community.
  */
 import {
   Bookmark,
@@ -47,12 +40,10 @@ export type Tab = {
 /**
  * Build the role's primary tabs.
  *
- * - anon:  For You · Community · Favorites · Me  (Me -> /profile, which
- *          itself renders Log in / Sign up + NearbyRadiusPref for anon)
+ * - anon:  For You · Community · Favorites · Me
  * - buyer: For You · Community · Favorites · Me
- * - agent: Agent Hub · For You · Community · + New · Favorites · Me
- *
- * Phase 45.10: Favorites restored to primary tabs across all roles.
+ * - agent: Agent Hub · For You · Community · New · Me
+ *          (Favorites is reachable from the avatar menu, not a primary tab)
  */
 export function getPrimaryTabs(role: ViewerRole): Tab[] {
   if (role === 'agent') {
@@ -60,8 +51,7 @@ export function getPrimaryTabs(role: ViewerRole): Tab[] {
       { href: '/dashboard', label: 'Agent Hub', icon: Briefcase, matchPrefix: true },
       { href: '/browse', label: 'For You', icon: Compass, matchPrefix: true },
       { href: '/communities', label: 'Community', icon: Building2, matchPrefix: true },
-      { href: '/upload', label: '+ New', icon: Plus, fab: true },
-      { href: '/saved', label: 'Favorites', icon: Bookmark },
+      { href: '/upload', label: 'New', icon: Plus, fab: true },
       { href: '/profile', label: 'Me', icon: User },
     ];
   }
@@ -99,15 +89,20 @@ export function getSubTabs(pathname: string, role: ViewerRole): SubTab[] | null 
     ];
   }
   if (pathname === '/saved' || pathname.startsWith('/saved/')) {
-    return null; // SavedClient owns its own Listings/Communities pill row.
+    // Phase 45.11: Listings / Communities are now the global TopBar sub-tabs
+    // for Favorites. SavedClient no longer renders its own pill row.
+    return [
+      { href: '/saved', label: 'Listings' },
+      { href: '/saved/communities', label: 'Communities' },
+    ];
   }
   if (pathname === '/profile' || pathname.startsWith('/profile/')) {
     return null;
   }
   if (role === 'agent' && (pathname === '/dashboard' || pathname.startsWith('/dashboard'))) {
     return [
-      { href: '/dashboard', label: 'Listings' },
-      { href: '/dashboard/communities', label: 'Communities' },
+      { href: '/dashboard', label: 'Listing' },
+      { href: '/dashboard/communities', label: 'Community' },
       { href: '/dashboard/leads', label: 'Leads' },
       { href: '/dashboard/analytics', label: 'Analytics' },
     ];

@@ -1,0 +1,17 @@
+import type { Metadata } from 'next';
+/**
+ * /saved/communities — Buyer's saved communities (Favorites · Communities sub-tab).
+ *
+ * Phase 45.11 (2026-06-20): Listings/Communities are now route segments so
+ * the global TopBar can host them as sub-tabs.
+ */
+import { SavedClient } from '../_components/SavedClient';
+
+export const metadata: Metadata = {
+  title: 'Saved communities · Vicinity',
+  description: 'Communities you have saved while browsing.',
+};
+
+export default function SavedCommunitiesPage() {
+  return <SavedClient kind="communities" />;
+}
