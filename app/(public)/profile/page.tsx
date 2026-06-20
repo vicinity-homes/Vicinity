@@ -36,29 +36,34 @@ export default async function ProfilePage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
+    // Phase 45.10 (2026-06-20): anon Me lands here per owner. Show the
+    // search-radius preference (so anon viewers can dial /browse/nearby
+    // without an account) plus the Log in / Sign up CTA pair.
     return (
       <main className="min-h-dvh bg-bg text-ink">
-        <Header />
-        <section className="mx-auto max-w-md px-6 py-12">
-          <h1 className="font-serif text-3xl text-ink">Welcome</h1>
+        <section className="mx-auto max-w-md px-6 py-8">
+          <NearbyRadiusPref />
 
-          <div className="mt-8 flex flex-col gap-3">
-            <Link
-              href="/login"
-              className="btn-gold inline-flex items-center justify-center rounded-full px-6 py-3 text-sm"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/signup"
-              className="btn-ghost inline-flex items-center justify-center rounded-full px-6 py-3 text-sm"
-            >
-              Create account
-            </Link>
-          </div>
-
-          <div className="mt-6">
-            <NearbyRadiusPref />
+          <div className="mt-6 rounded-xl border border-line bg-surface p-5">
+            <div className="font-serif text-lg text-ink">Sign in to save your work</div>
+            <p className="mt-1 text-ink2 text-sm">
+              Log in or create an account to save listings, follow communities, and (for
+              agents) publish your own tours.
+            </p>
+            <div className="mt-4 flex flex-col gap-2">
+              <Link
+                href="/login"
+                className="btn-gold inline-flex items-center justify-center rounded-full px-6 py-3 text-sm"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/signup"
+                className="btn-ghost inline-flex items-center justify-center rounded-full px-6 py-3 text-sm"
+              >
+                Create account
+              </Link>
+            </div>
           </div>
         </section>
       </main>
@@ -82,7 +87,6 @@ export default async function ProfilePage() {
   if (agent) {
     return (
       <main className="min-h-dvh bg-bg text-ink pb-20 md:pb-0">
-        <Header />
         <section className="mx-auto max-w-md px-6 py-8">
           <EditableAgentIdentity
             initialName={agent.name ?? user.email ?? 'Agent'}
@@ -150,7 +154,6 @@ export default async function ProfilePage() {
 
   return (
     <main className="min-h-dvh bg-bg text-ink pb-20 md:pb-0">
-      <Header />
       <section className="mx-auto max-w-md px-6 py-8">
         <EditableBuyerIdentity
           initialDisplayName={buyerDisplayName}
@@ -195,10 +198,4 @@ export default async function ProfilePage() {
   );
 }
 
-function Header() {
-  return (
-    <header className="sticky top-0 z-20 flex items-center justify-center border-line border-b bg-bg px-4 py-3 backdrop-blur-md md:hidden">
-      <div className="font-medium text-ink2 text-sm uppercase tracking-wider">Profile</div>
-    </header>
-  );
-}
+

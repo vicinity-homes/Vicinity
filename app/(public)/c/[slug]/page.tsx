@@ -1,26 +1,23 @@
 /**
- * /c/[slug] — buyer-facing community page (Phase 27).
+ * /c/[slug] — buyer-facing community page.
  *
- * Shows: community name + description + counts, a thumbnail grid of all
- * videos that belong to this community (primary + extra memberships via the
- * community_video_membership view), and a CTA to view the active listings
- * inside this community.
+ * Phase 27: shipped IA + thumbnail grid + active-listings count.
+ * Phase 45.10 (2026-06-20, owner round 2): hero cover height reduced
+ * (21:9 → 16:7 → effectively half on mobile), and the page now hosts a
+ * sub-tab toggle for [Community Videos | Active Listings] so the listings
+ * inside this community are reachable without a round-trip to /browse.
  *
- * Phase 27 ships the IA + data plumbing. Tapping a video tile currently
- * routes the user back to /browse/feed (the existing buyer swipe surface);
- * a community-scoped swipe feed (filter the feed to this community's
- * videos only) is a follow-up — the wiring needed lives in
- * `lib/feed/browse-cards.ts` and is not in scope for this phase to keep
- * the change surgical.
+ * Both grids share the unified /browse card style (3:4 frame, caption
+ * below image) — see <CommunityTabs>.
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { resolveCommunityCoverWithCfIds } from '@/lib/community/cover';
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
 import { demoCoverFor } from '@/lib/demo-media';
-import { resolveCommunityCoverWithCfIds } from '@/lib/community/cover';
-import Link from 'next/link';
+import { fetchBrowseCardsByCommunitySlug } from '@/lib/feed/browse-cards';
+import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import { Building2, Film } from 'lucide-react';
+import { CommunityTabs } from './_components/CommunityTabs';
 
 interface CommunityRow {
   id: string;
@@ -58,23 +55,11 @@ export default async function CommunityPage({
 
   if (!community) notFound();
 
-  // Run the membership lookup + active-listings count in parallel; both
-  // depend on community.id but are independent of each other.
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-  const [{ data: memberships }, { count: activeListings }] = (await Promise.all([
-    (supabase as any)
-      .from('community_video_membership')
-      .select('video_id')
-      .eq('community_id', community.id),
-    (supabase as any)
-      .from('listings')
-      .select('id', { count: 'exact', head: true })
-      .eq('community_id', community.id)
-      .eq('status', 'published'),
-  ])) as [
-    { data: Array<{ video_id: string }> | null },
-    { count: number | null },
-  ];
+  const { data: memberships } = (await (supabase as any)
+    .from('community_video_membership')
+    .select('video_id')
+    .eq('community_id', community.id)) as { data: Array<{ video_id: string }> | null };
 
   const videoIds = (memberships ?? []).map((m) => m.video_id);
 
@@ -90,7 +75,11 @@ export default async function CommunityPage({
     videos = rows ?? [];
   }
 
-  // Resolve hero cover: explicit pick → uploaded image → first ready video poster.
+  // Active listings inside this community — reuse the browse-card builder
+  // so cards match the global feed shape exactly (BrowseCard type).
+  const listings = await fetchBrowseCardsByCommunitySlug(community.slug);
+
+  // Hero cover.
   const firstReadyVideo = videos[0] ?? null;
   const coverVideoCfId = community.cover_video_id
     ? videos.find((v) => v.id === community.cover_video_id)?.cf_video_id ?? null
@@ -101,11 +90,14 @@ export default async function CommunityPage({
     cover_storage_path: community.cover_storage_path,
     fallback_video_cf_id: firstReadyVideo?.cf_video_id ?? null,
   });
+  void thumbnailUrl; // imported for transitive demoCoverFor needs in CommunityTabs
+  void demoCoverFor;
 
   return (
-    <div className="mx-auto max-w-5xl">
-      {/* Hero — 21:9 banner with cover + dark gradient overlay for text legibility */}
-      <div className="relative aspect-[21/9] w-full overflow-hidden bg-surface sm:rounded-b-xl">
+    <div className="mx-auto max-w-6xl">
+      {/* Hero — phase 45.10 reduced from 21:9 to 16:7 (mobile) / 21:7 (md+).
+        * Owner: \"reduce the height of the community pic\". */}
+      <div className="relative aspect-[16/7] w-full overflow-hidden bg-surface md:aspect-[21/7] sm:rounded-b-xl">
         {heroCover ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -117,70 +109,26 @@ export default async function CommunityPage({
           <div className="absolute inset-0 bg-gradient-to-br from-bronze/30 to-ink" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/60 to-ink/10" />
-        <div className="absolute inset-x-0 bottom-0 px-4 py-4 sm:px-6 sm:py-5">
+        <div className="absolute inset-x-0 bottom-0 px-4 py-3 sm:px-6 sm:py-4">
           <h1 className="font-semibold text-2xl text-cream tracking-tight sm:text-3xl">
             {community.name}
           </h1>
-          <div className="mt-1 text-cream/75 text-sm">
+          <div className="mt-0.5 text-cream/75 text-sm">
             {community.city ? `${community.city}, ${community.state}` : community.state}
           </div>
-        </div>
-      </div>
-
-      <div className="px-4 py-6">
-        <header className="mb-6">
           {community.description ? (
-            <p className="max-w-2xl text-ink2 text-sm">{community.description}</p>
+            <p className="mt-1 max-w-2xl text-cream/80 text-xs sm:text-sm">
+              {community.description}
+            </p>
           ) : null}
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-ink/10 px-3 py-1 text-ink text-xs">
-              <Film size={12} aria-hidden="true" />
-              {videos.length} community {videos.length === 1 ? 'video' : 'videos'}
-            </span>
-            <Link
-              href={`/browse?community=${community.slug}`}
-              prefetch={false}
-              className="inline-flex items-center gap-1.5 rounded-full bg-ink/10 px-3 py-1 text-ink text-xs transition hover:bg-ink/20"
-            >
-              <Building2 size={12} aria-hidden="true" />
-              {activeListings ?? 0} active{' '}
-              {(activeListings ?? 0) === 1 ? 'listing' : 'listings'}
-            </Link>
-          </div>
-        </header>
-
-      {videos.length === 0 ? (
-        <div className="rounded border border-line border-dashed bg-surface px-6 py-12 text-center">
-          <p className="text-ink2 text-sm">No videos in this community yet.</p>
         </div>
-      ) : (
-        <ul className="grid grid-cols-2 gap-2 md:grid-cols-4">
-          {videos.map((v) => (
-            <li key={v.id}>
-              <Link
-                href={`/c/${community.slug}/feed?start=${v.id}`}
-                prefetch={false}
-                className="group relative block aspect-[9/16] overflow-hidden rounded-lg bg-surface"
-              >
-                {/* Cloudflare Stream auto-generated thumbnail */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={demoCoverFor(v.cf_video_id, thumbnailUrl(v.cf_video_id)) ?? thumbnailUrl(v.cf_video_id)}
-                  alt={v.title ?? 'Community video'}
-                  className="h-full w-full object-cover transition group-hover:scale-[1.02]"
-                  loading="lazy"
-                />
-                {v.category ? (
-                  <span className="absolute top-1.5 left-1.5 rounded bg-ink/90 px-1.5 py-0.5 font-medium text-[10px] text-cream">
-                    {v.category}
-                  </span>
-                ) : null}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
       </div>
+
+      <CommunityTabs
+        communitySlug={community.slug}
+        videos={videos}
+        listings={listings}
+      />
     </div>
   );
 }

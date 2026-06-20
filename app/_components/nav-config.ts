@@ -14,19 +14,15 @@
  *   drop the center FAB. Bottom nav is now a flat 4-icon bar.
  * Phase 43.7 (2026-06-20): drop the Recommended/Nearby split inside /browse.
  * Phase 45 (2026-06-20): ground-up nav redesign — left vertical sidebar on
- *   desktop (Xiaohongshu/Linear shape), top bar with [search · sub-tabs · avatar]
- *   on every breakpoint. `getSubTabs(pathname, role)` is the new SSOT for the
- *   contextual second-level nav (Explore/Nearby on /browse + /communities,
- *   Listings/Communities/Leads/Analytics on /dashboard, single label fallback
- *   on /saved + /profile).
- *
- *   Agent's mobile bottom nav still uses the 5-slot bar with center + New FAB,
- *   but the desktop sidebar promotes "+ New" to a real primary tab with a
- *   dropdown — the bottom-nav center FAB and the sidebar "+ New" tab open the
- *   same Listing/Community picker. + New is inserted *between* Community and
- *   Profile so the sidebar order mirrors the mobile bar's center-emphasis slot.
+ *   desktop, top bar with [search · sub-tabs · avatar] on every breakpoint.
+ *   `getSubTabs(pathname, role)` is the SSOT for the contextual second-level nav.
+ * Phase 45.9 (2026-06-20): owner round 1 — Favorites dropped, anon Me ->
+ *   /login direct. Phase 45.10 (2026-06-20): owner round 2 — Favorites
+ *   restored; anon Me now points at /profile (which renders the Log in /
+ *   Sign up CTA + NearbyRadiusPref) instead of /login directly.
  */
 import {
+  Bookmark,
   Briefcase,
   Building2,
   Compass,
@@ -51,13 +47,12 @@ export type Tab = {
 /**
  * Build the role's primary tabs.
  *
- * - anon:  For You · Community · Me (links /login)
- * - buyer: For You · Community · Me
- * - agent: Agent Hub · For You · Community · + New · Me  (#13 — see DesktopSidebar)
+ * - anon:  For You · Community · Favorites · Me  (Me -> /profile, which
+ *          itself renders Log in / Sign up + NearbyRadiusPref for anon)
+ * - buyer: For You · Community · Favorites · Me
+ * - agent: Agent Hub · For You · Community · + New · Favorites · Me
  *
- * Phase 45.9: dropped Favorites from primary tabs per owner 2026-06-20.
- *   (BottomNav still renders + New as a center FAB; DesktopSidebar renders it
- *   as a dropdown. Phase 45.)
+ * Phase 45.10: Favorites restored to primary tabs across all roles.
  */
 export function getPrimaryTabs(role: ViewerRole): Tab[] {
   if (role === 'agent') {
@@ -66,30 +61,21 @@ export function getPrimaryTabs(role: ViewerRole): Tab[] {
       { href: '/browse', label: 'For You', icon: Compass, matchPrefix: true },
       { href: '/communities', label: 'Community', icon: Building2, matchPrefix: true },
       { href: '/upload', label: '+ New', icon: Plus, fab: true },
+      { href: '/saved', label: 'Favorites', icon: Bookmark },
       { href: '/profile', label: 'Me', icon: User },
     ];
   }
 
-  // Anon's Me tab links to /login (auth gate). Buyer's Me goes to /profile.
-  // Favorites is intentionally NOT in primary tabs anymore — owner moved it
-  // off the top nav 2026-06-20 since SavedClient is reachable from Me/avatar
-  // menu and the empty-state CTAs already cover discovery.
-  const meTab: Tab =
-    role === 'buyer'
-      ? { href: '/profile', label: 'Me', icon: User }
-      : { href: '/login', label: 'Me', icon: User };
-
   return [
     { href: '/browse', label: 'For You', icon: Compass, matchPrefix: true },
     { href: '/communities', label: 'Community', icon: Building2, matchPrefix: true },
-    meTab,
+    { href: '/saved', label: 'Favorites', icon: Bookmark },
+    { href: '/profile', label: 'Me', icon: User },
   ];
 }
 
 /**
  * Sub-tab — second-level horizontal nav rendered in the TopBar middle slot.
- * `href` is the route the tab links to. Active = pathname equals or starts
- * with href (sub-routes inherit parent's active state).
  */
 export type SubTab = {
   href: string;
@@ -98,26 +84,9 @@ export type SubTab = {
 
 /**
  * Resolve sub-tabs for the current pathname.
- *
- * Returns null when the route has no contextual sub-nav (TopBar middle slot
- * stays empty on /saved + /profile per owner's call 2026-06-20).
- *
- * Routes:
- *   /browse, /browse/*           → Explore | Nearby
- *   /communities, /communities/* → Explore | Nearby
- *   /saved                       → "Favorites" (single non-clickable label)
- *   /profile                     → "Profile"  (single non-clickable label)
- *   /dashboard*                  → Listings | Communities | Leads | Analytics
- *
- * Agent dashboard sub-routes that don't fit one of the four buckets (e.g.
- * /dashboard/listings/[id]/edit) inherit the closest match — `Listings` for
- * anything under /dashboard/listings, `Communities` for /dashboard/communities,
- * etc. The default branch falls back to `Listings` for plain /dashboard.
  */
 export function getSubTabs(pathname: string, role: ViewerRole): SubTab[] | null {
   if (pathname === '/browse' || pathname.startsWith('/browse/')) {
-    // The swipe feed is its own immersive surface — chrome hides there entirely
-    // (handled by isChromeHidden). Sub-tabs only matter for grid views.
     return [
       { href: '/browse', label: 'Explore' },
       { href: '/browse/nearby', label: 'Nearby' },
@@ -130,9 +99,7 @@ export function getSubTabs(pathname: string, role: ViewerRole): SubTab[] | null 
     ];
   }
   if (pathname === '/saved' || pathname.startsWith('/saved/')) {
-    // /saved sub-tabs are owned by SavedClient itself (Listings | Communities
-    // pill row). TopBar middle stays empty here — no redundant label.
-    return null;
+    return null; // SavedClient owns its own Listings/Communities pill row.
   }
   if (pathname === '/profile' || pathname.startsWith('/profile/')) {
     return null;
@@ -149,21 +116,14 @@ export function getSubTabs(pathname: string, role: ViewerRole): SubTab[] | null 
 }
 
 /**
- * Active rule for sub-tabs — same prefix-or-equal rule the primary tabs use,
- * but `/dashboard` (Listings) needs special handling so it doesn't swallow
- * /dashboard/communities, /dashboard/leads, /dashboard/analytics.
+ * Active rule for sub-tabs — longest-prefix-wins so /dashboard doesn't
+ * swallow /dashboard/communities, /dashboard/leads, /dashboard/analytics.
  */
 export function isSubTabActive(pathname: string, sub: SubTab, all: SubTab[]): boolean {
-  // Longest-prefix-wins: a sub-tab is active iff it has the longest matching
-  // prefix among siblings. Resolves the /dashboard ⊃ /dashboard/communities
-  // ambiguity without per-tab special cases.
   const matches = all.filter(
     (t) => pathname === t.href || pathname.startsWith(`${t.href}/`),
   );
   if (matches.length === 0) {
-    // Fall back to the first sub-tab on bare /dashboard, /browse, etc. that
-    // don't match any sub-tab href exactly. (Defensive; usually unreachable
-    // because the first tab's href equals the bare route.)
     return sub.href === all[0]?.href;
   }
   const best = matches.reduce((a, b) => (a.href.length >= b.href.length ? a : b));
@@ -184,7 +144,6 @@ export const CHROME_HIDDEN_PREFIXES = [
   '/auth/',
 ];
 
-// Community swipe feed: /c/<slug>/feed — immersive vertical video, hide chrome.
 const COMMUNITY_FEED_RE = /^\/c\/[^/]+\/feed(?:\/|$)/;
 
 export function isChromeHidden(pathname: string): boolean {

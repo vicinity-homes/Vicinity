@@ -165,9 +165,11 @@ export function NearbyClient() {
     );
   }
 
+  // Phase 45.10 (2026-06-20): match /browse card style exactly — caption
+  // BELOW the image (not overlaid), 3:4 frame, no ring, gallery gap.
   return (
-    <div className="mx-auto max-w-5xl px-2 py-4">
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
+    <div className="mx-auto max-w-6xl px-3 pb-6 sm:px-6">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-4 md:gap-x-5 md:gap-y-12">
         {cards.map((card, idx) => (
           <Link
             key={card.listing.id}
@@ -177,9 +179,9 @@ export function NearbyClient() {
                 : `/v/${card.agent.slug}/${card.listing.slug}`
             }
             prefetch={false}
-            className="group block overflow-hidden rounded-xl bg-bg ring-1 ring-line transition-shadow hover:ring-line-strong"
+            className="group block"
           >
-            <div className="relative aspect-[3/4] w-full bg-black/40">
+            <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface">
               <Image
                 src={
                   demoCoverFor(
@@ -191,28 +193,27 @@ export function NearbyClient() {
                 }
                 alt={card.listing.address}
                 fill
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                sizes="(max-width: 640px) 50vw, 25vw"
                 priority={idx < 4}
-                className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
               />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
               {typeof card.distance === 'number' && (
-                <div className="absolute top-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] text-cream backdrop-blur-sm">
+                <div className="absolute top-2 left-2 rounded-full bg-ink/85 px-2 py-0.5 text-[10px] text-surface backdrop-blur">
                   {card.distance.toFixed(1)} mi
                 </div>
               )}
-              <div className="absolute right-2 bottom-2 left-2 text-cream">
-                <div className="font-serif text-lg leading-tight tracking-tight drop-shadow">
-                  {formatPrice(card.listing.price)}
-                </div>
-                <div className="truncate text-cream/80 text-xs">{card.listing.address}</div>
-                <div className="flex items-center gap-1.5 text-[10px] text-cream/80">
-                  {card.listing.beds != null && <span>{card.listing.beds} bd</span>}
-                  {card.listing.baths != null && <span>· {card.listing.baths} ba</span>}
-                  {card.listing.sqft != null && (
-                    <span>· {card.listing.sqft.toLocaleString()} sqft</span>
-                  )}
-                </div>
+            </div>
+            <div className="pt-3">
+              <div className="font-serif text-base text-ink leading-tight tracking-[-0.012em]">
+                {formatPrice(card.listing.price)}
+              </div>
+              <div className="mt-1 truncate text-ink2 text-[12px]">{card.listing.address}</div>
+              <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted tracking-wide">
+                {card.listing.beds != null && <span>{card.listing.beds} bd</span>}
+                {card.listing.baths != null && <span>· {card.listing.baths} ba</span>}
+                {card.listing.sqft != null && (
+                  <span>· {card.listing.sqft.toLocaleString()} sqft</span>
+                )}
               </div>
             </div>
           </Link>

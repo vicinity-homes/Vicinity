@@ -1,18 +1,20 @@
 import type { CommunityListCard } from '@/lib/communities/list';
 import { demoCoverFor } from '@/lib/demo-media';
 /**
- * CommunityGrid — shared grid card for the buyer-facing communities surface.
+ * CommunityGrid — buyer-facing grid card for the communities surface.
  *
- * Used by `/browse` (Communities tab) and `/communities`. Each card is a
- * 9:16 cover with name + city/state + real counters (videos, listings).
- *
- * Phase 34b note (2026-06-17, V1 redo): no fake stats. If a field doesn't
- * exist in the schema yet, it doesn't render — when the migration ships
- * that adds rating / school / median, those badges are added then.
+ * Used by /communities (Explore + Nearby). Phase 45.10 (2026-06-20):
+ * unified with the /browse listing-grid style — 3:4 frame, caption below
+ * the image (not overlaid), no ring, gallery gap. Owner: "all other tabs
+ * should share the same page and card format".
  */
 import Link from 'next/link';
 
-export function CommunityGrid({ communities }: { communities: CommunityListCard[] }) {
+export function CommunityGrid({
+  communities,
+}: {
+  communities: (CommunityListCard & { nearestVideoMi?: number | null })[];
+}) {
   if (communities.length === 0) {
     return (
       <p className="rounded-lg border border-line bg-surface px-4 py-6 text-ink2 text-sm">
@@ -22,53 +24,56 @@ export function CommunityGrid({ communities }: { communities: CommunityListCard[
   }
 
   return (
-    <ul className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-4 md:gap-x-5 md:gap-y-12">
       {communities.map((c) => {
-        // Phase 38 (2026-06-18): /communities grid was missing demo-media
-        // override — agents who hadn't picked a cover got their real
-        // bucket cover (or storefront photo) instead of the curated demo
-        // luxury still. Wrap here like every other community surface does.
         const coverUrl = demoCoverFor(c.id, c.cover?.url ?? null);
+        const distanceMi =
+          typeof c.nearestVideoMi === 'number' ? c.nearestVideoMi : null;
         return (
-          <li key={c.id}>
-            <Link
-              href={`/c/${c.slug}`}
-              className="group relative block aspect-[9/16] overflow-hidden rounded-xl bg-surface ring-1 ring-line transition hover:ring-line-strong"
-            >
+          <Link key={c.id} href={`/c/${c.slug}`} prefetch={false} className="group block">
+            <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface">
               {coverUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={coverUrl}
                   alt={c.name}
-                  className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                  className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
                   loading="lazy"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-bronze/20 to-ink">
-                  <span className="font-semibold text-3xl text-cream/70">{c.name.charAt(0)}</span>
+                  <span className="font-semibold text-3xl text-cream/70">
+                    {c.name.charAt(0)}
+                  </span>
                 </div>
               )}
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink via-ink/80 to-transparent p-3 pt-10">
-                <div className="font-medium text-cream text-sm leading-tight">{c.name}</div>
-                <div className="mt-0.5 text-cream/75 text-[11px]">
-                  {c.city ? `${c.city}, ${c.state}` : c.state}
+              {distanceMi !== null && (
+                <div className="absolute top-2 left-2 rounded-full bg-ink/85 px-2 py-0.5 text-[10px] text-surface backdrop-blur">
+                  {distanceMi.toFixed(1)} mi
                 </div>
-                {/* Real counters only — videos + active listings. */}
-                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-cream/20 px-2 py-0.5 text-[10px] text-cream backdrop-blur">
-                    {c.videoCount} {c.videoCount === 1 ? 'video' : 'videos'}
-                  </span>
-                  {c.listingCount > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-cream/15 px-2 py-0.5 text-[10px] text-cream/85 backdrop-blur">
-                      {c.listingCount} {c.listingCount === 1 ? 'home' : 'homes'}
-                    </span>
-                  )}
-                </div>
+              )}
+            </div>
+            <div className="pt-3">
+              <div className="font-serif text-base text-ink leading-tight tracking-[-0.012em]">
+                {c.name}
               </div>
-            </Link>
-          </li>
+              <div className="mt-1 truncate text-ink2 text-[12px]">
+                {c.city ? `${c.city}, ${c.state}` : c.state}
+              </div>
+              <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted tracking-wide">
+                <span>
+                  {c.videoCount} {c.videoCount === 1 ? 'video' : 'videos'}
+                </span>
+                {c.listingCount > 0 && (
+                  <span>
+                    · {c.listingCount} {c.listingCount === 1 ? 'home' : 'homes'}
+                  </span>
+                )}
+              </div>
+            </div>
+          </Link>
         );
       })}
-    </ul>
+    </div>
   );
 }
