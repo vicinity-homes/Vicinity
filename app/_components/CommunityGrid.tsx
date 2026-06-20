@@ -22,7 +22,7 @@ export function CommunityGrid({ communities }: { communities: CommunityListCard[
   }
 
   return (
-    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+    <ul className="grid grid-cols-2 gap-3">
       {communities.map((c) => {
         // Phase 38 (2026-06-18): /communities grid was missing demo-media
         // override — agents who hadn't picked a cover got their real
