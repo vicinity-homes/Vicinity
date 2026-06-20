@@ -35,6 +35,7 @@ import {
   type Tab,
   type ViewerRole,
 } from './nav-config';
+import { UploadFAB } from './UploadFAB';
 
 export type { ViewerRole } from './nav-config';
 
@@ -82,7 +83,11 @@ export function BottomNav({ role }: { role: ViewerRole }) {
       <ul className="mx-auto flex max-w-3xl items-stretch justify-around">
         {tabs.map((tab) => (
           <li key={tab.href} className="flex-1">
-            <TabButton tab={tab} active={isTabActive(pathname, tab)} />
+            {tab.fab ? (
+              <UploadFAB />
+            ) : (
+              <TabButton tab={tab} active={isTabActive(pathname, tab)} />
+            )}
           </li>
         ))}
       </ul>

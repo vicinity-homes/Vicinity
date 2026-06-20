@@ -41,7 +41,10 @@ function zodToFieldErrors(error: import('zod').ZodError): FieldErrors {
   return out;
 }
 
-export async function createCommunity(raw: unknown): Promise<ActionResult<{ id: string }>> {
+export async function createCommunity(
+  raw: unknown,
+  options?: { prefillId?: string | null },
+): Promise<ActionResult<{ id: string }>> {
   const parsed = CreateCommunityInput.safeParse(raw);
   if (!parsed.success) {
     return { ok: false, error: 'invalid_input', fieldErrors: zodToFieldErrors(parsed.error) };

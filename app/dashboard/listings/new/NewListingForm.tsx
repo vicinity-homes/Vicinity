@@ -17,6 +17,8 @@
  */
 
 import { useEffect, useRef, useState, useTransition } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { peekPrefillCount } from '@/app/_components/upload-prefill-store';
 import type { CreateListingInput } from './actions';
 import { createListing } from './actions';
 
@@ -58,6 +60,10 @@ function parseOptNum(s: string): number | null {
 }
 
 export function NewListingForm() {
+  const searchParams = useSearchParams();
+  const prefillId = searchParams?.get('prefill') ?? null;
+  const prefillCount = prefillId ? peekPrefillCount(prefillId) : 0;
+
   const [query, setQuery] = useState('');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [resolved, setResolved] = useState<Resolved | null>(null);
@@ -162,6 +168,7 @@ export function NewListingForm() {
       beds: parseOptNum(beds),
       baths: parseOptNum(baths),
       sqft: parseOptInt(sqft),
+      prefillId: prefillId,
     };
 
     startTransition(async () => {
@@ -179,6 +186,12 @@ export function NewListingForm() {
 
   return (
     <form className="space-y-6" onSubmit={onSubmit}>
+      {prefillCount > 0 && (
+        <div className="rounded border border-line bg-surface p-3 text-xs text-ink2">
+          {prefillCount} file{prefillCount === 1 ? '' : 's'} queued — they'll attach to this listing
+          after you create the draft.
+        </div>
+      )}
       <div className="space-y-2">
         <label htmlFor="address" className="block text-sm font-medium">
           Address

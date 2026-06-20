@@ -31,6 +31,13 @@ const NewListingInput = z.object({
   beds: z.number().nonnegative().nullable().optional(),
   baths: z.number().nonnegative().nullable().optional(),
   sqft: z.number().int().positive().nullable().optional(),
+  /**
+   * Phase 43.6: an in-memory prefill key from the upload-prefill-store.
+   * The action treats it as opaque — it's just forwarded into the
+   * redirect URL so the /edit page's PhotoPanel can pull the File[]
+   * out of the client-side store and start uploading immediately.
+   */
+  prefillId: z.string().min(1).max(64).optional().nullable(),
 });
 
 export type CreateListingInput = z.infer<typeof NewListingInput>;
@@ -109,7 +116,8 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
     };
 
     if (created) {
-      redirect(`/dashboard/listings/${created.id}/edit`);
+      const suffix = data.prefillId ? `?prefill=${encodeURIComponent(data.prefillId)}` : '';
+      redirect(`/dashboard/listings/${created.id}/edit${suffix}`);
     }
     lastErr = error;
     // 23505 = unique_violation; loop with next suffix. Anything else aborts.

@@ -33,7 +33,7 @@ import {
   photoPublicUrl,
 } from '@/lib/supabase/storage';
 import { Star, Trash2, Upload } from 'lucide-react';
-import { useCallback, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 
 export interface ListingPhotoRow {
   id: string;
@@ -48,6 +48,14 @@ interface Props {
   listingId: string;
   initialPhotos: ListingPhotoRow[];
   initialCoverPhotoId: string | null;
+  /**
+   * Phase 43.6: optional File[] piped in from the upload-prefill-store
+   * (when the agent landed here via the BottomNav UploadFAB → /new flow).
+   * Filtered to images only — videos in the prefill are dropped with a
+   * console.warn (see TODO below). Processed once on mount via
+   * handleFilesArray; subsequent prop changes are ignored.
+   */
+  prefillFiles?: File[];
 }
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB — matches bucket policy
@@ -60,7 +68,7 @@ interface PendingItem {
   error?: string;
 }
 
-export function PhotoPanel({ listingId, initialPhotos, initialCoverPhotoId }: Props) {
+export function PhotoPanel({ listingId, initialPhotos, initialCoverPhotoId, prefillFiles }: Props) {
   const [photos, setPhotos] = useState<ListingPhotoRow[]>(initialPhotos);
   const [pending, setPending] = useState<PendingItem[]>([]);
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -71,7 +79,7 @@ export function PhotoPanel({ listingId, initialPhotos, initialCoverPhotoId }: Pr
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const handleFiles = useCallback(
-    async (files: FileList) => {
+    async (files: File[] | FileList) => {
       setGlobalError(null);
       const supabase = createClient();
 
@@ -161,6 +169,28 @@ export function PhotoPanel({ listingId, initialPhotos, initialCoverPhotoId }: Pr
     },
     [listingId, photos, coverPhotoId],
   );
+
+  // Phase 43.6: consume prefilled File[] from the upload-prefill-store flow.
+  // Filter to images only — videos in the prefill are dropped here. The
+  // listing video uploader is tus + Cloudflare Stream and threading a File
+  // into it is non-trivial; revisit when video prefill becomes a real ask.
+  // TODO(phase43+): wire video prefill into VideoPanel.
+  const prefillProcessedRef = useRef(false);
+  useEffect(() => {
+    if (prefillProcessedRef.current) return;
+    if (!prefillFiles || prefillFiles.length === 0) return;
+    prefillProcessedRef.current = true;
+    const images = prefillFiles.filter((f) => f.type.startsWith('image/'));
+    const videos = prefillFiles.length - images.length;
+    if (videos > 0) {
+      console.warn(
+        `[PhotoPanel] Dropped ${videos} video file(s) from prefill — listing video upload via prefill is not yet supported.`,
+      );
+    }
+    if (images.length > 0) {
+      void handleFiles(images);
+    }
+  }, [prefillFiles, handleFiles]);
 
   const handleSetCover = useCallback(
     (photoId: string | null) => {
