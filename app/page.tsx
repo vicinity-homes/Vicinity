@@ -1,5 +1,10 @@
 import { SiteFooter } from '@/components/site/SiteFooter';
-import { LANDING_HERO_POSTER, LANDING_HERO_VIDEO } from '@/lib/copy/landing';
+import {
+  LANDING_HERO_POSTER,
+  LANDING_HERO_VIDEO,
+  LANDING_SUBTITLE,
+  LANDING_TAGLINE,
+} from '@/lib/copy/landing';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -37,10 +42,11 @@ export default async function HomePage() {
             from a mid-screen cream wash) while the text panel still lands on cream. */}
         <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-b from-bg/0 via-bg/60 to-bg" />
 
-        <div className="relative z-10 flex h-full flex-col items-center justify-end px-6 pb-20 text-center md:pb-28">
-          <h1 className="display-xl max-w-4xl text-ink">Vicinity</h1>
+        <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center">
+          <div className="eyebrow mb-6 !text-ink">Vicinity</div>
+          <h1 className="display-xl max-w-4xl text-ink">{LANDING_TAGLINE}</h1>
           <p className="mx-auto mt-6 max-w-xl text-base text-ink leading-[1.7] sm:text-lg">
-            TikTok for Homebuying
+            {LANDING_SUBTITLE}
           </p>
           <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
