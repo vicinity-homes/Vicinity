@@ -3,6 +3,37 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.45.0 — 2026-06-20
+
+### 🚀 Features
+
+- **New top navigation** — every page now has a unified top bar with search, section tabs, and your avatar in the top right. On larger screens you also get a left sidebar for one-tap jumps between surfaces.
+- **"New" is a primary tab** for agents — creating a listing or community no longer lives only behind the floating button.
+
+### ✨ Improvements
+
+- **Browse** brings back **Explore | Nearby** as sub-tabs.
+- **Communities → Nearby** now shows community-mapped video tiles instead of a flat list.
+- **Favorites** tab restored to the bottom nav, with cleaner "Saved" labels.
+- **Search results** now use a 4-column grid on wider screens.
+- **Agent Hub** dropped the duplicate avatar, simplified labels (singular "Listing" / "Community"), and removed status pills that weren't earning their space.
+- **My Community** tap now jumps you straight into the editor.
+- **Community feed** uses a phone-shaped frame with video captions for a more native feel.
+- **Floating create button** is centered and consistent across surfaces.
+- **Listings and communities** now have **delete** actions in the dashboard (videos already had this — bringing the rest to parity).
+- **Sidebar** has more breathing room and tighter visual rhythm.
+- **Auto-cover, grid meta, and like interactions** were polished across the home and feed grids.
+
+### 🐛 Bug Fixes
+
+- **Upload from the floating button → New community → no longer drops your files.** Previously, picking files and creating a new community would silently lose everything you'd queued. We now carry your selection through to the upload screen, split videos and photos into the right panels, and show a "N files queued" banner so you can confirm before submitting.
+- **Like state** correctly persists after publish.
+- **Publish redirect** now lands you on the right destination instead of the editor.
+
+### ⚠️ Known Issues
+
+- None reported. Owner verification of the community upload fix is pending.
+
 ## v0.42.0 — 2026-06-20
 
 ### 🚀 Features

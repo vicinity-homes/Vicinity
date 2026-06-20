@@ -2,6 +2,47 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-20 10:00 UTC — Phase 45: Top-nav redesign + 6 rounds of owner polish
+
+**Objective**: Replace the old SiteHeader/TopRightAvatar/SearchPill chrome with a unified TopBar + DesktopSidebar nav system, then iterate through 6 rounds of owner feedback covering favorites, agent hub, community feed, search, upload flow, and publish redirects.
+
+**Actions**: 17 commits on `phase45/top-nav-redesign`, merged ff into main at `6af1d7b`.
+
+- 45.1 `nav-config` SSOT — `getSubTabs()` per surface, agent surface registered, "New" promoted to primary tab.
+- 45.2 New TopBar component — search + sub-tabs + avatar, responsive across all breakpoints.
+- 45.3 DesktopSidebar — md+ left vertical rail.
+- 45.4 Root layout: mount DesktopSidebar + TopBar, drop old chrome wrappers.
+- 45.5 Delete `SiteHeader`, `TopRightAvatar`, `SearchPill` (replaced by TopBar).
+- 45.6 `/browse`: restore Explore | Nearby sub-tabs.
+- 45.7 `/communities` Nearby: videos-mapped-to-communities grid.
+- 45.8 Dashboard: drop `WorkspaceSubNav`, retitle per surface.
+- 45.9 TopBar polish — 13 owner-flagged items (alignment, spacing, hover states).
+- 45.10 4-item polish — Favorites tab restored, anonymous Me → `/profile`, unified card style, `/c/[slug]` sub-tabs.
+- 45.11 Owner round 3 — favorites/agent/community/search polish.
+- 45.12 Owner round 4 — sidebar breathing room, singular IA labels, FAB centered, community feed phone-shape, video captions.
+- 45.13 Owner round 5 (#1-5) — saved labels, search 4-col grid, hub off avatar, my community → editor, drop status pills.
+- 45.14 Owner round 5 (#6) — delete listing/community actions + UI parity with videos.
+- 45.15 Owner round 6 — like fix, upload btn, publish redirect, rail, auto-cover, grid meta.
+- 45.16 fix #6 — community upload prefill no longer drops files. Two-bug chain: `createCommunity` declared `options.prefillId` but never read it; success redirect went to the editor (no upload panels) instead of `/upload`. Added `CommunityUploadPrefillBridge` (twin of `PhotoPanelPrefillBridge`), widened `CommunityPhotoPanel.handleFiles` to `Iterable<File>` so both `FileList` and `File[]` flow through, split prefill list into video → `VideoUploader` (new `initialFile` prop) and photos → `CommunityPhotoPanel` (new `prefillFiles`, auto-uploads on mount).
+
+**Decisions**:
+- TopBar + DesktopSidebar replaces three legacy chrome components — single nav surface, fewer ad-hoc avatars/search inputs floating around layouts.
+- "New" as a primary nav tab (not buried under FAB) for agent surface — matches the round-4 owner call to centralize creation.
+- FAB centered globally; UploadFAB → community new path now passes prefill via `?prefill=ULID` over the in-memory store, NOT via redirect to editor (45.16 fix).
+- Community upload page reuses VideoUploader + CommunityPhotoPanel rather than a separate community-only uploader — same primitives as listing upload, just different post-upload binding target.
+
+**Issues / Resolution**:
+- Round 5 #6 (delete actions) discovered videos already had delete UI; brought listing + community to parity.
+- Round 6 community upload bug (#6) escaped owner round 5 because the editor page silently consumed the redirect — files were lost without UI feedback. Fixed by intercepting the redirect at `createCommunity` server action when `prefillId` is set.
+
+**Learnings**:
+- Prefill stores need bridges paired 1:1 with their consumer pages — adding a new upload entry point requires a new bridge, not just a new redirect target.
+- Server-action option bags must be exhaustively read; declaring a field in the signature without consuming it produces silent data loss with zero type errors.
+
+**Next steps**:
+- Owner verification of 45.16 community upload flow on production (vicinities.cc).
+- If the 5 rounds of polish reveal shared regression patterns, codify into the next phase's pre-flight checklist.
+
 ## 2026-06-20 03:05 UTC — Phase 43: IA polish + Save/Like split + agent analytics
 
 **Objective**: V1 IA cleanup — landing copy reduction, role-aware bottom nav, Favorites split into Saves/Likes, agent center FAB upload, global search, agent analytics rollup.
