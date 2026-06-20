@@ -53,7 +53,11 @@ export function BrandMark({ href = '/', className }: Props) {
           fontSize: '12px',
         }}
       >
-        VICINITY
+        {/* First V is supplied by the monogram tile (Loewe/Bottega idiom) —
+            the wordmark continues from "ICINITY" to avoid a doubled V.
+            Negative left margin nudges the wordmark slightly closer to the
+            tile so the eye reads the monogram as the missing V. */}
+        <span className="-ml-0.5">ICINITY</span>
       </span>
     </Link>
   );
