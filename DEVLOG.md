@@ -2,6 +2,29 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-21 — Phase 45.30: dot + icon + text chip, dropped to 25vh
+
+**Objective**: qiaoxux follow-up on 45.29 — banner cut-edge was too
+sharp; final form should be **status-dot + emoji + text** in a soft
+squircle (10px radius — "rounded but not too rounded"), and moved
+**down to ~1/4 of viewport height** to breathe away from the top
+search/title chrome.
+
+**Changes** (both surfaces, identical pattern):
+- Position: `top-16` → `top: 25vh` (≈ 25% down the screen).
+- Shape: `rounded-md` + clip-path banner-cut → `rounded-[10px]` plain
+  squircle. Drops the diagonal cut entirely.
+- Prepended a 6px emerald status dot (`bg-emerald-400` + soft glow
+  via boxShadow) before the existing emoji + text — reads as a "live
+  / active" indicator, gives the chip a wayfinding feel without extra
+  text weight.
+- Sibling 45.28.6 hero CTA pass landed on these files concurrently
+  (sibling subagent `20260621_080328_d88a62`) — re-read before
+  patching to avoid stomping each other.
+
+Files: `app/(public)/c/[slug]/feed/CommunityVideoFeed.tsx`,
+`app/(public)/browse/_components/BrowseFeed.tsx`.
+
 ## 2026-06-21 — Phase 45.29: top-left "Live here" banner-cut chip (shape #3)
 
 **Objective**: qiaoxux flagged the top-left community pill on the

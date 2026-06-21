@@ -3,6 +3,12 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.49.2 — 2026-06-21
+
+### ✨ Improvements
+
+- **Left-corner chip refined and repositioned.** The "Live here" / community-name chip on video feeds now uses a soft squircle with a small green status dot before the icon + text, and sits about a quarter of the way down the screen instead of tucked under the top bar — easier to read against the video and clearer space from the top chrome.
+
 ## v0.49.1 — 2026-06-21
 
 ### ✨ Improvements
