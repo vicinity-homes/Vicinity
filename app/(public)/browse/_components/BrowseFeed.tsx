@@ -7,10 +7,11 @@ import { type DemoVideoPool, demoCoverFor, demoPhotosFor, demoVideoFor } from '@
 import Hls from 'hls.js';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LeadModal } from '../../_components/LeadModal';
 import { CommunityCarousel } from './CommunityCarousel';
 import { CommunitySheet, type CommunitySheetData } from './CommunitySheet';
+import { ActionButton } from '../../_components/feed/ActionButton';
 import {
   BackArrowIcon,
   BookmarkIcon,
@@ -136,80 +137,6 @@ function formatPrice(n: number | null): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2).replace(/\.?0+$/, '')}M`;
   if (n >= 1_000) return `$${Math.round(n / 1_000)}K`;
   return `$${n.toLocaleString()}`;
-}
-
-function ActionButton({
-  onClick,
-  href,
-  label,
-  active,
-  activeColor,
-  disabled,
-  badge,
-  children,
-}: {
-  onClick?: () => void;
-  href?: string;
-  label: string;
-  active?: boolean;
-  /**
-   * Phase 28: optional accent for the active state. 'gold' (default) is
-   * used by all info actions and Save; 'rose' is used by Like to match
-   * Xiaohongshu / TikTok convention.
-   */
-  activeColor?: 'gold' | 'rose';
-  disabled?: boolean;
-  badge?: string | number;
-  children: ReactNode;
-}) {
-  const activeCls =
-    activeColor === 'rose'
-      ? 'border-rose-400/70 bg-rose-400/20 text-rose-400'
-      : 'border-cream/40 bg-cream/15 text-cream';
-  const cls = `flex h-12 w-12 items-center justify-center rounded-full border backdrop-blur transition ${
-    active
-      ? activeCls
-      : disabled
-        ? 'border-cream/10 bg-ink/30 text-cream/30'
-        : 'border-cream/20 bg-ink/40 text-cream hover:border-cream/50'
-  }`;
-  const inner = (
-    <div className="flex flex-col items-center gap-1">
-      <span className="relative">
-        <span className={cls}>{children}</span>
-        {badge ? (
-          <span className="-right-1 -top-1 absolute rounded-full bg-cream px-1.5 py-0.5 font-semibold text-[9px] text-ink leading-none tabular-nums">
-            {badge}
-          </span>
-        ) : null}
-      </span>
-      <span className="font-medium text-[10px] text-cream/80">{label}</span>
-    </div>
-  );
-  if (href && !disabled) {
-    return (
-      <Link
-        href={href}
-        className="block"
-        aria-label={label}
-        style={{ touchAction: 'manipulation' }}
-      >
-        {inner}
-      </Link>
-    );
-  }
-  return (
-    <button
-      type="button"
-      onClick={disabled ? undefined : onClick}
-      className="block"
-      aria-label={label}
-      style={{ touchAction: 'manipulation' }}
-      disabled={disabled}
-    >
-      {inner}
-    </button>
-  );
 }
 
 interface CardProps {
