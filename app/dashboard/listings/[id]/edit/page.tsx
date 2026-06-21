@@ -21,9 +21,10 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
 import { HubTabs } from '@/app/dashboard/_components/HubTabs';
-import { HeroHeader, type HeroStat } from '@/app/dashboard/_components/HeroHeader';
+import { HeroHeader } from '@/app/dashboard/_components/HeroHeader';
 import { HeroControl } from '@/app/dashboard/_components/HeroControl';
-import { StatusPill } from '@/app/dashboard/_components/StatusPill';
+import { InstantStatusToggle } from '@/app/dashboard/_components/InstantStatusToggle';
+import { HeroDeleteButton } from '@/app/dashboard/_components/HeroDeleteButton';
 
 import { type CommunityOption, EditListingForm, type ListingContext } from './EditListingForm';
 import { GenerateTourPanel } from './GenerateTourPanel';
@@ -31,7 +32,6 @@ import type { ListingPhotoRow } from './PhotoPanel';
 import { PhotoPanelPrefillBridge } from './PhotoPanelPrefillBridge';
 import { SocialCopyPanel } from './SocialCopyPanel';
 import { type ListingVideoRow, VideoPanel } from './VideoPanel';
-import { ListingDetailMenu } from './ListingDetailMenu';
 import { MarketingPanel } from './MarketingPanel';
 import { ListingLeadsPanel } from './ListingLeadsPanel';
 import { AnalyticsPanel } from './AnalyticsPanel';
@@ -57,10 +57,6 @@ interface ListingRow {
   description: string[] | null;
   cover_url: string | null;
   community_id: string | null;
-}
-
-function fmtCount(n: number): string {
-  return n.toLocaleString('en-US');
 }
 
 export default async function EditListingPage({
@@ -124,43 +120,18 @@ export default async function EditListingPage({
     .order('name', { ascending: true })) as { data: CommunityOption[] | null };
   const communities = communitiesRaw ?? [];
 
-  // ── Hero stats: Views / Saves / Leads ────────────────────────────────
-  // Snapshot numbers, intentionally lightweight. Detailed funnels live in
-  // the Analytics tab.
-  const [viewsRes, savesRes, leadsRes] = await Promise.all([
-    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-    (supabase as any)
-      .from('events')
-      .select('id', { count: 'exact', head: true })
-      .eq('listing_id', listing.id)
-      .eq('event_type', 'page_view'),
-    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-    (supabase as any)
-      .from('saved_listings')
-      .select('listing_id', { count: 'exact', head: true })
-      .eq('listing_id', listing.id),
-    // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-    (supabase as any)
-      .from('leads')
-      .select('id, followed_up_at', { count: 'exact' })
-      .eq('listing_id', listing.id),
-  ]);
-
-  const viewCount = (viewsRes?.count as number | null) ?? 0;
-  const saveCount = (savesRes?.count as number | null) ?? 0;
-  const leadCount = (leadsRes?.count as number | null) ?? 0;
-  const leadRows = (leadsRes?.data ?? []) as Array<{ followed_up_at: string | null }>;
+  // ── Hero stats: open Leads count for tab badge ────────────────────────
+  // Stats themselves moved out of the hero (Phase 47.11). We still need a
+  // lightweight count of un-followed-up leads to badge the Leads tab.
+  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+  const { data: leadRowsRaw } = (await (supabase as any)
+    .from('leads')
+    .select('id, followed_up_at')
+    .eq('listing_id', listing.id)) as {
+    data: Array<{ id: string; followed_up_at: string | null }> | null;
+  };
+  const leadRows = leadRowsRaw ?? [];
   const openLeads = leadRows.filter((l) => !l.followed_up_at).length;
-
-  const stats: HeroStat[] = [
-    { label: 'Views', value: fmtCount(viewCount) },
-    { label: 'Saves', value: fmtCount(saveCount) },
-    {
-      label: 'Leads',
-      value: fmtCount(leadCount),
-      delta: openLeads > 0 ? `${openLeads} new` : undefined,
-    },
-  ];
 
   // ── Cover resolution (unchanged from phase 46) ───────────────────────
   let initialCoverVideoId: string | null = null;
@@ -224,14 +195,17 @@ export default async function EditListingPage({
         subtitle={subtitle}
         controls={
           <>
-            <HeroControl href={`/dashboard/listings/${listing.id}/preview`}>
-              Preview
+            <HeroControl
+              href={`/dashboard/listings/${listing.id}/preview`}
+              className="border-white/35 bg-white/15 backdrop-blur-md hover:bg-white/25"
+            >
+              <span aria-hidden>↗</span>
+              <span>Preview</span>
             </HeroControl>
-            <StatusPill id={listing.id} status={listing.status} variant="listing" />
-            <ListingDetailMenu listingId={listing.id} />
+            <InstantStatusToggle id={listing.id} status={listing.status} />
+            <HeroDeleteButton listingId={listing.id} />
           </>
         }
-        stats={stats}
       />
 
       <HubTabs

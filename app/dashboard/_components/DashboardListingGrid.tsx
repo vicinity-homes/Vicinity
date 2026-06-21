@@ -64,36 +64,42 @@ export function DashboardListingGrid({ items }: { items: DashboardItem[] }) {
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1">
-          {FILTERS.map((f) => {
-            const isActive = f.id === filter;
-            const n = counts[f.id];
-            return (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setFilter(f.id)}
-                className={`rounded-full px-3.5 py-1.5 text-[13px] transition-colors ${
-                  isActive
-                    ? 'bg-ink text-surface'
-                    : 'text-ink2 hover:bg-line/40'
-                }`}
-              >
-                {f.label}
-                <span className={`ml-1.5 text-[11px] ${isActive ? 'opacity-80' : 'text-muted'}`}>
-                  {n}
-                </span>
-              </button>
-            );
-          })}
+      <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px]">
+        <div className="flex items-center gap-3 text-ink2">
+          <span className="text-muted">Show</span>
+          <div className="flex items-center gap-1">
+            {FILTERS.map((f) => {
+              const isActive = f.id === filter;
+              const n = counts[f.id];
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFilter(f.id)}
+                  className={`rounded-full px-2.5 py-1 transition-colors ${
+                    isActive
+                      ? 'bg-ink text-surface'
+                      : 'text-ink2 hover:bg-line/40'
+                  }`}
+                >
+                  {f.label}
+                  <span
+                    className={`ml-1 text-[11px] ${isActive ? 'opacity-80' : 'text-muted'}`}
+                  >
+                    {n}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <label className="flex items-center gap-2 text-muted text-xs">
-          Sort
+        <span aria-hidden className="hidden h-4 w-px bg-line sm:inline-block" />
+        <label className="flex items-center gap-2 text-ink2">
+          <span className="text-muted">Sort by</span>
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
-            className="rounded-full border border-line bg-surface px-3 py-1 text-ink text-[13px]"
+            className="-mx-1 cursor-pointer appearance-none border-0 bg-transparent pr-4 text-ink underline decoration-line decoration-dotted underline-offset-4 hover:decoration-ink2 focus:outline-none"
           >
             {SORTS.map((s) => (
               <option key={s.id} value={s.id}>

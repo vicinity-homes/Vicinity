@@ -2,6 +2,84 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## Phase 47.11 — AgentHub mylisting hero polish (2026-06-21)
+
+Agent feedback after Phase 47.10 ship surfaced four UX papercuts:
+
+1. **Dashboard `/dashboard` filter+sort feels two-island'd** → merged into one
+   natural row: `Show: [All N] [Active N] [Inactive N] | Sort by: dotted-underline select`.
+   Removed the right-aligned bordered pill around the sort; underline-only
+   feels lighter and reads as one sentence with the filter chips.
+2. **Hero Preview button "not responsive" (looked unclickable)** → kept
+   chromeless base but added `border-white/35 bg-white/15 backdrop-blur-md`
+   default state + ↗ arrow glyph. Now it visibly invites a click on bright
+   covers without losing the chromeless aesthetic.
+3. **Active/Inactive popover felt like a 2-step "deactivate" gesture** →
+   new `InstantStatusToggle` replaces hero `StatusPill`. Active→Inactive is
+   silent and instant (no popover, no "→ deactivate" hint). Inactive→Active
+   still surfaces the missing-fields popover when validation fails (that's
+   genuinely useful). One click, no chrome.
+4. **Delete hidden behind ⋯ menu** → new `HeroDeleteButton` is a visible
+   chromeless rose-tinted control on the hero. `confirm()` still gates the
+   destructive call. The old `ListingDetailMenu` stays in-tree (used by
+   nothing on the hero now) — left for any future overflow needs.
+5. **Stats removed from hero** → hero is back to "hero pic". The detailed
+   funnel + breakdowns already live in the Analytics tab; the open-leads
+   tab badge (`Leads · N`) carries the only number the agent really needs
+   at a glance. HeroHeader simplified from 3-section grid (`auto · 1fr · auto`)
+   to 2-section (`auto · 1fr`); zero-overlap guarantee preserved.
+
+### Code
+
+- New `app/dashboard/_components/InstantStatusToggle.tsx` (5,620 B) —
+  client, calls `publishListing` / `unpublishListing`, uses `flushPending`
+  from edit flush-registry, portals validation popover to `document.body`
+  to escape stacking contexts (per phase 45.33 lesson).
+- New `app/dashboard/_components/HeroDeleteButton.tsx` (1,820 B) — client,
+  rose-tinted chromeless variant matching HeroControl pattern.
+- `app/dashboard/_components/HeroHeader.tsx` — dropped `stats` prop and
+  `HeroStat` type; grid template `auto 1fr auto` → `auto 1fr`. The home
+  info column moved from `justify-center` to `justify-end pb-2` so the
+  title sits naturally near the bottom of the hero plate.
+- `app/dashboard/listings/[id]/edit/page.tsx` — removed the 3-promise
+  parallel SSR fetch for views/saves/leads counts. Kept a single
+  lightweight leads fetch just to compute `openLeads` for the tab badge.
+  Swapped `StatusPill` → `InstantStatusToggle`, `ListingDetailMenu` →
+  `HeroDeleteButton`. Preview link now carries explicit visible chrome.
+- `app/dashboard/_components/DashboardListingGrid.tsx` — flat single-row
+  layout: `Show <chips>  |  Sort by <underlined select>`.
+
+### Verification
+
+- `npx tsc --noEmit` → exit 0
+- `npx next build` → success. `/dashboard` 2.23 kB / 98.2 kB,
+  `/dashboard/listings/[id]/edit` 28.9 kB / 205 kB (-0.4 kB vs phase 47.10
+  thanks to dropped stat-fetch path).
+
+### Pitfalls captured
+
+- Existing helper `flushPending` lives at
+  `@/app/dashboard/listings/[id]/edit/flush-registry` — there is no
+  `@/lib/forms/pending` module. Wrong import compiles via path alias but
+  fails TS resolution.
+- After dropping a `HeroHeader` prop, must read **then** rewrite the
+  caller block, not just patch the prop line — leftover usage caused TS
+  errors until the `stats={...}` line was removed.
+
+### Files changed
+
+- `app/dashboard/_components/HeroHeader.tsx` (modified, simpler)
+- `app/dashboard/_components/InstantStatusToggle.tsx` (new)
+- `app/dashboard/_components/HeroDeleteButton.tsx` (new)
+- `app/dashboard/_components/DashboardListingGrid.tsx` (modified)
+- `app/dashboard/listings/[id]/edit/page.tsx` (modified)
+
+`StatusPill.tsx` and `ListingDetailMenu.tsx` remain in-tree but are not
+referenced from the hero. Other dashboard surfaces (community detail
+hub) still use `StatusPill` via its `variant="community"` path.
+
+---
+
 ## Phase 47.5–47.10 — AgentHub mylisting redesign (2026-06-21)
 
 Owner ask: "关于agenthub里的mylisting 的子页面们 你有什么建议吗 增加或改动或布局".

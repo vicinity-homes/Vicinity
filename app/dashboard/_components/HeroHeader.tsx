@@ -1,47 +1,34 @@
 /**
- * HeroHeader — 3-section hero for the agent listing detail page (Phase 47.5).
+ * HeroHeader — 2-section hero for the agent listing detail page.
  *
- * Replaces the older HubDetailShell hero block. Uses CSS grid with three
- * explicit rows:
- *   Row 1: controls (right-aligned)  — chromeless buttons + StatusPill + ⋯
- *   Row 2: home info (1fr, left-aligned, vertically centered) — title + subtitle
- *   Row 3: stats (3 frosted glass tiles, full-width) — Views / Saves / Leads
+ * Phase 47.11: stats removed from hero per agent feedback ("hero pic should
+ * be hero pic"). The grid is now `auto 1fr` — controls on top, home info
+ * vertically centered. Stats live inline at the top of the Analytics tab.
  *
  * No `position: absolute`. Physical separation, zero overlap risk regardless
  * of address length.
  *
- * The component is server-renderable; interactive children (StatusPill,
- * ListingDetailMenu) are passed in as `controls`. Stats are passed in as
- * data, not children, so the SSR fetch in the parent page can drive them.
+ * Server-renderable; interactive children (StatusPill, delete button) are
+ * passed in as `controls`.
  */
 import type { ReactNode } from 'react';
-
-export type HeroStat = {
-  label: string;
-  value: number | string;
-  delta?: string;
-};
 
 type Props = {
   coverUrl: string | null;
   title: string;
   subtitle?: string;
-  /** Right-aligned control row (Preview button, StatusPill, menu). */
+  /** Right-aligned control row (Preview button, status toggle, delete). */
   controls?: ReactNode;
-  /** Three glass tiles at the bottom of the hero. Pass [] to hide. */
-  stats?: HeroStat[];
 };
 
-export function HeroHeader({ coverUrl, title, subtitle, controls, stats }: Props) {
-  const showStats = stats && stats.length > 0;
-
+export function HeroHeader({ coverUrl, title, subtitle, controls }: Props) {
   return (
     <header className="mx-auto max-w-6xl">
       <div
         className="relative grid w-full overflow-hidden bg-surface sm:rounded-b-xl"
         style={{
           aspectRatio: '5 / 2',
-          gridTemplateRows: 'auto 1fr auto',
+          gridTemplateRows: 'auto 1fr',
           padding: '12px 18px',
         }}
       >
@@ -63,7 +50,7 @@ export function HeroHeader({ coverUrl, title, subtitle, controls, stats }: Props
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              'linear-gradient(to bottom, rgba(0,0,0,0.35), transparent 22%, transparent 60%, rgba(0,0,0,0.55))',
+              'linear-gradient(to bottom, rgba(0,0,0,0.45), transparent 30%, transparent 55%, rgba(0,0,0,0.55))',
           }}
         />
 
@@ -72,8 +59,8 @@ export function HeroHeader({ coverUrl, title, subtitle, controls, stats }: Props
           {controls}
         </div>
 
-        {/* §2 — home info (middle, left) */}
-        <div className="relative z-10 flex flex-col justify-center text-surface">
+        {/* §2 — home info (bottom, left, vertically centered in remaining space) */}
+        <div className="relative z-10 flex flex-col justify-end pb-2 text-surface">
           <h1
             className="font-serif font-semibold text-2xl leading-tight drop-shadow sm:text-3xl"
             style={{ letterSpacing: '-0.01em' }}
@@ -84,34 +71,6 @@ export function HeroHeader({ coverUrl, title, subtitle, controls, stats }: Props
             <p className="mt-1 text-sm text-surface/90 drop-shadow">{subtitle}</p>
           )}
         </div>
-
-        {/* §3 — stats (bottom, full width, 3 frosted tiles) */}
-        {showStats && (
-          <div className="relative z-10 grid grid-cols-3 gap-2">
-            {stats.map((s) => (
-              <div
-                key={s.label}
-                className="rounded-[10px] border px-3 py-2 text-surface"
-                style={{
-                  background: 'rgba(251, 248, 243, 0.18)',
-                  backdropFilter: 'blur(14px) saturate(140%)',
-                  WebkitBackdropFilter: 'blur(14px) saturate(140%)',
-                  borderColor: 'rgba(255,255,255,0.22)',
-                }}
-              >
-                <div className="text-[10px] uppercase tracking-[0.07em] opacity-75">
-                  {s.label}
-                </div>
-                <div className="flex items-baseline gap-1.5 font-serif text-[22px] leading-none">
-                  <span>{s.value}</span>
-                  {s.delta && (
-                    <span className="font-sans text-[11px] opacity-85">{s.delta}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </header>
   );
