@@ -2,6 +2,42 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-21 — Phase 45.32: revert fan, simplify to album/camera/cancel
+
+**Objective**: qiaoxux 看完 fan-out 实装后改主意 — "改成之前的 sheet 只
+留 Choose from album and Camera and Cancel, 并且点击别的区域会取消,
+注意,只是取消但是不会进入别的界面". Two requirements:
+1. 退回 bottom sheet 形态(扇形不要)
+2. 选项收敛成 3 个:Album / Camera / Cancel(Photo+Video 合并成 Camera)
+3. 点击 sheet 外区域只关 sheet,不能触发底层 listing/video 元素
+
+**Actions**:
+- `app/_components/UploadSheet.tsx` 重写回 sheet 形态。`open` 重新变成
+  `() => void`(扇形 mode 参数移除)。Source picker 3 行:
+  `Choose from album` / `Camera` / `Cancel`。
+- Photo + Video 合并成 Camera:相机 input 改为 `accept="image/*,video/*"
+  capture="environment"`,iOS Safari 在打开相机时让用户选拍照或录像,
+  减一个分支。
+- `UploadFAB.tsx` / `DesktopSidebar.tsx` 把 `onClick={() => open('xxx')}`
+  改回 `onClick={open}`。
+- Scrim 行为没变:`<button type="button" onClick={close}>` 全屏 z-50,
+  DOM click event 不会穿透到底层元素 — 用户的"点视频不开视频"需求
+  已经被原结构满足,不需要额外的 stopPropagation。
+
+**Decisions**:
+- Photo + Video → Camera:用户原话只列了 album 和 camera 两个 source,
+  说明她要的就是 2 选 1。把 capture input 的 accept 同时收 image+video
+  最贴近她的语言。
+- 没把扇形 prototype/v2 文件删除 — `public/prototype/` 是 throwaway
+  目录,留作历史快照(future "为啥当时没用扇形" 的查询)。
+- LSP 报 phantom error 因为缓存了旧 union type;实际 tsc 通过,build
+  绿。
+
+**Issues**: 无。Build first try green.
+
+**Verification**: `npm run build` green. Push to main 后人肉验证手机
+端 sheet 渲染 + 点击外部不触发底层。
+
 ## 2026-06-21 — Phase 45.31: upload source-picker — fan-out radial menu
 
 **Objective**: qiaoxux complaint — the existing 4-button vertical sheet

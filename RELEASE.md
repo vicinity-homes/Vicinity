@@ -3,6 +3,12 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.49.4 — 2026-06-21
+
+### ✨ Improvements
+
+- **Upload menu simplified.** Tapping the center "+" button now opens a clean bottom sheet with three choices: **Choose from album**, **Camera**, **Cancel**. Photo and Video are merged into a single Camera option (your phone lets you pick which to capture). Tapping anywhere outside the sheet closes it without activating whatever was behind — your tap won't accidentally open a listing or play a video.
+
 ## v0.49.3 — 2026-06-21
 
 ### ✨ Improvements
