@@ -1,16 +1,20 @@
 'use client';
 
 /**
- * CommunityTabs — client island that toggles between "Community Videos" and
- * "Active Listings" inside a single community page.
+ * CommunityBody — client island that owns both the hero (so a CTA pill can sit
+ * absolute inside it) and the videos/listings grid below.
  *
- * Phase 45.10 (2026-06-20): introduced.
- * Phase 45.11 (2026-06-20): owner round 3 —
- *   - Width matches the rest of the page (`max-w-6xl px-3 sm:px-6`) so the
- *     grid below the hero aligns with /browse / /communities.
- *   - Tab pills use square (1:1) thumbs visually via the toggle row, and the
- *     content cards inside each tab now use a 1:1 frame.
- *   - Counts dropped from the tab labels per owner.
+ * Phase 45.28 (2026-06-21, owner immersion pass):
+ *   - Hero shrunk: aspect-[16/7] → aspect-[5/2] mobile (~9% shorter),
+ *     md:aspect-[21/5] → md:aspect-[5/1] desktop (~16% shorter).
+ *   - Removed the [Community Videos | Active Listings] pill toggle row —
+ *     videos render by default so the grid butts directly against the hero
+ *     for a more immersive feel.
+ *   - Added a "Live here →" CTA pill at the hero's bottom-right; clicking it
+ *     switches the body to the listings grid. A subtle "← Community videos"
+ *     text link above the listings grid provides the return path.
+ *   - Hero moved out of page.tsx into this client island so the CTA can
+ *     drive the videos/listings tab state without a route round-trip.
  */
 
 import type { BrowseCard } from '@/app/(public)/browse/_components/BrowseFeed';
@@ -35,60 +39,86 @@ type CommunityVideo = {
 
 type Tab = 'videos' | 'listings';
 
-export function CommunityTabs({
-  communitySlug,
+export function CommunityBody({
+  community,
+  heroCoverUrl,
   videos,
   listings,
 }: {
-  communitySlug: string;
+  community: {
+    name: string;
+    slug: string;
+    city: string | null;
+    state: string;
+    description: string | null;
+  };
+  heroCoverUrl: string | null;
   videos: CommunityVideo[];
   listings: BrowseCard[];
 }) {
   const [tab, setTab] = useState<Tab>('videos');
 
   return (
-    <div className="mx-auto max-w-6xl px-3 sm:px-6 py-4">
-      {/* Pill row — same shape as TopBar sub-tabs / SavedClient pills. */}
-      <div className="-mx-1 mb-5 flex items-center gap-1 overflow-x-auto">
-        <TabButton active={tab === 'videos'} onClick={() => setTab('videos')}>
-          Community Videos
-        </TabButton>
-        <TabButton active={tab === 'listings'} onClick={() => setTab('listings')}>
-          Active Listings
-        </TabButton>
+    <div className="mx-auto max-w-6xl">
+      {/* Hero — phase 45.28: 5/2 mobile, 5/1 desktop. */}
+      <div className="relative aspect-[5/2] w-full overflow-hidden bg-surface md:aspect-[5/1] sm:rounded-b-xl">
+        {heroCoverUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={heroCoverUrl}
+            alt={community.name}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-bronze/30 to-ink" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/60 to-ink/10" />
+        <div className="absolute inset-x-0 bottom-0 px-4 py-3 sm:px-6 sm:py-4">
+          <h1 className="font-semibold text-2xl text-cream tracking-tight sm:text-3xl">
+            {community.name}
+          </h1>
+          <div className="mt-0.5 text-cream/75 text-sm">
+            {community.city ? `${community.city}, ${community.state}` : community.state}
+          </div>
+          {community.description ? (
+            <p className="mt-1 max-w-2xl text-cream/80 text-xs sm:text-sm">
+              {community.description}
+            </p>
+          ) : null}
+        </div>
+
+        {/* Phase 45.28: CTA — bottom-right of hero. Switches body → listings. */}
+        {tab === 'videos' ? (
+          <button
+            type="button"
+            onClick={() => setTab('listings')}
+            className="absolute right-3 bottom-3 inline-flex h-9 items-center gap-1 rounded-full bg-cream px-4 font-medium text-ink text-sm shadow-md transition hover:bg-cream/90 sm:right-4 sm:bottom-4 sm:h-10 sm:px-5"
+          >
+            Live here
+            <span aria-hidden="true">→</span>
+          </button>
+        ) : null}
       </div>
 
-      {tab === 'videos' ? (
-        <VideosGrid communitySlug={communitySlug} videos={videos} />
-      ) : (
-        <ListingsGrid listings={listings} />
-      )}
+      {/* Body */}
+      <div className="px-3 py-4 sm:px-6">
+        {tab === 'videos' ? (
+          <VideosGrid communitySlug={community.slug} videos={videos} />
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => setTab('videos')}
+              className="-mx-1 mb-3 inline-flex items-center gap-1 px-1 text-ink2 text-sm hover:text-ink"
+            >
+              <span aria-hidden="true">←</span>
+              Community videos
+            </button>
+            <ListingsGrid listings={listings} />
+          </>
+        )}
+      </div>
     </div>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        'inline-flex h-9 shrink-0 items-center rounded-full px-4 text-sm transition',
-        active
-          ? 'bg-ink text-bg'
-          : 'border border-line text-ink2 hover:border-line-strong hover:text-ink',
-      ].join(' ')}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -109,7 +139,6 @@ function VideosGrid({
   return (
     <div className="grid grid-cols-2 gap-x-1 gap-y-2 md:grid-cols-4 md:gap-x-1.5 md:gap-y-3">
       {videos.map((v) => {
-        // Phase 45.12: caption shows category label + blurb (not raw filename).
         const meta = v.category
           ? CATEGORY_META.get(v.category as CommunityVideoCategoryId)
           : null;
@@ -130,7 +159,6 @@ function VideosGrid({
               />
               {meta ? (
                 <>
-                  {/* Phase 45.26 (2026-06-21): TikTok-density overlay D. */}
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                   <div className="absolute inset-x-2 bottom-2 text-surface">
                     <div className="truncate font-serif text-[15px] font-semibold leading-tight tracking-[-0.01em]">
@@ -185,7 +213,6 @@ function ListingsGrid({ listings }: { listings: BrowseCard[] }) {
               priority={idx < 4}
               className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
             />
-            {/* Phase 45.26 (2026-06-21): TikTok-density overlay D. */}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
             <div className="absolute inset-x-2 bottom-2 text-surface">
               <div className="font-serif text-[15px] font-semibold leading-tight tracking-[-0.01em]">

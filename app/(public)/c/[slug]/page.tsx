@@ -2,13 +2,12 @@
  * /c/[slug] — buyer-facing community page.
  *
  * Phase 27: shipped IA + thumbnail grid + active-listings count.
- * Phase 45.10 (2026-06-20, owner round 2): hero cover height reduced
- * (21:9 → 16:7 → effectively half on mobile), and the page now hosts a
- * sub-tab toggle for [Community Videos | Active Listings] so the listings
- * inside this community are reachable without a round-trip to /browse.
- *
- * Both grids share the unified /browse card style (3:4 frame, caption
- * below image) — see <CommunityTabs>.
+ * Phase 45.10–45.11: hero shrunk, sub-tab toggle introduced.
+ * Phase 45.28 (2026-06-21, owner immersion pass): hero + grid moved into
+ * <CommunityBody> client island. Hero shrunk further (5/2 mobile, 5/1
+ * desktop), pill toggle row removed (videos default), and a "Live here →"
+ * CTA pill in the hero's bottom-right now switches the body to the
+ * active-listings grid.
  */
 
 import { resolveCommunityCoverWithCfIds } from '@/lib/community/cover';
@@ -17,7 +16,7 @@ import { demoCoverFor } from '@/lib/demo-media';
 import { fetchBrowseCardsByCommunitySlug } from '@/lib/feed/browse-cards';
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import { CommunityTabs } from './_components/CommunityTabs';
+import { CommunityBody } from './_components/CommunityBody';
 
 interface CommunityRow {
   id: string;
@@ -90,45 +89,24 @@ export default async function CommunityPage({
     cover_storage_path: community.cover_storage_path,
     fallback_video_cf_id: firstReadyVideo?.cf_video_id ?? null,
   });
-  void thumbnailUrl; // imported for transitive demoCoverFor needs in CommunityTabs
-  void demoCoverFor;
+  void thumbnailUrl; // kept for transitive demoCoverFor needs in CommunityBody
+
+  const heroCoverUrl = heroCover
+    ? demoCoverFor(community.slug, heroCover.url) ?? heroCover.url
+    : null;
 
   return (
-    <div className="mx-auto max-w-6xl">
-      {/* Hero — phase 45.11 (owner round 3): desktop slims further to 21:5;
-        * mobile keeps 16:7 (~half-height) so portrait readability holds. */}
-      <div className="relative aspect-[16/7] w-full overflow-hidden bg-surface md:aspect-[21/5] sm:rounded-b-xl">
-        {heroCover ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={demoCoverFor(community.slug, heroCover.url) ?? heroCover.url}
-            alt={community.name}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-bronze/30 to-ink" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/60 to-ink/10" />
-        <div className="absolute inset-x-0 bottom-0 px-4 py-3 sm:px-6 sm:py-4">
-          <h1 className="font-semibold text-2xl text-cream tracking-tight sm:text-3xl">
-            {community.name}
-          </h1>
-          <div className="mt-0.5 text-cream/75 text-sm">
-            {community.city ? `${community.city}, ${community.state}` : community.state}
-          </div>
-          {community.description ? (
-            <p className="mt-1 max-w-2xl text-cream/80 text-xs sm:text-sm">
-              {community.description}
-            </p>
-          ) : null}
-        </div>
-      </div>
-
-      <CommunityTabs
-        communitySlug={community.slug}
-        videos={videos}
-        listings={listings}
-      />
-    </div>
+    <CommunityBody
+      community={{
+        name: community.name,
+        slug: community.slug,
+        city: community.city,
+        state: community.state,
+        description: community.description,
+      }}
+      heroCoverUrl={heroCoverUrl}
+      videos={videos}
+      listings={listings}
+    />
   );
 }

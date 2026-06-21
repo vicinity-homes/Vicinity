@@ -2,6 +2,56 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-21 — Phase 45.28: community hero immersion pass
+
+**Objective**: qiaoxux owner pass on `/c/[slug]` — reduce friction, make
+the page feel as immersive as possible. Three asks: (1) shrink hero
+height further, (2) drop the [Community Videos | Active Listings] pill
+toggle row since videos are the default, (3) move the active-listings
+entry point into the hero itself, bottom-right, renamed from "Active
+Listings" to a softer "see homes here…"-style CTA. Owner picked
+**"Live here →"** from a 10-option shortlist.
+**Actions**:
+- New client island `app/(public)/c/[slug]/_components/CommunityBody.tsx`
+  takes ownership of both the hero and the body grid (so the CTA can sit
+  absolute inside the hero and drive the videos↔listings tab state
+  without a route round-trip). Old `CommunityTabs.tsx` deleted.
+- Hero aspect: `aspect-[16/7] md:aspect-[21/5]` → `aspect-[5/2]
+  md:aspect-[5/1]` (~9% shorter mobile, ~16% shorter desktop).
+- Pill toggle row removed. Videos render by default; the grid now butts
+  directly against the hero's bottom edge.
+- CTA pill `Live here →` placed `absolute right-3 bottom-3 sm:right-4
+  sm:bottom-4`, cream background / ink text / shadow-md, only visible
+  on the videos tab. Switching to listings hides the CTA and reveals a
+  lightweight `← Community videos` text link above the listings grid as
+  the return path.
+- `page.tsx` reduced to data fetching + prop forwarding (computes
+  `heroCoverUrl` once on the server with `demoCoverFor`, passes the
+  resolved string in to the client island so we don't ship the
+  `resolveCommunityCoverWithCfIds` machinery to the browser).
+**Decisions**:
+- Considered keeping the hero in `page.tsx` and hosting only the CTA
+  inside a tiny client island, but the CTA needs to mutate the same
+  state that drives the body's videos/listings switch — splitting the
+  hero from that state would force either a URL param round-trip or
+  cross-island state plumbing. Folding the hero into the same client
+  component is the surgical option.
+- "Live here" picked over "See homes here →" / data-driven "N homes
+  available →" — the double meaning ("reside here" + "active/live
+  listings") fit the immersive-not-utilitarian framing the owner asked
+  for, and 4 chars stays out of the way of the hero text on the left.
+- Kept `← Community videos` as a plain text link, not a pill — once the
+  user has flipped to listings, a second pill in the same place as the
+  CTA they just clicked would feel like a tab strip we just deleted.
+**Issues / Resolution**: None. tsc clean on first try.
+**Learnings**: When a CTA's job is to drive state that lives inside a
+sibling component, the cheapest fix is usually to merge the two into
+one client island — not to invent a state-sharing layer. The
+`page.tsx` stays as a thin server wrapper that just gathers data.
+**Next steps**: qiaoxux verifies on Vercel preview. If the CTA's
+contrast feels off against light hero photos, drop to ink/cream
+inversion or add a stronger backdrop-blur ring.
+
 ## 2026-06-21 — Phase 45.27.1: nearby geolocation diagnostics + retry
 
 **Objective**: qiaoxux clicked "Enable location" in the soft prompt and
