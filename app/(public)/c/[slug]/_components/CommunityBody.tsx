@@ -87,14 +87,13 @@ export function CommunityBody({
           ) : null}
         </div>
 
-        {/* Phase 45.28.1: CTA at hero top-right (was bottom-right — overlapped
-         *  hero title/desc on mobile). Same pill, label flips with tab state,
-         *  serving as both the videos→listings entry and the listings→videos
-         *  return path. No separate "back" link in body. */}
+        {/* Phase 45.28.2: rounded-md (was rounded-full pill) to echo the
+         *  square feed cards' angular feel; label "Walk through" on
+         *  listings tab pairs with "Live here" as a verb→verb mirror. */}
         <button
           type="button"
           onClick={() => setTab(tab === 'videos' ? 'listings' : 'videos')}
-          className="absolute top-3 right-3 inline-flex h-9 items-center gap-1 rounded-full bg-cream px-4 font-medium text-ink text-sm shadow-md transition hover:bg-cream/90 sm:top-4 sm:right-4 sm:h-10 sm:px-5"
+          className="absolute top-3 right-3 inline-flex h-9 items-center gap-1 rounded-md bg-cream px-4 font-medium text-ink text-sm shadow-md transition hover:bg-cream/90 sm:top-4 sm:right-4 sm:h-10 sm:px-5"
         >
           {tab === 'videos' ? (
             <>
@@ -104,7 +103,7 @@ export function CommunityBody({
           ) : (
             <>
               <span aria-hidden="true">←</span>
-              Videos
+              Walk through
             </>
           )}
         </button>
