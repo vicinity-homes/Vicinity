@@ -2,6 +2,49 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-21 — Phase 45.33: fix scrim z-index escape + redesign source picker
+
+**Objective**: qiaoxux 测试 45.32 实装后报两个 bug:
+1. 「点击别的地方并没有取消 sheet,并且打开了另一个窗口」— 点 listing
+   card 区域的「取消」实际触发了卡片导航
+2. 上一版 sheet 视觉太平,4 个白矩形(被 45.32 收敛到 3 个但仍是平按钮)
+
+**Root cause**: `UploadSheet` 的 portal JSX 渲染在 `<UploadFAB>` 内部,而
+`<UploadFAB>` 嵌在 `<BottomNav>`(`fixed z-40`)里。`fixed` + `z-index` 会
+创建新的 stacking context,所以 sheet 自己的 `z-50` 只在 BottomNav 这个 z-40
+盒子内部生效,**全局上整个 sheet 被封顶在 z-40 层**。页面上的 listing card
+(在 BottomNav 的 stacking context 之外)即使是 z-auto 也排在 sheet 之上,
+点击事件实际命中卡片本身,不是 scrim button。
+
+**Actions**:
+- `app/_components/UploadSheet.tsx`:
+  - 改用 `createPortal(sheetUI, document.body)` 把 sheet 渲染到 body,
+    彻底逃出 BottomNav 的 stacking context。Hidden file inputs 留在原
+    组件树(refs 必须共享同一 React tree)。
+  - SSR-safe:`useEffect` mount flag + `mounted ?? null` 守门,避免
+    `document is undefined` 的 server render 报错。
+  - 提升 z-index 到 `z-[80]`(超过现有 LeadModal 的 z-[70]),给上传流
+    一个全局最高优先级。
+  - Source picker 视觉重做:从 3 行平按钮换成 2 个 icon tile(Album /
+    Camera),inline SVG icon + label + hint。删除 Cancel 按钮,改成底
+    部 hint「Tap outside to cancel」+ 加深 scrim(`bg-ink/50` + 弱
+    blur)+ 入场动画(fade-in scrim + slide-in-from-bottom sheet)。
+  - Type-picker(第二步)保留 Listing/Community 两行 + 同样的 hint。
+
+**Decisions**:
+- 不改 BottomNav 的 z-40 自己 — 那会影响 sticky/safe-area 行为。Portal
+  逃逸是更隔离的修法。
+- 不用 `event.stopPropagation` 拦底层卡片 click:scrim 是 `<button>`,
+  click event 的 target 就是 button 本身,不存在「穿透」语义,问题
+  纯粹是 stacking context 把 scrim 物理排到了卡片之后。修 z-index/
+  portal 才是根因修复。
+
+**Verification**:
+- `npx tsc --noEmit` clean
+- `npm run build` green
+- 待 qiaoxux 手机端验证:点击外部 → 只关 sheet,不进卡片;sheet
+  视觉是否顺眼
+
 ## 2026-06-21 — Phase 45.32: revert fan, simplify to album/camera/cancel
 
 **Objective**: qiaoxux 看完 fan-out 实装后改主意 — "改成之前的 sheet 只

@@ -3,6 +3,16 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.49.5 — 2026-06-21
+
+### 🐛 Bug Fixes
+
+- **Upload sheet now properly cancels on outside tap.** Previously, tapping outside the upload sheet on the listings page would not only fail to close the sheet — it would also navigate to whatever listing card you tapped on. Fixed: the sheet now renders at the document root (above all page content) so tapping outside reliably dismisses it without triggering anything underneath.
+
+### ✨ Improvements
+
+- **Upload sheet redesigned.** Replaced the three flat buttons (Album / Camera / Cancel) with two large icon tiles for **Album** and **Camera**, plus a subtle "Tap outside to cancel" hint. Smoother slide-in animation, deeper scrim, no need for a Cancel button — just tap anywhere off the sheet.
+
 ## v0.49.4 — 2026-06-21
 
 ### ✨ Improvements
