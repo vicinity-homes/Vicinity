@@ -23,6 +23,8 @@ export type ListingGridItem = {
   /** Optional top-right badge — { label: 'Stock' } on demo cards, { label:
    *  'Inactive', tone: 'light' } on owner-side dimmed cards. */
   badge?: { label: string; tone?: 'dark' | 'light' } | null;
+  /** Optional top-left distance pill — used by /nearby (e.g. "1.2 mi"). */
+  distanceMi?: number | null;
   /** Reduce cover opacity (used for inactive listings on the agent side). */
   dimmed?: boolean;
 };
@@ -80,6 +82,10 @@ export function ListingGrid({
           )
         ) : null;
         const specs = specsLine(item);
+        const topLeft =
+          typeof item.distanceMi === 'number' ? (
+            <GridCardBadgeDark>{`${item.distanceMi.toFixed(1)} mi`}</GridCardBadgeDark>
+          ) : null;
         return (
           <GridCard
             key={item.id}
@@ -87,6 +93,7 @@ export function ListingGrid({
             coverUrl={item.coverUrl}
             alt={item.address ?? ''}
             dimmed={item.dimmed}
+            topLeft={topLeft}
             topRight={topRight}
             fallback={
               <div className="grid h-full w-full place-items-center text-muted text-xs">

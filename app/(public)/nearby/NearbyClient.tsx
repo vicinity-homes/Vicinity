@@ -1,9 +1,10 @@
 'use client';
 
 import type { BrowseCard } from '@/app/(public)/browse/_components/BrowseFeed';
+import { GridPageShell } from '@/app/_components/GridPageShell';
+import { ListingGrid, type ListingGridItem } from '@/app/_components/ListingGrid';
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
 import { demoCoverFor } from '@/lib/demo-media';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -140,13 +141,15 @@ export function NearbyClient() {
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6 backdrop-blur-sm"
       >
         <div className="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-xl">
-          <div className="mb-3 text-3xl" aria-hidden>📍</div>
+          <div className="mb-3 text-3xl" aria-hidden>
+            📍
+          </div>
           <h2 id="nearby-geo-title" className="font-serif text-xl text-ink">
             See homes near you
           </h2>
           <p className="mt-2 text-ink2 text-sm leading-relaxed">
-            Vicinity uses your location to show listings within your search radius.
-            Your location stays on your device — we only use it to filter what you see.
+            Vicinity uses your location to show listings within your search radius. Your location
+            stays on your device — we only use it to filter what you see.
           </p>
           <div className="mt-6 flex flex-col gap-2">
             <button
@@ -227,69 +230,34 @@ export function NearbyClient() {
     );
   }
 
-  // Phase 45.10 (2026-06-20): match /browse card style exactly — caption
-  // BELOW the image (not overlaid), 3:4 frame, no ring, gallery gap.
-  return (
-    <div className="mx-auto max-w-6xl px-3 pb-6 sm:px-6">
-      {/* Phase 45.26 (2026-06-21): TikTok-density grid — overlay variant D. */}
-      <div className="grid grid-cols-2 gap-x-1 gap-y-2 md:grid-cols-4 md:gap-x-1.5 md:gap-y-3">
-        {cards.map((card, idx) => (
-          <Link
-            key={card.listing.id}
-            href={
-              card.mediaKind === 'video'
-                ? `/browse/feed?start=${encodeURIComponent(card.listing.id)}`
-                : `/v/${card.agent.slug}/${card.listing.slug}`
-            }
-            prefetch={false}
-            className="group block"
-          >
-            <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface">
-              <Image
-                src={
-                  demoCoverFor(
-                    card.listing.id,
-                    card.mediaKind === 'video'
-                      ? thumbnailUrl(card.hero.cfVideoId)
-                      : (card.heroPhotoUrl as string),
-                  ) as string
-                }
-                alt={card.listing.address}
-                fill
-                sizes="(max-width: 640px) 50vw, 25vw"
-                priority={idx < 4}
-                className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
-              />
-              {typeof card.distance === 'number' && (
-                <div className="absolute top-2 left-2 rounded-full bg-ink/85 px-2 py-0.5 text-[10px] text-surface backdrop-blur">
-                  {card.distance.toFixed(1)} mi
-                </div>
-              )}
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-              <div className="absolute inset-x-2 bottom-2 text-surface">
-                <div className="font-serif text-[15px] font-semibold leading-tight tracking-[-0.01em]">
-                  {formatPrice(card.listing.price)}
-                </div>
-                <div className="mt-0.5 truncate text-[11px] opacity-95 tracking-wide">
-                  {[
-                    card.listing.beds != null ? `${card.listing.beds} bd` : null,
-                    card.listing.baths != null ? `${card.listing.baths} ba` : null,
-                    card.listing.sqft != null ? `${card.listing.sqft.toLocaleString()} sqft` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </div>
-                <div className="mt-px truncate text-[11px] opacity-80">{card.listing.address}</div>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
+  // Phase 47.2 (2026-06-21): refactored to use shared GridPageShell +
+  // ListingGrid primitives so /nearby matches /browse, /communities,
+  // /dashboard, /dashboard/communities, /saved exactly. Distance pill
+  // routes through ListingGridItem.distanceMi → GridCard topLeft slot.
+  const items: ListingGridItem[] = cards.map((card) => {
+    const realSrc =
+      card.mediaKind === 'video'
+        ? thumbnailUrl(card.hero.cfVideoId)
+        : (card.heroPhotoUrl as string);
+    return {
+      id: card.listing.id,
+      href:
+        card.mediaKind === 'video'
+          ? `/browse/feed?start=${encodeURIComponent(card.listing.id)}`
+          : `/v/${card.agent.slug}/${card.listing.slug}`,
+      coverUrl: demoCoverFor(card.listing.id, realSrc) ?? null,
+      price: card.listing.price,
+      beds: card.listing.beds,
+      baths: card.listing.baths,
+      sqft: card.listing.sqft,
+      address: card.listing.address,
+      distanceMi: typeof card.distance === 'number' ? card.distance : null,
+    };
+  });
 
-function formatPrice(price: number | null): string {
-  if (price == null) return 'Price on request';
-  return `$${price.toLocaleString()}`;
+  return (
+    <GridPageShell>
+      <ListingGrid items={items} />
+    </GridPageShell>
+  );
 }

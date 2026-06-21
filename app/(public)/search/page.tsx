@@ -1,4 +1,6 @@
 import { CommunityGrid } from '@/app/_components/CommunityGrid';
+import { GridPageShell } from '@/app/_components/GridPageShell';
+import { ListingGrid, type ListingGridItem } from '@/app/_components/ListingGrid';
 /**
  * /search — basic site-wide search across listings and communities.
  *
@@ -7,6 +9,11 @@ import { CommunityGrid } from '@/app/_components/CommunityGrid';
  * with simple ILIKE matching on `address`/`city` and `name`/`city`
  * respectively. Sanitised input only — no user-controlled patterns,
  * no LIKE injection.
+ *
+ * Phase 47.2 (2026-06-21): grids unified on top of GridPageShell +
+ * ListingGrid + CommunityGrid so /search matches every other grid
+ * surface visually (browse / communities / dashboard / saved / nearby /
+ * c/[slug]). Inline `ListingCard` deleted.
  */
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
 import { fetchCommunityListCards } from '@/lib/communities/list';
@@ -14,8 +21,6 @@ import { DEMO_MEDIA_ENABLED, demoCoverFor } from '@/lib/demo-media';
 import { createClient } from '@/lib/supabase/server';
 import { photoPublicUrl } from '@/lib/supabase/storage';
 import type { Metadata } from 'next';
-import Image from 'next/image';
-import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Search · Vicinity',
@@ -142,61 +147,29 @@ async function searchListings(q: string): Promise<ListingHit[]> {
   });
 }
 
-function formatPrice(price: number | null): string {
-  if (price == null) return 'Price on request';
-  return `$${price.toLocaleString()}`;
-}
-
-function ListingCard({ hit, idx }: { hit: ListingHit; idx: number }) {
-  const realSrc = hit.cover?.src ?? null;
-  const src = realSrc ? (demoCoverFor(hit.id, realSrc) as string) : null;
-  const isDemoStock = DEMO_MEDIA_ENABLED && src !== null && src !== realSrc;
-  const href =
-    hit.cover?.kind === 'video'
-      ? `/browse/feed?start=${encodeURIComponent(hit.id)}`
-      : hit.agent_slug
-        ? `/v/${hit.agent_slug}/${hit.slug}`
-        : `/browse`;
-  return (
-    <Link href={href} prefetch={false} className="group block">
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface">
-        {src ? (
-          <>
-            <Image
-              src={src}
-              alt={hit.address}
-              fill
-              sizes="(min-width: 768px) 25vw, 50vw"
-              priority={idx < 4}
-              className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
-            />
-            {isDemoStock && (
-              <span className="absolute top-2 right-2 bg-ink/85 px-1.5 py-0.5 text-[8px] tracking-[0.18em] text-surface uppercase backdrop-blur">
-                Stock
-              </span>
-            )}
-          </>
-        ) : null}
-        {/* Phase 45.26 (2026-06-21): TikTok-density overlay D. */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-        <div className="absolute inset-x-2 bottom-2 text-surface">
-          <div className="font-serif text-[15px] font-semibold leading-tight tracking-[-0.01em]">
-            {formatPrice(hit.price)}
-          </div>
-          <div className="mt-0.5 truncate text-[11px] opacity-95 tracking-wide">
-            {[
-              hit.beds != null ? `${hit.beds} bd` : null,
-              hit.baths != null ? `${hit.baths} ba` : null,
-              hit.sqft != null ? `${hit.sqft.toLocaleString()} sqft` : null,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </div>
-          <div className="mt-px truncate text-[11px] opacity-80">{hit.address}</div>
-        </div>
-      </div>
-    </Link>
-  );
+function listingHitsToItems(hits: ListingHit[]): ListingGridItem[] {
+  return hits.map((hit) => {
+    const realSrc = hit.cover?.src ?? null;
+    const src = realSrc ? (demoCoverFor(hit.id, realSrc) ?? null) : null;
+    const isDemoStock = DEMO_MEDIA_ENABLED && src !== null && src !== realSrc;
+    const href =
+      hit.cover?.kind === 'video'
+        ? `/browse/feed?start=${encodeURIComponent(hit.id)}`
+        : hit.agent_slug
+          ? `/v/${hit.agent_slug}/${hit.slug}`
+          : '/browse';
+    return {
+      id: hit.id,
+      href,
+      coverUrl: src,
+      price: hit.price,
+      beds: hit.beds,
+      baths: hit.baths,
+      sqft: hit.sqft,
+      address: hit.address,
+      badge: isDemoStock ? { label: 'Stock', tone: 'dark' } : null,
+    };
+  });
 }
 
 export default async function SearchPage({
@@ -243,7 +216,7 @@ export default async function SearchPage({
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-3 pb-6 sm:px-6">
+      <GridPageShell>
         <h1 className="px-1 pt-6 pb-4 font-serif text-xl text-ink tracking-[-0.012em]">
           Search results for &lsquo;{q}&rsquo;
         </h1>
@@ -257,11 +230,7 @@ export default async function SearchPage({
                 <h2 className="mb-3 px-1 text-[11px] text-ink2 tracking-[0.22em] uppercase">
                   Listings
                 </h2>
-                <div className="grid grid-cols-2 gap-x-1 gap-y-2 md:grid-cols-4 md:gap-x-1.5 md:gap-y-3">
-                  {listings.map((hit, idx) => (
-                    <ListingCard key={hit.id} hit={hit} idx={idx} />
-                  ))}
-                </div>
+                <ListingGrid items={listingHitsToItems(listings)} />
               </section>
             )}
 
@@ -275,7 +244,7 @@ export default async function SearchPage({
             )}
           </>
         )}
-      </div>
+      </GridPageShell>
     </main>
   );
 }

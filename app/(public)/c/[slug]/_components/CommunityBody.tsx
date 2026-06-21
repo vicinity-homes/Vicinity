@@ -15,17 +15,24 @@
  *     text link above the listings grid provides the return path.
  *   - Hero moved out of page.tsx into this client island so the CTA can
  *     drive the videos/listings tab state without a route round-trip.
+ *
+ * Phase 47.2 (2026-06-21): videos + listings grids refactored on top of
+ * GridFrame + GridCard / ListingGrid so /c/[slug] matches /browse,
+ * /communities, /dashboard, /dashboard/communities, /saved, /nearby — all
+ * grid surfaces now share aspect-[3/4], gap-1 md:gap-1.5, and identical
+ * caption/badge styling. Inline aspect-square card markup deleted.
  */
 
 import type { BrowseCard } from '@/app/(public)/browse/_components/BrowseFeed';
+import { GridCard, GridCardCaption } from '@/app/_components/GridCard';
+import { GridFrame } from '@/app/_components/GridFrame';
+import { ListingGrid, type ListingGridItem } from '@/app/_components/ListingGrid';
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
 import { demoCoverFor } from '@/lib/demo-media';
 import {
   COMMUNITY_VIDEO_CATEGORIES,
   type CommunityVideoCategoryId,
 } from '@/lib/zod/community-video-categories';
-import Image from 'next/image';
-import Link from 'next/link';
 import { useState } from 'react';
 
 const CATEGORY_META = new Map(COMMUNITY_VIDEO_CATEGORIES.map((m) => [m.id, m] as const));
@@ -86,7 +93,9 @@ export function CommunityBody({
             <span className="text-cream/75">
               {community.city ? `${community.city}, ${community.state}` : community.state}
             </span>
-            <span className="text-cream/40" aria-hidden="true">·</span>
+            <span className="text-cream/40" aria-hidden="true">
+              ·
+            </span>
             <button
               type="button"
               onClick={() => setTab(tab === 'videos' ? 'listings' : 'videos')}
@@ -111,8 +120,10 @@ export function CommunityBody({
         </div>
       </div>
 
-      {/* Body */}
-      <div className="px-3 py-4 sm:px-6">
+      {/* Body — Phase 47.2: padding aligned with grid gap (px-1 md:px-1.5)
+          so the outer margin matches inter-card gutters and matches
+          GridPageShell elsewhere. */}
+      <div className="px-1 py-4 md:px-1.5">
         {tab === 'videos' ? (
           <VideosGrid communitySlug={community.slug} videos={videos} />
         ) : (
@@ -138,42 +149,33 @@ function VideosGrid({
     );
   }
   return (
-    <div className="grid grid-cols-2 gap-x-1 gap-y-2 md:grid-cols-4 md:gap-x-1.5 md:gap-y-3">
+    <GridFrame>
       {videos.map((v) => {
-        const meta = v.category
-          ? CATEGORY_META.get(v.category as CommunityVideoCategoryId)
-          : null;
+        const meta = v.category ? CATEGORY_META.get(v.category as CommunityVideoCategoryId) : null;
+        const coverUrl =
+          demoCoverFor(v.cf_video_id, thumbnailUrl(v.cf_video_id)) ?? thumbnailUrl(v.cf_video_id);
         return (
-          <Link
+          <GridCard
             key={v.id}
             href={`/c/${communitySlug}/feed?start=${v.id}`}
-            prefetch={false}
-            className="group block"
-          >
-            <div className="relative aspect-square w-full overflow-hidden bg-surface">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={demoCoverFor(v.cf_video_id, thumbnailUrl(v.cf_video_id)) ?? thumbnailUrl(v.cf_video_id)}
-                alt={meta?.label ?? 'Community video'}
-                className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
-                loading="lazy"
-              />
-              {meta ? (
-                <>
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                  <div className="absolute inset-x-2 bottom-2 text-surface">
-                    <div className="truncate font-serif text-[15px] font-semibold leading-tight tracking-[-0.01em]">
-                      {meta.label}
-                    </div>
-                    <div className="mt-0.5 truncate text-[11px] opacity-90">{meta.blurb}</div>
-                  </div>
-                </>
-              ) : null}
-            </div>
-          </Link>
+            coverUrl={coverUrl}
+            alt={meta?.label ?? 'Community video'}
+            fallback={
+              <div className="grid h-full w-full place-items-center text-muted text-xs">
+                No cover
+              </div>
+            }
+            caption={
+              meta ? (
+                <GridCardCaption title={meta.label} sub={meta.blurb} />
+              ) : (
+                <span className="sr-only">Community video</span>
+              )
+            }
+          />
         );
       })}
-    </div>
+    </GridFrame>
   );
 }
 
@@ -185,59 +187,24 @@ function ListingsGrid({ listings }: { listings: BrowseCard[] }) {
       </div>
     );
   }
-  return (
-    <div className="grid grid-cols-2 gap-x-1 gap-y-2 md:grid-cols-4 md:gap-x-1.5 md:gap-y-3">
-      {listings.map((card, idx) => (
-        <Link
-          key={card.listing.id}
-          href={
-            card.mediaKind === 'video'
-              ? `/browse/feed?start=${encodeURIComponent(card.listing.id)}`
-              : `/v/${card.agent.slug}/${card.listing.slug}`
-          }
-          prefetch={false}
-          className="group block"
-        >
-          <div className="relative aspect-square w-full overflow-hidden bg-surface">
-            <Image
-              src={
-                demoCoverFor(
-                  card.listing.id,
-                  card.mediaKind === 'video'
-                    ? thumbnailUrl(card.hero.cfVideoId)
-                    : (card.heroPhotoUrl as string),
-                ) as string
-              }
-              alt={card.listing.address}
-              fill
-              sizes="(max-width: 640px) 50vw, 25vw"
-              priority={idx < 4}
-              className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
-            />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-            <div className="absolute inset-x-2 bottom-2 text-surface">
-              <div className="font-serif text-[15px] font-semibold leading-tight tracking-[-0.01em]">
-                {formatPrice(card.listing.price)}
-              </div>
-              <div className="mt-0.5 truncate text-[11px] opacity-95 tracking-wide">
-                {[
-                  card.listing.beds != null ? `${card.listing.beds} bd` : null,
-                  card.listing.baths != null ? `${card.listing.baths} ba` : null,
-                  card.listing.sqft != null ? `${card.listing.sqft.toLocaleString()} sqft` : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </div>
-              <div className="mt-px truncate text-[11px] opacity-80">{card.listing.address}</div>
-            </div>
-          </div>
-        </Link>
-      ))}
-    </div>
-  );
-}
-
-function formatPrice(price: number | null): string {
-  if (price == null) return 'Price on request';
-  return `$${price.toLocaleString()}`;
+  const items: ListingGridItem[] = listings.map((card) => {
+    const realSrc =
+      card.mediaKind === 'video'
+        ? thumbnailUrl(card.hero.cfVideoId)
+        : (card.heroPhotoUrl as string);
+    return {
+      id: card.listing.id,
+      href:
+        card.mediaKind === 'video'
+          ? `/browse/feed?start=${encodeURIComponent(card.listing.id)}`
+          : `/v/${card.agent.slug}/${card.listing.slug}`,
+      coverUrl: demoCoverFor(card.listing.id, realSrc) ?? null,
+      price: card.listing.price,
+      beds: card.listing.beds,
+      baths: card.listing.baths,
+      sqft: card.listing.sqft,
+      address: card.listing.address,
+    };
+  });
+  return <ListingGrid items={items} />;
 }
