@@ -33,6 +33,7 @@ export function NearbyClient() {
   const [data, setData] = useState<NearbyResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [geoDenied, setGeoDenied] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
   // Phase 45.27 (2026-06-21): first-visit soft prompt before triggering the
   // browser's native geolocation permission UI. Without this users see a bare
   // "allow location?" dialog with no context and reflexively deny.
@@ -45,17 +46,31 @@ export function NearbyClient() {
 
   const requestGeolocation = useCallback(() => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setGeoError('unsupported');
       setGeoDenied(true);
       return;
     }
+    setGeoError(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
       },
-      () => {
+      (err) => {
+        // 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
+        const reason =
+          err.code === 1
+            ? 'denied'
+            : err.code === 2
+              ? 'unavailable'
+              : err.code === 3
+                ? 'timeout'
+                : 'unknown';
+        setGeoError(reason);
         setGeoDenied(true);
       },
-      { enableHighAccuracy: false, timeout: 8000 },
+      // Phase 45.27.1 (2026-06-21): 8s was too tight — users were timing out
+      // mid native-prompt. Bump to 30s and don't require high accuracy.
+      { enableHighAccuracy: false, timeout: 30000, maximumAge: 60_000 },
     );
   }, []);
 
@@ -83,6 +98,12 @@ export function NearbyClient() {
     setShowSoftPrompt(false);
     setGeoDenied(true);
   }, []);
+
+  const handleRetryGeolocation = useCallback(() => {
+    setGeoDenied(false);
+    setGeoError(null);
+    requestGeolocation();
+  }, [requestGeolocation]);
 
   const fetchNearby = useCallback(async (c: { lat: number; lng: number }, r: number) => {
     setLoading(true);
@@ -148,14 +169,32 @@ export function NearbyClient() {
     );
   }
 
-  // Geolocation denied / unavailable — show empty result with a one-line
-  // explanation. No input boxes.
+  // Geolocation denied / unavailable — show empty result with the reason
+  // (helps diagnose: was it a hard browser deny, a timeout, or unavailable?)
+  // and a Try again button that re-fires the geolocation call.
   if (!coords && geoDenied) {
+    const message =
+      geoError === 'denied'
+        ? 'Location access is blocked for this site. Open your browser site settings (lock icon in the URL bar → Location → Allow), then try again.'
+        : geoError === 'timeout'
+          ? "We didn't get a location response in time."
+          : geoError === 'unavailable'
+            ? "Your device couldn't determine its location."
+            : geoError === 'unsupported'
+              ? "This browser doesn't support location."
+              : 'Enable location access in your browser to see listings near you.';
     return (
       <div className="mx-auto max-w-md px-6 py-24 text-center">
-        <p className="text-ink2">
-          Enable location access in your browser to see listings near you.
-        </p>
+        <p className="text-ink2">{message}</p>
+        {geoError !== 'denied' && geoError !== 'unsupported' && (
+          <button
+            type="button"
+            onClick={handleRetryGeolocation}
+            className="mt-6 rounded-full bg-ink px-5 py-2 text-surface text-sm font-medium transition hover:opacity-90"
+          >
+            Try again
+          </button>
+        )}
       </div>
     );
   }

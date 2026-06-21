@@ -2,6 +2,43 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-21 — Phase 45.27.1: nearby geolocation diagnostics + retry
+
+**Objective**: qiaoxux clicked "Enable location" in the soft prompt and
+still landed on the "Enable location access in your browser…" empty
+state. Need to (a) figure out *why* — was it timeout, hard deny, or
+sticky-deny from a prior test session? — and (b) give a retry path so
+the user isn't stuck.
+**Actions**: `app/(public)/nearby/NearbyClient.tsx` —
+- Added `geoError` state holding `denied | timeout | unavailable | unsupported | unknown`.
+- `getCurrentPosition` error handler now reads `err.code` (1/2/3) and
+  records the reason instead of dropping it.
+- Bumped timeout 8s → 30s, added `maximumAge: 60_000` so a recent fix
+  is reused inside a minute (avoids a second permission round-trip
+  during dev iteration).
+- Empty state now branches per reason: hard `denied` tells the user to
+  open lock-icon site settings (no Try again button — browser permission
+  is sticky and re-firing `getCurrentPosition` does nothing); `timeout`
+  / `unavailable` / `unknown` get a Try again button that re-fires the
+  request from a user gesture.
+**Decisions**: Did not switch to the Permissions API to pre-check state.
+The native dialog only fires from a user gesture (the "Enable" button
+click), so a passive permission check would just duplicate logic.
+The localStorage `nearby_geo_prompted` flag stays set on the first
+"Enable" click — we don't re-show the soft prompt on retry, only the
+inline empty-state retry button.
+**Issues**: Hit Rules of Hooks again — initial patch put
+`handleRetryGeolocation = useCallback(...)` between the showSoftPrompt
+early-return and the geoDenied early-return. Moved it next to the other
+handlers above all returns; tsc clean.
+**Learnings**: Geolocation fail modes are user-actionable but only if
+the UI tells them which one happened. "Click Enable, get told to
+'enable location' anyway" is the worst possible loop — silent
+swallowing of `err.code` is what produced it.
+**Next steps**: qiaoxux re-tests on Vercel preview. If the retry button
+still leaves her stuck, the message will at least show `denied` /
+`timeout` / `unavailable` so we can debug.
+
 ## 2026-06-21 — Phase 45.27: First-visit geolocation soft prompt on /nearby
 
 **Objective**: Stop the bare browser geolocation dialog from appearing the

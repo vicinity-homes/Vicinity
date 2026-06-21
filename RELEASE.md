@@ -3,6 +3,13 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.48.2 — 2026-06-21
+
+### 🐛 Bug Fixes
+
+- **Nearby now tells you what went wrong with location.** If location fails — because the browser timed out, your device couldn't get a fix, or you'd previously blocked the site — the empty state now explains which one and shows a **Try again** button (except for "blocked", where the only fix is to open the browser's site settings). Before this, every failure landed on the same generic "enable location access in your browser" message even after you clicked Enable, so there was no way to tell whether retrying would help.
+- **Longer wait on first location lookup.** The Nearby page used to give up after 8 seconds, which was too short — by the time the OS permission dialog appeared and you tapped Allow, we'd often already moved on. Bumped to 30 seconds, and we'll reuse a recent fix for up to a minute so back-and-forth between Nearby and other pages doesn't keep re-asking the OS.
+
 ## v0.48.1 — 2026-06-21
 
 ### ✨ Improvements
