@@ -44,6 +44,8 @@ import {
   ShareIcon,
 } from '../../../_components/feed/icons';
 import { ActionButton } from '../../../_components/feed/ActionButton';
+import { FEED_RAIL_BOTTOM, FEED_Z } from '../../../_components/feed/constants';
+import { FeedShell } from '../../../_components/feed/FeedShell';
 
 export type CommunityFeedVideo = {
   id: string;
@@ -507,42 +509,12 @@ export function CommunityVideoFeed({
   }
 
   return (
-    <div className="relative mx-auto h-screen w-full overflow-hidden bg-black md:w-[min(430px,calc(100vh*9/16))] md:shadow-2xl md:shadow-black/50">
-      {/* Phase 45.12 (2026-06-20): desktop constrains the feed to a phone-width
-       * portrait column centered on the page — same idiom as BrowseFeed.
-       * Mobile stays full viewport. Owner: community videos shouldn't expand
-       * to full desktop width; should match the listing video feed.
-       *
-       * Phase 45.19 (2026-06-20): the snap-y scroller is now a child of this
-       * outer container, not the container itself. Earlier the overlay
-       * buttons (top header, right-rail Like/Save/Contact, "homes here"
-       * chip) were absolute children of the scroller, which meant they
-       * scrolled WITH the cards and disappeared off-screen after the first
-       * video. Same idiom BrowseFeed uses (BrowseFeed.tsx:1271). */}
-      <div
-        ref={scrollerRef}
-        className="h-full w-full snap-y snap-mandatory overflow-y-scroll overscroll-contain"
-        style={{ scrollSnapType: 'y mandatory' }}
-      >
-        {Array.from({ length: totalCards }, (_, idx) => {
-          const v = videos[idx % videos.length];
-          if (!v) return null;
-          return (
-            <VideoCard
-              key={`${v.id}-${idx}`}
-              video={v}
-              shouldMount={mountWindow.has(idx)}
-              isActive={idx === activeIndex}
-              cardRef={(el) => setCardRef(idx, el)}
-              muted={muted}
-              onAutoplayBlocked={onAutoplayBlocked}
-            />
-          );
-        })}
-      </div>
-
+    <FeedShell
+      scrollerRef={scrollerRef}
+      overlays={
+        <>
       {/* Top header — Back + community name pill. */}
-      <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-3 pt-3">
+      <div className={`absolute inset-x-0 top-0 ${FEED_Z.topbar} flex items-center justify-between px-3 pt-3`}>
         <button
           type="button"
           onClick={onBack}
@@ -588,8 +560,8 @@ export function CommunityVideoFeed({
        * "Contact" caption underneath, matching BrowseFeed exactly so
        * the three feed surfaces speak with one voice. */}
       <div
-        className="absolute right-3 z-20 flex flex-col items-center gap-3"
-        style={{ bottom: 'max(6rem, calc(env(safe-area-inset-bottom) + 5rem))' }}
+        className={`absolute right-3 ${FEED_Z.rail} flex flex-col items-center gap-3`}
+        style={{ bottom: FEED_RAIL_BOTTOM }}
       >
         <ActionButton
           onClick={toggleLike}
@@ -636,7 +608,7 @@ export function CommunityVideoFeed({
           aria-label={`View ${listings.length} ${
             listings.length === 1 ? 'home' : 'homes'
           } in ${community.name}`}
-          className="absolute top-16 left-3 z-20 flex items-center gap-1.5 rounded-full border border-cream/20 bg-ink/65 py-2 pr-3 pl-3 text-cream backdrop-blur-md transition-colors hover:border-cream hover:text-cream"
+          className={`absolute top-16 left-3 ${FEED_Z.caption} flex items-center gap-1.5 rounded-full border border-cream/20 bg-ink/65 py-2 pr-3 pl-3 text-cream backdrop-blur-md transition-colors hover:border-cream hover:text-cream`}
           style={{ touchAction: 'manipulation' }}
         >
           <span aria-hidden="true">🏠</span>
@@ -683,6 +655,24 @@ export function CommunityVideoFeed({
           communityId={community.id}
         />
       )}
-    </div>
+        </>
+      }
+    >
+      {Array.from({ length: totalCards }, (_, idx) => {
+        const v = videos[idx % videos.length];
+        if (!v) return null;
+        return (
+          <VideoCard
+            key={`${v.id}-${idx}`}
+            video={v}
+            shouldMount={mountWindow.has(idx)}
+            isActive={idx === activeIndex}
+            cardRef={(el) => setCardRef(idx, el)}
+            muted={muted}
+            onAutoplayBlocked={onAutoplayBlocked}
+          />
+        );
+      })}
+    </FeedShell>
   );
 }
