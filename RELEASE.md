@@ -3,6 +3,40 @@
 Newest at the top. Each release covers a meaningful product change visible to users.
 Format matches the standard release template (Features / Improvements / Bug Fixes / Technical / Known Issues / Metrics).
 
+## v0.51.2 — 2026-06-21 — Edge-to-edge grid rhythm
+
+### ✨ Improvements
+
+- Page-level left/right padding on grid pages reduced to match the
+  inter-card gap (4px mobile / 6px desktop), so the visual rhythm of
+  the grid extends all the way to the screen edges with no asymmetric
+  outer margin.
+- Six more grid surfaces (`/saved`, `/search`, `/nearby`, `/c/[slug]`
+  videos + listings) now use the same shared GridPageShell /
+  GridFrame / GridCard primitives as `/browse`, `/communities`,
+  `/dashboard`, `/dashboard/communities` — identical card aspect,
+  caption styling, and badge placement.
+- `/nearby` distance pill now uses the shared GridCard top-left slot;
+  `/search` "Stock" demo badge uses the shared top-right slot.
+- 5 loading skeletons updated to match the unified grid spacing so
+  the loading state visually matches what gets rendered.
+
+### 🛠️ Technical
+
+- `ListingGridItem` extended with optional `distanceMi` — renders
+  automatically as a top-left badge.
+- `GridPageShell` padding changed from `px-3 sm:px-6` to
+  `px-1 md:px-1.5` (equal to grid gap).
+- Inline `ListingCard` helpers in /search and /nearby deleted —
+  ~110 lines of duplicate card markup removed.
+- `tsc`, `biome`, `next build` all clean.
+
+### Known Issues
+
+- `/a/[agentSlug]` agent portfolio page is intentionally NOT in this
+  unification — it's an editorial 1/2/3-column layout, different
+  visual family. Will revisit if visual consistency there is wanted.
+
 ## v0.51.1 — 2026-06-21 — Even grid spacing
 
 ### ✨ Improvements

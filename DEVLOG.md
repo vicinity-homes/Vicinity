@@ -2,6 +2,52 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-21 — Phase 47.2: unify all remaining grid surfaces + flush gutters
+
+**Objective**: qiaoxux follow-up after phase47.1 — (a) make the page's
+left/right padding equal to the inter-card gap so the visual rhythm
+matches all the way to the screen edge; (b) extend the unified grid
+(GridPageShell + GridFrame + GridCard / ListingGrid / CommunityGrid)
+to *every* page that renders a card grid, not just the four already
+done in phase47.
+
+**Surfaces unified in this pass**:
+- `/saved` (SavedClient — buyer favorites, listings + communities)
+- `/search` (site-wide search results — listings + communities)
+- `/nearby` (geolocation feed; distance pill now routes through
+  `ListingGridItem.distanceMi` → `GridCard topLeft`)
+- `/c/[slug]` (community detail; both VideosGrid and ListingsGrid
+  rebuilt on top of GridFrame + GridCard / ListingGrid)
+- 5 corresponding `loading.tsx` skeletons
+
+**Gutter alignment**: GridPageShell padding changed from
+`px-3 sm:px-6` to `px-1 md:px-1.5` — i.e. exactly the gap value.
+The whole grid now reads as a continuous rhythm of equal whitespace
+from edge to edge with no special margin around the page.
+
+**API extension**: `ListingGridItem` gained an optional `distanceMi`
+field; `ListingGrid` renders it as a top-left dark badge so /nearby
+no longer needs its own card markup.
+
+**Decisions**:
+- `app/(public)/a/[agentSlug]` (agent portfolio page) intentionally
+  left alone — it uses an editorial 1/2/3-column layout with large
+  gaps and a different card design; that's a separate visual family,
+  not a feed/search/list grid. Will revisit if owner asks.
+- Inline `formatPrice` and `ListingCard` helpers deleted from
+  /search and /nearby; price formatting lives in GridCardPrice.
+
+**Verification**:
+- `npx tsc --noEmit` → 0 errors
+- `npx biome check` → clean
+- `npx next build` → success, all routes built
+- Manual: every grid page now shares the same px-1 md:px-1.5
+  outer padding, gap-1 md:gap-1.5 inter-card gutters, aspect-[3/4]
+  cards, and identical caption / badge typography.
+
+**Files changed**: 11 (1 modified primitive + 4 page refactors +
+5 loading skeletons + 1 ListingGrid extension).
+
 ## 2026-06-21 — Phase 47.1: equal grid gaps
 
 **Objective**: qiaoxux follow-up — wanted horizontal + vertical gaps in
