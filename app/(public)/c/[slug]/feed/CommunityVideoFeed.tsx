@@ -622,8 +622,8 @@ export function CommunityVideoFeed({
           aria-label={`View ${listings.length} ${
             listings.length === 1 ? 'home' : 'homes'
           } in ${community.name}`}
-          className={`absolute left-3 ${FEED_Z.caption} flex items-center gap-2 rounded-[10px] bg-ink/65 px-3 py-1.5 text-cream backdrop-blur-md transition-colors hover:bg-ink/75`}
-          style={{ touchAction: 'manipulation', top: '25vh' }}
+          className={`absolute top-20 left-3 ${FEED_Z.caption} flex items-center gap-2 rounded-[10px] bg-ink/65 px-3 py-1.5 text-cream backdrop-blur-md transition-colors hover:bg-ink/75`}
+          style={{ touchAction: 'manipulation' }}
         >
           <span
             aria-hidden="true"
