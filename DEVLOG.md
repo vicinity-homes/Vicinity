@@ -2,6 +2,34 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## Phase 48.6 — Quiet cache + default heading (2026-06-22)
+
+**Objective**: qiaoxux 48.5 follow-up. Two trims:
+1. The green "cached" pill on the output card was ops/internal info
+   leaking into agent UX — agents don't care whether we called Claude
+   or returned a saved draft, only that the right text is in the box.
+2. Saved-draft rows without a custom title showed empty heading +
+   "Title" CTA, which read as a missing field instead of an optional
+   one. Default the heading to `Platform · Language` and drop the
+   redundant lower meta line.
+
+**Changes**:
+- `SocialCopyPanel`:
+  - Removed the `outputCached` state, the green pill, and the cached
+    detection in the response handler. Server still returns
+    `cached: true` (kept for telemetry/debug); UI just ignores it.
+  - `DraftRow` heading is now always rendered. Falls back to
+    `Platform · Language` (e.g. "Facebook · English") when no custom
+    title is set — styled `text-ink2` to telegraph "auto" — and
+    bumps to `text-ink font-medium` once renamed.
+  - Dropped the secondary platform + language pills below the
+    heading; they were duplicate info now that the heading carries
+    them by default.
+  - Single button label: **Rename** (was conditionally "Title" /
+    "Rename" depending on whether a custom title existed).
+- API and DB unchanged — `cached` flag still set, `title` column
+  still nullable, semantics intact.
+
 ## Phase 48.5 — Social drafts: cache + rename + tour-panel polish (2026-06-22)
 
 **Objective**: qiaoxux follow-up on 48.4.

@@ -2,6 +2,17 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.52.5 — Cleaner Marketing tab (2026-06-22)
+
+### 🧹 Polish
+
+- Removed the green "cached" badge — irrelevant to your workflow.
+- Saved drafts now show **Platform · Language** as the default
+  heading (e.g. "Facebook · English") so every row reads cleanly out
+  of the box. **Rename** still lets you replace it with your own
+  label.
+- Dropped the duplicate platform/language line below the heading.
+
 ## v0.52.4 — Skip the AI when you've already got the answer (2026-06-22)
 
 ### 🚀 Features
