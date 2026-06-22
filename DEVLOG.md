@@ -2,6 +2,74 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## Phase 50 — Community agent hub mirrors listing edit hub (2026-06-22)
+
+**Objective**: qiaoxux: "agent hub my community, select one community,
+there are 3 tabs: details, video and photo, do you have any suggestions
+to add or update or remove anything?" The community detail page only had
+Details / Videos / Photos — no Marketing copy, no Analytics, and Cover
+sat as its own owner-only tab. The listing edit hub right next door has
+five icon chips (Details · Media · Marketing · Leads · Analytics). The
+two surfaces should read the same so an agent's brain reuses the same
+mental model across both nouns.
+
+**Approach**: rebuild `/dashboard/communities/[id]` as a 4-icon-tab hub
+mirroring the listing edit hub, and DRY the cross-cutting machinery
+(events, analytics, drafts, marketing prompt) so both nouns share one
+implementation. Skip Leads on community side (community pages don't
+collect leads — leads are listing-scoped).
+
+**Tabs**:
+- **Details** (FileText) — `<CommunityEditor>` + public-page link.
+- **Media** (ImageIcon) — Videos + Photos in a single card. Cover panel
+  folded in beneath them, owner-only.
+- **Marketing** (Megaphone, owner-only) — language-only generator (5
+  buyer languages). Listing's `SocialCopyPanel` is platform×language;
+  community is language only because buyers reach `/c/<slug>` via a
+  single URL and the platform axis adds no signal.
+- **Analytics** (LineChart, owner-only) — same KPIs and funnel as the
+  listing analytics tab.
+
+**DRY refactors**:
+- `lib/analytics/listing-stats.ts` → re-export shim around new
+  `lib/analytics/entity-stats.ts` (`getEntityStats({ entityType, entityId })`,
+  `getRollupEntityStats(...)`). Same `EntityStats` shape for both.
+- `app/dashboard/_components/AnalyticsPanel.tsx` — generic
+  `<AnalyticsPanel entityKind entityId>`; old `edit/AnalyticsPanel.tsx`
+  deleted, listing edit page rewired.
+- `lib/events/track.ts`: `EventInput` now `{ listing_id?, community_id? }`
+  XOR. `app/api/events/route.ts` zod-enforces XOR on the wire.
+- `lib/ai/anthropic.ts` adds `generateCommunityMarketing` (community
+  vocabulary, no platform axis), distinct from the listing one.
+- New `app/api/generate-marketing/route.ts` (community-only) and
+  `app/api/communities/[id]/social-drafts/route.ts` (CRUD on
+  `saved_social_drafts` rows where `community_id` is set, `platform`
+  null, `language` set).
+
+**Migrations**:
+- `0034_saved_social_drafts_community.sql` — adds `community_id` FK,
+  makes `platform` nullable, XOR check, RLS on `community_id` ownership.
+- `0035_events_community.sql` — adds `community_id` FK + RLS that scopes
+  reads to communities the calling agent created.
+
+**Buyer-side**: `app/(public)/c/[slug]/_components/CommunityBody.tsx`
+fires `track({ event_type: 'page_view', community_id })` on mount. Same
+shape as the listing video feed page_view. This is what feeds the
+community Analytics tab.
+
+**Tests**: extended `lib/analytics/__tests__/listing-stats.test.ts` to
+cover both entity types (single + rollup). `tsc --noEmit` clean. Biome
+clean on phase-50 surface (the two pre-existing useTemplate hits in
+the listing prompt and one community-feed test failure on `main`
+predate this phase).
+
+**Out of scope (future)**:
+- Wire community_id into per-card / per-video events on the feed pages
+  so the funnel beyond page_view fills in. Today only page_view fires
+  on /c/[slug].
+- Listing/community Leads parity — communities don't collect leads at
+  all yet; if that changes we'll add a Leads tab.
+
 ## Phase 49.3 — My-listing tabs: Amazon-style icon chips (2026-06-22)
 
 **Objective**: qiaoxux flagged the 5 sub-tabs on the listing-edit hub

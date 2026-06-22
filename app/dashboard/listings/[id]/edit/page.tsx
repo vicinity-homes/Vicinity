@@ -33,7 +33,7 @@ import { MediaPanel } from './MediaPanel';
 import type { ListingVideoRow } from './VideoPanel';
 import { SocialCopyPanel } from './SocialCopyPanel';
 import { ListingLeadsPanel } from './ListingLeadsPanel';
-import { AnalyticsPanel } from './AnalyticsPanel';
+import { AnalyticsPanel } from '@/app/dashboard/_components/AnalyticsPanel';
 import { DangerZone } from './DangerZone';
 
 interface ListingRow {
@@ -239,7 +239,7 @@ export default async function EditListingPage({
           ),
           marketing: <SocialCopyPanel listingId={listing.id} />,
           leads: <ListingLeadsPanel listingId={listing.id} />,
-          analytics: <AnalyticsPanel listingId={listing.id} />,
+          analytics: <AnalyticsPanel entityKind="listing" entityId={listing.id} />,
         }}
       />
     </>

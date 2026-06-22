@@ -29,11 +29,12 @@ import { GridFrame } from '@/app/_components/GridFrame';
 import { ListingGrid, type ListingGridItem } from '@/app/_components/ListingGrid';
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
 import { demoCoverFor } from '@/lib/demo-media';
+import { track } from '@/lib/events/track';
 import {
   COMMUNITY_VIDEO_CATEGORIES,
   type CommunityVideoCategoryId,
 } from '@/lib/zod/community-video-categories';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const CATEGORY_META = new Map(COMMUNITY_VIDEO_CATEGORIES.map((m) => [m.id, m] as const));
 
@@ -53,6 +54,7 @@ export function CommunityBody({
   listings,
 }: {
   community: {
+    id: string;
     name: string;
     slug: string;
     city: string | null;
@@ -64,6 +66,14 @@ export function CommunityBody({
   listings: BrowseCard[];
 }) {
   const [tab, setTab] = useState<Tab>('videos');
+
+  // Phase 50: fire one page_view per community visit so the agent's
+  // Analytics tab on /dashboard/communities/[id] has data to show. The
+  // events route enforces XOR(listing_id, community_id) — we only set
+  // community_id here.
+  useEffect(() => {
+    track({ event_type: 'page_view', community_id: community.id });
+  }, [community.id]);
 
   return (
     <div className="mx-auto max-w-6xl">

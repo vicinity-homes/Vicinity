@@ -17,9 +17,9 @@
  */
 'use client';
 
-import { useEffect } from 'react';
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
 import { demoCoverFor } from '@/lib/demo-media';
+import { useEffect } from 'react';
 import type { CommunityListingItem } from '../CommunityVideoFeed';
 
 interface Props {
@@ -164,16 +164,12 @@ export function CommunityListingsSheet({
                             {formatPrice(l.price)}
                           </div>
                         )}
-                        <div className="mt-0.5 truncate text-[13px] text-ink2">
-                          {l.address}
-                        </div>
+                        <div className="mt-0.5 truncate text-[13px] text-ink2">{l.address}</div>
                         <div className="truncate text-[12px] text-ink2">
                           {l.city}, {l.state}
                         </div>
                         {(l.beds != null || l.baths != null || l.sqft != null) && (
-                          <div className="mt-1 text-[12px] text-ink2">
-                            {formatBedBathSqft(l)}
-                          </div>
+                          <div className="mt-1 text-[12px] text-ink2">{formatBedBathSqft(l)}</div>
                         )}
                       </div>
                       <div className="text-muted" aria-hidden="true">

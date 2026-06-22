@@ -14,16 +14,16 @@
  * tool, no multi-image carousel — V1.
  */
 
-import { useState, useTransition, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
-import {
-  setCommunityCoverVideo,
-  recordCommunityCoverImage,
-  clearCommunityCover,
-} from './cover-actions';
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
 import { publicCoverImageUrl } from '@/lib/community/cover';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
+import { useRef, useState, useTransition } from 'react';
+import {
+  clearCommunityCover,
+  recordCommunityCoverImage,
+  setCommunityCoverVideo,
+} from './cover-actions';
 
 interface VideoOption {
   id: string;
@@ -59,7 +59,7 @@ export function CommunityCoverPanel({
 
   // Render the current cover preview.
   const previewVideo =
-    coverVideoId != null ? videos.find((v) => v.id === coverVideoId) ?? null : null;
+    coverVideoId != null ? (videos.find((v) => v.id === coverVideoId) ?? null) : null;
   const previewUrl = previewVideo
     ? thumbnailUrl(previewVideo.cf_video_id)
     : coverStoragePath
@@ -139,8 +139,8 @@ export function CommunityCoverPanel({
       <header className="mb-3">
         <h2 className="text-sm font-semibold text-ink">Cover</h2>
         <p className="mt-0.5 text-xs text-ink2">
-          Shown on the buyer Communities grid, the community page header, and saved cards. Pick
-          a video or upload an image; otherwise the first video&apos;s thumbnail is used.
+          Shown on the buyer Communities grid, the community page header, and saved cards. Pick a
+          video or upload an image; otherwise the first video&apos;s thumbnail is used.
         </p>
       </header>
 
@@ -149,11 +149,7 @@ export function CommunityCoverPanel({
         <div className="aspect-[9/16] w-32 shrink-0 overflow-hidden rounded bg-bg">
           {previewUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={previewUrl}
-              alt="Cover"
-              className="h-full w-full object-cover"
-            />
+            <img src={previewUrl} alt="Cover" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-[11px] text-muted">
               No cover
@@ -169,7 +165,11 @@ export function CommunityCoverPanel({
             onClick={() => setShowPicker((v) => !v)}
             className="rounded border border-line px-3 py-1.5 text-xs text-ink transition hover:border-line-strong disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {videos.length === 0 ? 'No videos yet' : showPicker ? 'Cancel pick' : 'Pick from videos'}
+            {videos.length === 0
+              ? 'No videos yet'
+              : showPicker
+                ? 'Cancel pick'
+                : 'Pick from videos'}
           </button>
           <button
             type="button"

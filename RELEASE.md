@@ -2,6 +2,32 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.54.0 — Community hub gets Marketing & Analytics tabs (2026-06-22)
+
+### ✨ Improvements
+
+- The **community detail page** in your dashboard now reads the same way
+  as the listing edit hub — four icon shortcuts across the top:
+  **Details · Media · Marketing · Analytics**.
+- **Media** combines Videos + Photos in one tab (and the Cover picker
+  is folded in beneath them for the community creator), so you don't
+  have to bounce between three sub-tabs to manage media.
+- **Marketing (new)** — generate a community marketing body in any of
+  five buyer languages (English / 简体中文 / Español / Tiếng Việt /
+  한국어), grounded in your videos, schools, and nearby points of
+  interest. Edit inline, save per language, copy with one click.
+  Regenerate refines from your edited draft instead of starting fresh.
+- **Analytics (new)** — same KPIs and engagement funnel as the listing
+  Analytics tab (Page views → Card views → Video completes → Leads),
+  scoped to this community. Numbers update live from `/c/<slug>`.
+
+### 🧱 Under the hood
+
+- Analytics machinery was generalized so listings and communities share
+  the same code path; the listing Analytics tab is unchanged.
+- `events` and `saved_social_drafts` now carry an optional
+  `community_id` alongside `listing_id` (XOR-enforced).
+
 ## v0.53.3 — My-listing tabs got icons (2026-06-22)
 
 ### ✨ Improvements

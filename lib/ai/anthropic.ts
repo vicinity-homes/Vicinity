@@ -190,13 +190,7 @@ export const SOCIAL_PLATFORMS: readonly SocialPlatform[] = [
   'wechat',
 ] as const;
 
-export const SOCIAL_LANGUAGES: readonly SocialLanguage[] = [
-  'en',
-  'zh',
-  'es',
-  'vi',
-  'ko',
-] as const;
+export const SOCIAL_LANGUAGES: readonly SocialLanguage[] = ['en', 'zh', 'es', 'vi', 'ko'] as const;
 
 const PLATFORM_BRIEF: Record<SocialPlatform, string> = {
   facebook:
@@ -207,8 +201,7 @@ const PLATFORM_BRIEF: Record<SocialPlatform, string> = {
     'Buyer-database email body: no subject, no "Dear" greeting — open with a hook. 4-6 short paragraphs, 2-3 concrete listing details, invitation to schedule a showing, listing URL on its own line.',
   tiktok:
     'TikTok caption: 1-2 sentences max, hook-first, 3-5 hashtags. No URL — TikTok strips links from captions.',
-  x:
-    'X (Twitter) post: under 270 characters total, one strong hook line, listing URL at end, 1-2 hashtags max.',
+  x: 'X (Twitter) post: under 270 characters total, one strong hook line, listing URL at end, 1-2 hashtags max.',
   linkedin:
     'LinkedIn post: 2-3 paragraphs, agent-professional voice (third-person about the property is fine), ends with listing URL. No hashtag spam — 2-3 relevant tags max.',
   threads:
@@ -264,30 +257,19 @@ export async function generateSocialCopy(
     languages: SocialLanguage[];
   },
 ): Promise<SocialCopyOutput> {
-  const platforms = input.platforms.filter((p) =>
-    SOCIAL_PLATFORMS.includes(p),
-  );
-  const languages = input.languages.filter((l) =>
-    SOCIAL_LANGUAGES.includes(l),
-  );
+  const platforms = input.platforms.filter((p) => SOCIAL_PLATFORMS.includes(p));
+  const languages = input.languages.filter((l) => SOCIAL_LANGUAGES.includes(l));
   if (platforms.length === 0 || languages.length === 0) {
     throw new Error('generateSocialCopy: need at least one platform and one language');
   }
 
-  const platformBrief = platforms
-    .map((p) => `- ${p}: ${PLATFORM_BRIEF[p]}`)
-    .join('\n');
-  const languageBrief = languages
-    .map((l) => `- ${l}: ${LANGUAGE_LABEL[l]}`)
-    .join('\n');
+  const platformBrief = platforms.map((p) => `- ${p}: ${PLATFORM_BRIEF[p]}`).join('\n');
+  const languageBrief = languages.map((l) => `- ${l}: ${LANGUAGE_LABEL[l]}`).join('\n');
 
   const shapeExample =
     '{ ' +
     platforms
-      .map(
-        (p) =>
-          `"${p}": { ${languages.map((l) => `"${l}": string`).join(', ')} }`,
-      )
+      .map((p) => `"${p}": { ${languages.map((l) => `"${l}": string`).join(', ')} }`)
       .join(', ') +
     ' }';
 
@@ -316,8 +298,7 @@ export async function generateSocialCopy(
   if (input.beds != null) userPayload.beds = input.beds;
   if (input.baths != null) userPayload.baths = input.baths;
   if (input.sqft != null) userPayload.sqft = input.sqft;
-  if (input.highlights && input.highlights.length > 0)
-    userPayload.highlights = input.highlights;
+  if (input.highlights && input.highlights.length > 0) userPayload.highlights = input.highlights;
   if (input.description && input.description.length > 0)
     userPayload.listing_description = input.description;
   if (input.photoAltText && input.photoAltText.length > 0)
@@ -345,7 +326,7 @@ export async function generateSocialCopy(
     if (Object.keys(seeds).length > 0) {
       userPayload.previous_drafts = seeds;
       userPayload.previous_drafts_note =
-        'For any (platform, language) present in previous_drafts, treat that string as the agent-edited seed. Preserve the agent\'s voice, phrasing, and any specific facts they added; refine only to better match the platform brief and the requested language. Do not regress edits back to a generic listing summary.';
+        "For any (platform, language) present in previous_drafts, treat that string as the agent-edited seed. Preserve the agent's voice, phrasing, and any specific facts they added; refine only to better match the platform brief and the requested language. Do not regress edits back to a generic listing summary.";
     }
   }
 
@@ -376,6 +357,261 @@ export async function generateSocialCopy(
   }
   if (Object.keys(out).length === 0) {
     throw new Error('Anthropic response missing all requested platform/language strings');
+  }
+  return out;
+}
+
+// ─── Community marketing copy ─────────────────────────────────────
+//
+// Phase 50 (2026-06-22). Communities are a different shape from
+// listings — there is no platform axis (a community is browsed on
+// vicinities.cc, not posted to TikTok). Agents want one general-
+// purpose marketing blurb per language they speak, suitable for
+// pasting into a buyer email, a WeChat message, or a printed
+// handout. Hence: language-only, no platform brief.
+//
+// The video-evidence axis is what makes this generation honest. The
+// agent has filmed 0..N category videos for the community (see
+// `references/community-video-categories.md` — 12 categories, two
+// buckets). The prompt receives ONLY those category labels + blurbs
+// the agent actually filmed and is told, in hard terms, not to
+// fabricate categories the agent has not covered. This keeps
+// marketing claims grounded in evidence the buyer can verify by
+// scrolling the public `/c/<slug>` page.
+
+export type CommunityMarketingLanguage = SocialLanguage;
+export const COMMUNITY_MARKETING_LANGUAGES = SOCIAL_LANGUAGES;
+
+export interface CommunityMarketingVideo {
+  /** Stable category id (matches DB enum + COMMUNITY_VIDEO_CATEGORIES). */
+  category: string;
+  /** UI label for the category, e.g. "Walk the Block". */
+  categoryLabel: string;
+  /** One-liner for the category, used as evidence flavor. */
+  categoryBlurb: string;
+  /** Optional agent-supplied title for this specific clip. */
+  title?: string;
+}
+
+export interface CommunityMarketingContext {
+  communityUrl: string;
+  name: string;
+  city?: string;
+  state?: string;
+  /** Anything the agent typed in the community detail form. */
+  description?: string;
+  /** Filmed category videos, in order. Empty = generate a generic
+   *  blurb that does not promise category content. */
+  videos?: CommunityMarketingVideo[];
+  /** Schools associated with the community, name only. */
+  schools?: string[];
+  /** Points of interest, name only. */
+  pois?: string[];
+  /** Agent-edited prior body per language; the model treats these as
+   *  the seed to refine instead of regenerating from scratch. */
+  previousDrafts?: Partial<Record<CommunityMarketingLanguage, string>>;
+}
+
+export type CommunityMarketingOutput = Partial<Record<CommunityMarketingLanguage, string>>;
+
+// Single source of truth for the category vocabulary the model is
+// allowed to reference. We keep it inline (rather than re-importing
+// from `lib/zod/community-video-categories.ts`) so that:
+//   - this file stays usable in edge runtime / non-zod contexts;
+//   - the prompt vocabulary is auditable in one place next to the
+//     generation logic.
+// If the canonical category list changes, update both sides.
+const COMMUNITY_CATEGORY_VOCABULARY: ReadonlyArray<{
+  bucket: 'a' | 'b';
+  id: string;
+  label: string;
+  blurb: string;
+}> = [
+  // Bucket A — Only on Vicinity
+  {
+    bucket: 'a',
+    id: 'walk_the_block',
+    label: 'Walk the Block',
+    blurb: 'A real, unedited walk through the streets',
+  },
+  { bucket: 'a', id: 'listen_here', label: 'Listen Here', blurb: 'What this place sounds like' },
+  {
+    bucket: 'a',
+    id: 'morning_rush',
+    label: 'Morning Rush',
+    blurb: 'The commute, on a real weekday',
+  },
+  { bucket: 'a', id: 'after_dark', label: 'After Dark', blurb: 'How the area feels at night' },
+  {
+    bucket: 'a',
+    id: 'hidden_spot',
+    label: 'Hidden Spot',
+    blurb: 'Locals-only places worth knowing',
+  },
+  {
+    bucket: 'a',
+    id: 'local_pick',
+    label: 'Local Pick',
+    blurb: 'A non-chain place residents actually go',
+  },
+  // Bucket B — Real look at the data
+  {
+    bucket: 'b',
+    id: 'school_run',
+    label: 'School Run',
+    blurb: 'The drive to the assigned schools',
+  },
+  {
+    bucket: 'b',
+    id: 'daily_errands',
+    label: 'Daily Errands',
+    blurb: 'Grocery, pharmacy, the boring real stuff',
+  },
+  { bucket: 'b', id: 'the_park', label: 'The Park', blurb: 'The neighborhood park, on the ground' },
+  { bucket: 'b', id: 'eating_out', label: 'Eating Out', blurb: 'Where you actually go for dinner' },
+  { bucket: 'b', id: 'get_active', label: 'Get Active', blurb: 'Trails, gyms, courts, fields' },
+  {
+    bucket: 'b',
+    id: 'transit_reality',
+    label: 'Transit Reality',
+    blurb: 'Bus stop, train, ride share — what actually works',
+  },
+];
+
+function communityMarketingSystemPrompt(languages: SocialLanguage[]): string {
+  const languageBrief = languages.map((l) => `- ${l}: ${LANGUAGE_LABEL[l]}`).join('\n');
+  const bucketA = COMMUNITY_CATEGORY_VOCABULARY.filter((c) => c.bucket === 'a')
+    .map((c) => `  - ${c.label} — ${c.blurb}`)
+    .join('\n');
+  const bucketB = COMMUNITY_CATEGORY_VOCABULARY.filter((c) => c.bucket === 'b')
+    .map((c) => `  - ${c.label} — ${c.blurb}`)
+    .join('\n');
+  const shape = `{ ${languages.map((l) => `"${l}": string`).join(', ')} }`;
+  return [
+    'You are writing community-level marketing copy for a US neighborhood,',
+    'voiced by a knowledgeable local real estate agent. Tone: warm but factual,',
+    'a guide who has walked the streets — not a brochure. The audience is',
+    'multilingual US homebuyers researching neighborhoods.',
+    '',
+    'Each language must read fully native — translate meaning, never transliterate;',
+    'use idiomatic phrasing for that locale. Do not hedge ("seems", "may be") —',
+    'state what the agent has shown evidence for, and skip claims you cannot ground.',
+    '',
+    'Languages requested:',
+    languageBrief,
+    '',
+    'Length: 150–250 words per language. Plain paragraphs (2–3), no markdown,',
+    'no headings, no hashtags, no emoji.',
+    '',
+    'CTA at the end: a short invitation along the lines of "explore homes in this',
+    'neighborhood" plus the community URL on its own line. Adapt phrasing per',
+    'language but keep it warm, not pushy.',
+    '',
+    'EVIDENCE GROUNDING — strict:',
+    'The agent has filmed videos in some of the categories below. The user',
+    'message includes the exact list of categories filmed (`videos[].category`).',
+    '- You MAY reference the categories present in `videos`.',
+    '- You MUST NOT fabricate or hint at categories the agent has not filmed.',
+    '  If `videos` is empty or missing a bucket, the copy must not promise that',
+    '  evidence exists. Speak generally about the neighborhood instead.',
+    '- Do not invent specific facts (school ratings, crime stats, commute times).',
+    '  Use only what the user payload provides.',
+    '',
+    'CATEGORY VOCABULARY (Bucket A — only on Vicinity):',
+    bucketA,
+    'CATEGORY VOCABULARY (Bucket B — real look at the data):',
+    bucketB,
+    '',
+    'FAIR HOUSING — strict:',
+    'Do not steer by race, color, religion, sex, disability, familial status,',
+    'national origin, sexual orientation, gender identity, or source of income.',
+    'Talk about places, amenities, walkability, transit, schools as institutions —',
+    'not the people who live there. No "good area" / "safe neighborhood" /',
+    '"family-friendly" / "diverse community" framing. Describe what the',
+    'neighborhood IS, not who SHOULD live there.',
+    '',
+    'OUTPUT — strict JSON, nothing else (no markdown, no fences, no commentary).',
+    `Shape: ${shape}. Each value is the full marketing body for that language,`,
+    'including the closing CTA and the URL on its own line.',
+  ].join('\n');
+}
+
+export async function generateCommunityMarketing(
+  input: CommunityMarketingContext & {
+    languages: CommunityMarketingLanguage[];
+  },
+): Promise<CommunityMarketingOutput> {
+  const languages = input.languages.filter((l) => SOCIAL_LANGUAGES.includes(l));
+  if (languages.length === 0) {
+    throw new Error('generateCommunityMarketing: need at least one language');
+  }
+
+  const system = communityMarketingSystemPrompt(languages);
+
+  // Whitelist categories sent to the model. The model is told it MAY
+  // reference these and MUST NOT invent others — defense in depth.
+  const allowedIds = new Set(COMMUNITY_CATEGORY_VOCABULARY.map((c) => c.id));
+  const videos = (input.videos ?? [])
+    .filter((v) => allowedIds.has(v.category))
+    .slice(0, 60) // cap on extreme cases
+    .map((v) => ({
+      category: v.category,
+      categoryLabel: v.categoryLabel,
+      categoryBlurb: v.categoryBlurb,
+      ...(v.title ? { title: v.title.slice(0, 200) } : {}),
+    }));
+
+  const userPayload: Record<string, unknown> = {
+    communityUrl: input.communityUrl,
+    name: input.name,
+    videos,
+  };
+  if (input.city) userPayload.city = input.city;
+  if (input.state) userPayload.state = input.state;
+  if (input.description && input.description.trim().length > 0) {
+    userPayload.description = input.description.slice(0, 4000);
+  }
+  if (input.schools && input.schools.length > 0) {
+    userPayload.schools = input.schools.slice(0, 20);
+  }
+  if (input.pois && input.pois.length > 0) {
+    userPayload.points_of_interest = input.pois.slice(0, 30);
+  }
+
+  if (input.previousDrafts) {
+    const seeds: Record<string, string> = {};
+    for (const l of languages) {
+      const v = input.previousDrafts[l];
+      if (typeof v === 'string' && v.trim().length > 0) {
+        seeds[l] = v.length > 8192 ? v.slice(0, 8192) : v;
+      }
+    }
+    if (Object.keys(seeds).length > 0) {
+      userPayload.previous_drafts = seeds;
+      userPayload.previous_drafts_note =
+        "For any language present in previous_drafts, treat that string as the agent-edited seed. Preserve the agent's voice, phrasing, and any specific facts they added; refine only to better fit the brief above and the requested language. Do not regress edits back to a generic neighborhood summary.";
+    }
+  }
+
+  // ~280 tokens per language body + overhead for the long system.
+  const maxTokens = Math.min(8000, 1200 + 450 * languages.length);
+
+  const text = await callMessages({
+    system,
+    messages: [{ role: 'user', content: JSON.stringify(userPayload) }],
+    maxTokens,
+  });
+
+  const parsed = safeJsonParse(text, 'community-marketing') as Record<string, unknown>;
+  const out: CommunityMarketingOutput = {};
+  for (const l of languages) {
+    const v = parsed[l];
+    if (typeof v === 'string' && v.trim().length > 0) {
+      out[l] = v;
+    }
+  }
+  if (Object.keys(out).length === 0) {
+    throw new Error('Anthropic response missing all requested languages');
   }
   return out;
 }

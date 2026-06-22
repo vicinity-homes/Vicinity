@@ -21,13 +21,13 @@ import {
   CommunityPhotoPanel,
   type CommunityPhotoRow,
 } from '@/app/dashboard/communities/[id]/CommunityPhotoPanel';
-import { type CommunityVideoCategoryId } from '@/lib/zod/community-video-categories';
+import type { CommunityVideoCategoryId } from '@/lib/zod/community-video-categories';
 import { useMemo, useState } from 'react';
 import { CategoryPicker } from './CategoryPicker';
 import {
   type CommunityOption,
-  type CommunityVideoRow,
   CommunityVideoPanel,
+  type CommunityVideoRow,
 } from './CommunityVideoPanel';
 
 export function CommunityUploadShell({
@@ -62,7 +62,9 @@ export function CommunityUploadShell({
     <div className="space-y-4">
       {queuedCount > 0 ? (
         <div className="rounded border border-line bg-surface px-4 py-3 text-sm text-ink2">
-          <span className="font-medium text-ink">{queuedCount} file{queuedCount === 1 ? '' : 's'}</span>{' '}
+          <span className="font-medium text-ink">
+            {queuedCount} file{queuedCount === 1 ? '' : 's'}
+          </span>{' '}
           queued from your upload picker.{' '}
           {firstVideo ? 'Video is ready below — tap Start upload to confirm. ' : ''}
           {photos.length > 0 ? 'Photos are uploading automatically.' : ''}

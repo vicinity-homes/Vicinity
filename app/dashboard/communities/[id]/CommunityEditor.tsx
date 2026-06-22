@@ -76,9 +76,8 @@ function DangerZone({ communityId }: { communityId: string }) {
       <div className="rounded-2xl border border-rose-300/60 bg-rose-50/40 p-5 sm:p-6">
         <h2 className="font-semibold text-ink text-sm">Danger zone</h2>
         <p className="mt-1 text-ink2 text-xs">
-          Permanently delete this community. Schools, POIs, photos, videos and
-          saved entries will be removed. Listings will be detached but not
-          deleted. This cannot be undone.
+          Permanently delete this community. Schools, POIs, photos, videos and saved entries will be
+          removed. Listings will be detached but not deleted. This cannot be undone.
         </p>
         <button
           type="button"

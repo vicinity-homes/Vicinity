@@ -24,10 +24,10 @@
  */
 'use client';
 
-import Hls from 'hls.js';
-import { useEffect, useMemo, useRef, useState } from 'react';
 import { hlsUrl, thumbnailUrl } from '@/lib/cloudflare/stream';
 import { demoCoverFor, demoVideoFor } from '@/lib/demo-media';
+import Hls from 'hls.js';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CommunityListingItem } from '../CommunityVideoFeed';
 
 interface Props {
@@ -68,8 +68,7 @@ export function CommunityListingCarousel({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
       else if (e.key === 'ArrowLeft') setActive((i) => Math.max(0, i - 1));
-      else if (e.key === 'ArrowRight')
-        setActive((i) => Math.min(listings.length - 1, i + 1));
+      else if (e.key === 'ArrowRight') setActive((i) => Math.min(listings.length - 1, i + 1));
     };
     window.addEventListener('keydown', onKey);
     return () => {
@@ -122,9 +121,7 @@ export function CommunityListingCarousel({
           <span className="text-xl leading-none">‹</span>
           <span className="flex flex-col text-left leading-tight">
             <span className="font-semibold text-[12px]">Back</span>
-            <span className="max-w-[40vw] truncate text-[10px] text-ink2">
-              {backLabel}
-            </span>
+            <span className="max-w-[40vw] truncate text-[10px] text-ink2">{backLabel}</span>
           </span>
         </button>
         <div className="flex h-9 items-center rounded-full bg-bg px-3 font-medium text-[12px] text-ink backdrop-blur-md tabular-nums">
@@ -137,9 +134,7 @@ export function CommunityListingCarousel({
         {listings.map((l, i) => (
           <div
             key={`${l.id}-prog`}
-            className={`h-0.5 flex-1 rounded-full ${
-              i <= safeActive ? 'bg-ink' : 'bg-surface/20'
-            }`}
+            className={`h-0.5 flex-1 rounded-full ${i <= safeActive ? 'bg-ink' : 'bg-surface/20'}`}
           />
         ))}
       </div>
@@ -298,11 +293,7 @@ function ListingSlide({
         />
       ) : poster ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={poster}
-          alt={listing.address}
-          className="h-full w-full bg-black object-contain"
-        />
+        <img src={poster} alt={listing.address} className="h-full w-full bg-black object-contain" />
       ) : null}
 
       {/* Bottom overlay: price + address + bbs (real fields only). */}

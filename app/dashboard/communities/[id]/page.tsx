@@ -1,37 +1,48 @@
 /**
- * /dashboard/communities/[id] — community detail (Phase 46 rebuild).
+ * /dashboard/communities/[id] — community detail (Phase 50 rebuild,
+ * 2026-06-22).
  *
- * New layout (parallels listing detail):
- *   - Hero cover (resolved via lib/community/cover) with StatusPill +
- *     ⋮ menu in top-right.
- *   - Sticky tabs: Details · Videos · Photos · Cover.
- *   - Switch is `?tab=` URL state, no server nav.
+ * Mirrors the listing edit hub's 4-icon-tab structure so the agent's
+ * dashboard reads identically across listings and communities:
  *
- * Buyer link "View public page →" moved into the Details panel header
- * so the hero stays minimal.
+ *   Details · Media · Marketing · Analytics
  *
- * Owner-only sections (metadata edit, cover panel, status toggle) only
- * render when the viewer is the creating agent. Non-creators upload-only
- * see the public-style layout — videos & photos panels still render so
- * they can manage their own contributions, but no metadata/cover/status.
+ *   - Details   : metadata edit (CommunityEditor) + buyer link.
+ *   - Media     : Videos + Photos in one card, plus the owner-only
+ *                 CommunityCoverPanel folded in beneath them.
+ *   - Marketing : owner-only language-only marketing copy generator
+ *                 (CommunityMarketingPanel — the community sibling of
+ *                 the listing SocialCopyPanel).
+ *   - Analytics : owner-only generic AnalyticsPanel (entityKind=community).
+ *
+ * Non-owner contributors still see Details + Media so they can manage
+ * their own video/photo contributions; Marketing and Analytics are
+ * hidden because they are not theirs to act on.
+ *
+ * Hero: HeroHeader (matches listing hub) — chromeless top-right control
+ * row with the StatusPill, title/subtitle bottom-left.
  */
 
+import { thumbnailUrl } from '@/lib/cloudflare/stream';
 import { resolveCommunityCoverWithCfIds } from '@/lib/community/cover';
 import { demoCoverFor } from '@/lib/demo-media';
-import { thumbnailUrl } from '@/lib/cloudflare/stream';
 import { createClient } from '@/lib/supabase/server';
+import { FileText, ImageIcon, LineChart, Megaphone } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { HubDetailShell } from '@/app/dashboard/_components/HubDetailShell';
+import { AnalyticsPanel } from '@/app/dashboard/_components/AnalyticsPanel';
+import { HeroHeader } from '@/app/dashboard/_components/HeroHeader';
+import { HubTabs } from '@/app/dashboard/_components/HubTabs';
 
-import type { CommunityPhotoRow } from './CommunityPhotoPanel';
-import { signCommunityPhotoUrls } from './photo-actions';
 import { CommunityCoverPanel } from './CommunityCoverPanel';
 import { CommunityEditor } from './CommunityEditor';
-import { CommunityPhotosTab } from './CommunityPhotosTab';
+import { CommunityMarketingPanel } from './CommunityMarketingPanel';
+import { CommunityMediaPanel } from './CommunityMediaPanel';
+import type { CommunityPhotoRow } from './CommunityPhotoPanel';
 import { CommunityStatusPill } from './CommunityStatusPill';
-import { CommunityVideoManageList, type ManageVideoRow } from './CommunityVideoManageList';
+import type { ManageVideoRow } from './CommunityVideoManageList';
+import { signCommunityPhotoUrls } from './photo-actions';
 
 interface CommunityRow {
   id: string;
@@ -149,9 +160,7 @@ export default async function CommunityEditorPage({
     .filter((v) => v.status === 'ready' && v.visibility === 'public')
     .map((v) => ({ id: v.id, cf_video_id: v.cf_video_id, title: v.title }));
 
-  // Photos for the inline Photos tab — match what /upload loads. We fetch
-  // every photo for the community (RLS owns visibility) and sign their
-  // URLs in batch so the panel can render thumbs immediately.
+  // Photos for the inline Photos tab — match what /upload loads.
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
   const { data: photoRows } = (await (supabase as any)
     .from('community_photos')
@@ -160,20 +169,18 @@ export default async function CommunityEditorPage({
     )
     .eq('community_id', community.id)
     .order('sort_order', { ascending: true })) as {
-    data:
-      | Array<{
-          id: string;
-          storage_path: string;
-          kind: string;
-          category: string | null;
-          school_id: string | null;
-          poi_id: string | null;
-          alt_text: string | null;
-          width: number | null;
-          height: number | null;
-          sort_order: number;
-        }>
-      | null;
+    data: Array<{
+      id: string;
+      storage_path: string;
+      kind: string;
+      category: string | null;
+      school_id: string | null;
+      poi_id: string | null;
+      alt_text: string | null;
+      width: number | null;
+      height: number | null;
+      sort_order: number;
+    }> | null;
   };
   const dbPhotos = photoRows ?? [];
   const signed = await signCommunityPhotoUrls(dbPhotos.map((p) => p.storage_path));
@@ -193,9 +200,11 @@ export default async function CommunityEditorPage({
   }));
 
   // Hero cover resolution — same path the buyer-facing public page uses.
-  const firstReadyVideo = manageVideos.find((v) => v.status === 'ready' && v.visibility === 'public');
+  const firstReadyVideo = manageVideos.find(
+    (v) => v.status === 'ready' && v.visibility === 'public',
+  );
   const coverVideoCfId = community.cover_video_id
-    ? manageVideos.find((v) => v.id === community.cover_video_id)?.cf_video_id ?? null
+    ? (manageVideos.find((v) => v.id === community.cover_video_id)?.cf_video_id ?? null)
     : null;
   const heroCover = resolveCommunityCoverWithCfIds({
     cover_video_id: community.cover_video_id,
@@ -205,78 +214,94 @@ export default async function CommunityEditorPage({
   });
   void thumbnailUrl;
   const heroCoverUrl = heroCover
-    ? demoCoverFor(community.slug, heroCover.url) ?? heroCover.url
+    ? (demoCoverFor(community.slug, heroCover.url) ?? heroCover.url)
     : null;
 
   const subtitle = community.city ? `${community.city}, ${community.state}` : community.state;
 
+  // Tabs — Details + Media always; Marketing + Analytics owner-only.
+  const tabs = [
+    {
+      id: 'details',
+      label: 'Details',
+      icon: <FileText className="h-5 w-5" strokeWidth={1.6} />,
+    },
+    {
+      id: 'media',
+      label: 'Media',
+      icon: <ImageIcon className="h-5 w-5" strokeWidth={1.6} />,
+    },
+    ...(isOwner
+      ? [
+          {
+            id: 'marketing',
+            label: 'Marketing',
+            icon: <Megaphone className="h-5 w-5" strokeWidth={1.6} />,
+          },
+          {
+            id: 'analytics',
+            label: 'Analytics',
+            icon: <LineChart className="h-5 w-5" strokeWidth={1.6} />,
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <HubDetailShell
-      coverUrl={heroCoverUrl}
-      title={community.name}
-      subtitle={subtitle}
-      rightOverlay={
-        isOwner ? (
-          <CommunityStatusPill communityId={community.id} status={community.status} />
-        ) : null
-      }
-      tabs={[
-        { id: 'details', label: 'Details' },
-        { id: 'videos', label: 'Videos' },
-        { id: 'photos', label: 'Photos' },
-        ...(isOwner ? [{ id: 'cover', label: 'Cover' }] : []),
-      ]}
-      defaultTab="videos"
-      panels={{
-        details: (
-          <section className="rounded-2xl border border-line bg-surface p-4 sm:p-6">
-            <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
-              <h2 className="text-base font-semibold">Community details</h2>
-              <Link
-                href={`/c/${community.slug}`}
-                className="inline-flex items-center gap-1 text-xs text-ink2 hover:text-ink"
-              >
-                View public page →
-              </Link>
-            </div>
-            {canEditMetadata ? (
-              <CommunityEditor community={community} canEditMetadata={canEditMetadata} />
-            ) : (
-              <p className="text-ink2 text-sm">
-                Only the creating agent can edit this community&apos;s name, city, or description.
-                You can still manage your own videos &amp; photos.
-              </p>
-            )}
-          </section>
-        ),
-        videos: (
-          <section className="rounded-2xl border border-line bg-surface p-4 sm:p-6">
-            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
-              <h2 className="text-base font-semibold">
-                Your videos{' '}
-                <span className="text-muted text-xs font-normal">({manageVideos.length})</span>
-              </h2>
-              <Link
-                href={`/dashboard/communities/${community.id}/upload`}
-                className="rounded bg-ink px-3 py-1.5 font-medium text-cream text-xs transition hover:opacity-90"
-              >
-                + Upload video
-              </Link>
-            </div>
-            <CommunityVideoManageList
-              communityId={community.id}
-              videos={manageVideos}
-              myAgentId={myAgentId}
-            />
-          </section>
-        ),
-        photos: (
-          <CommunityPhotosTab communityId={community.id} initialPhotos={initialPhotos} />
-        ),
-        ...(isOwner
-          ? {
-              cover: (
+    <>
+      <HeroHeader
+        coverUrl={heroCoverUrl}
+        title={community.name}
+        subtitle={subtitle}
+        controls={
+          isOwner ? (
+            <CommunityStatusPill communityId={community.id} status={community.status} />
+          ) : null
+        }
+      />
+
+      <HubTabs
+        tabs={tabs}
+        defaultTab="details"
+        panels={{
+          details: (
+            <section className="rounded-2xl border border-line bg-surface p-4 sm:p-6">
+              <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+                <h2 className="text-base font-semibold">Community details</h2>
+                <Link
+                  href={`/c/${community.slug}`}
+                  className="inline-flex items-center gap-1 text-xs text-ink2 hover:text-ink"
+                >
+                  View public page →
+                </Link>
+              </div>
+              {canEditMetadata ? (
+                <CommunityEditor community={community} canEditMetadata={canEditMetadata} />
+              ) : (
+                <p className="text-ink2 text-sm">
+                  Only the creating agent can edit this community&apos;s name, city, or description.
+                  You can still manage your own videos &amp; photos.
+                </p>
+              )}
+            </section>
+          ),
+          media: (
+            <div className="space-y-4">
+              <CommunityMediaPanel
+                communityId={community.id}
+                videos={manageVideos}
+                myAgentId={myAgentId}
+                photos={initialPhotos}
+              />
+              {isOwner && (
                 <section className="rounded-2xl border border-line bg-surface p-4 sm:p-6">
+                  <div className="mb-3">
+                    <h2 className="text-base font-semibold">Cover</h2>
+                    <p className="mt-1 text-muted text-xs">
+                      Pick the hero shown on /c/{community.slug} and on the community card across
+                      the app.
+                    </p>
+                  </div>
                   <CommunityCoverPanel
                     communityId={community.id}
                     canEdit={canEditMetadata}
@@ -285,10 +310,17 @@ export default async function CommunityEditorPage({
                     initialCoverStoragePath={community.cover_storage_path}
                   />
                 </section>
-              ),
-            }
-          : {}),
-      }}
-    />
+              )}
+            </div>
+          ),
+          ...(isOwner
+            ? {
+                marketing: <CommunityMarketingPanel communityId={community.id} />,
+                analytics: <AnalyticsPanel entityKind="community" entityId={community.id} />,
+              }
+            : {}),
+        }}
+      />
+    </>
   );
 }
