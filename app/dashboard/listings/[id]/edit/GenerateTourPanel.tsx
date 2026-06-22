@@ -22,11 +22,6 @@ import { Sparkles } from 'lucide-react';
 export function GenerateTourPanel({ listingId: _listingId }: { listingId: string }) {
   return (
     <section className="rounded border border-line bg-surface p-6">
-      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
-        <h2 className="font-semibold text-base">Create a home tour video from photos</h2>
-        <span className="text-muted text-xs">Coming soon</span>
-      </div>
-
       <p className="mb-4 text-ink2 text-sm leading-relaxed">
         Turn 10 listing photos into a 30-second home tour video.
       </p>

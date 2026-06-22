@@ -2,6 +2,26 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.52.3 — Edit drafts + refine from your edits (2026-06-22)
+
+### 🚀 Features
+
+- **Edit saved drafts in place.** Each saved draft now has an **Edit**
+  button — tweak wording, fix typos, keep the same row. Rows show
+  "(edited)" once you save changes.
+- **Refine from your edits.** The output textarea on the Marketing
+  tab is now editable. The moment you start typing, the **Regenerate**
+  button becomes **Refine from edits** — clicking it sends your
+  current text to the AI as a seed instead of starting over. Your
+  voice, your phrasing, your local references survive the regen.
+- **Refine button on saved drafts.** Pull a saved draft back into the
+  editor with one click and refine from there.
+
+### 🧹 Polish
+
+- Dropped the redundant section title on the Media-tab tour video
+  panel (the button label is the title).
+
 ## v0.52.2 — Save your social drafts (2026-06-22)
 
 ### 🚀 Features

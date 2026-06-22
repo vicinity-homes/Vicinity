@@ -2,6 +2,76 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## Phase 48.4 — Social drafts: editable + refine-from-edits (2026-06-22)
+
+**Objective**: qiaoxux follow-up on 48.3. Two pain points after the
+persistence ship:
+1. The tour panel had a section `<h2>` that duplicated the button label
+   and added visual chrome to a section that's currently just a teaser.
+2. Saved drafts were immutable — a typo or polish required delete +
+   re-save (lost the row's history). And worse, hitting **Regenerate**
+   on an edited output threw away the agent's edits because the model
+   had no idea they happened.
+
+**Changes**:
+- `GenerateTourPanel`: dropped the `<h2>` ("Create a home tour video from
+  photos") and the "Coming soon" badge that lived next to it. The
+  disabled CTA already says "Create a home tour video" with a tooltip,
+  so the section is self-describing.
+- `lib/ai/anthropic.ts` `generateSocialCopy`: new optional
+  `previousDrafts` param shaped exactly like the output map. When a
+  cell has a non-empty seed, the user payload carries `previous_drafts`
+  + a `previous_drafts_note` instructing the model to treat that string
+  as the agent-edited starting point — preserve voice, phrasing, and
+  any specific facts the agent added; refine only to better match the
+  platform brief and requested language. Each seed defensively trimmed
+  to 8 KB (matches the `saved_social_drafts.body` column constraint).
+- `app/api/generate-social/route.ts`: schema accepts
+  `previous_drafts: Record<platform, Record<language, string>>` (≤ 8 KB
+  each), forwards to `generateSocialCopy`.
+- `SocialCopyPanel`:
+  - Right-pane textarea is now editable. As soon as the agent types,
+    `outputEdited` flips and the Generate button re-labels to **Refine
+    from edits**, signaling that hitting it will *refine* not regen
+    from scratch.
+  - Live "edited" pill next to the platform tag while edits are
+    pending.
+  - When `outputEdited` is true, Generate sends
+    `{ previous_drafts: { [platform]: { [language]: output } } }`
+    alongside the usual fields; on a successful response the flag
+    resets so the next click is a normal regen.
+  - **Saved drafts** rows now have a **Refine** button (loads draft
+    into the editor + sets platform/language + flips edited so the
+    next Generate click refines from this body) and an **Edit**
+    button (inline textarea + Save/Cancel). The "(edited)" suffix
+    appears on rows where `updated_at != created_at`.
+- `app/api/listings/[id]/social-drafts/route.ts`: new `PATCH` handler
+  takes `{ draft_id, body, language? }`. Validates with the same zod
+  enums and 8 KB cap. Hits the `social_copy` rate bucket so edit churn
+  can't bypass the rate limit. Filtered by `id` + `listing_id` to pin
+  the row; RLS update policy gates by agent → user. GET response now
+  includes `updated_at` and orders by `updated_at desc` so freshly
+  edited drafts float to the top.
+- `supabase/migrations/0032_saved_social_drafts_update.sql`: adds
+  `updated_at` column + auto-touch trigger + RLS update policy
+  mirroring the select policy.
+
+**Why edits feed back as "refine seed" (not just plain regen)**: the
+agent has insider knowledge — exact street names, neighborhood
+shorthand, school references, language-specific idioms. Throwing that
+away every regen click trains them to never click Regenerate. Treating
+their edits as the seed turns Regenerate into an iterative polish loop
+instead of a destructive lottery.
+
+**Why edit + refine on saved drafts (not just on the live output)**:
+saved drafts are the durable artifact — they survive a refresh, a tab
+close, a teammate handoff. Mutating them in place keeps the row
+identity (and timestamp lineage) stable; the alternative (delete +
+re-save) loses the original `created_at` and counts toward the 50-row
+cap twice during the brief window before optimistic delete settles.
+
+**Migration target**: 0032 deployed to remote via `supabase db push`.
+
 ## Phase 48.3 — Social drafts: persistence + tour panel polish (2026-06-22)
 
 **Objective**: qiaoxux follow-up on Phase 48.1. Tour panel still had
