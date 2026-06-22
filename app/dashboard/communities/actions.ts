@@ -159,6 +159,26 @@ export async function updateCommunity(id: string, raw: unknown): Promise<ActionR
           city: parsed.data.city,
           state: parsed.data.state,
           description: parsed.data.description,
+          // Phase 50.4 — expanded metadata. Empty arrays collapse to NULL so
+          // we can distinguish "agent never touched this" from "agent set
+          // and then cleared". Empty strings already arrive as NULL because
+          // the editor normalizes before submit.
+          zip: parsed.data.zip ?? null,
+          county: parsed.data.county ?? null,
+          hoa_fee_text: parsed.data.hoa_fee_text ?? null,
+          year_built_text: parsed.data.year_built_text ?? null,
+          price_range_text: parsed.data.price_range_text ?? null,
+          property_types:
+            parsed.data.property_types && parsed.data.property_types.length > 0
+              ? parsed.data.property_types
+              : null,
+          highlights:
+            parsed.data.highlights && parsed.data.highlights.length > 0
+              ? parsed.data.highlights
+              : null,
+          builder: parsed.data.builder ?? null,
+          website: parsed.data.website ?? null,
+          tagline: parsed.data.tagline ?? null,
         },
         { count: 'exact' },
       )

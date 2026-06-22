@@ -2,6 +2,46 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.54.3 — Richer community profiles (2026-06-22)
+
+### ✨ New fields on the Community editor
+
+The community detail page's **Details** tab now lets you capture much more
+of what buyers actually ask about — without forcing rigid formats. All
+fields are optional; existing communities stay valid until you fill them
+in.
+
+**New fields:**
+
+- **Tagline** — one-line pitch shown on the community card.
+- **ZIP** and **County** — useful for tax and school-zone lookups.
+- **Highlights** — up to 8 short phrases (e.g. *Top-rated schools*,
+  *Walk to MARTA*, *New construction*). Click ✕ to remove, press Enter or
+  comma to add.
+- **Property types** — multi-select chips: Single Family, Townhome, Condo,
+  Active Adult 55+, New Construction, Resale, Custom Build.
+- **Builder** — e.g. Pulte, Toll Brothers.
+- **Year built** — accepts a single year or a range like *2018–2024*.
+- **Price range** — type whatever format you prefer: *$450k – $1.2M*.
+- **HOA fee** — type whatever's accurate: *$220/mo + one-time initiation*.
+- **Website** — optional link to the builder or HOA site.
+
+### 🎨 Form ergonomics
+
+- Fields are now grouped into **Identity / Location / Pitch / Property /
+  Contact** so the form reads as a story instead of a flat wall.
+- Every field has a **real example** in the placeholder so you can start
+  typing without thinking about format.
+- The **Save changes** button stays disabled until you've actually
+  changed something, with a small "No unsaved changes" hint when idle.
+
+### 🔜 Coming next
+
+The buyer-facing public community page will start surfacing these fields
+in the next release (tagline near the hero, highlights as a chip strip,
+property facts as a panel, etc.). Filling them in now means they'll show
+up automatically when that lands.
+
 ## v0.54.2 — Community hub: matching hero + cleaner Details panel (2026-06-22)
 
 ### ✨ Improvements

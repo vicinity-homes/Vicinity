@@ -55,6 +55,17 @@ interface CommunityRow {
   created_by: string | null;
   cover_video_id: string | null;
   cover_storage_path: string | null;
+  // Phase 50.4 — expanded metadata.
+  zip: string | null;
+  county: string | null;
+  hoa_fee_text: string | null;
+  year_built_text: string | null;
+  price_range_text: string | null;
+  property_types: string[] | null;
+  highlights: string[] | null;
+  builder: string | null;
+  website: string | null;
+  tagline: string | null;
 }
 
 // Re-exported for downstream consumers (e.g. upload subpage).
@@ -95,7 +106,7 @@ export default async function CommunityEditorPage({
   const { data: community } = (await (supabase as any)
     .from('communities')
     .select(
-      'id, name, slug, city, state, description, status, created_by, cover_video_id, cover_storage_path',
+      'id, name, slug, city, state, description, status, created_by, cover_video_id, cover_storage_path, zip, county, hoa_fee_text, year_built_text, price_range_text, property_types, highlights, builder, website, tagline',
     )
     .eq('id', id)
     .maybeSingle()) as { data: CommunityRow | null };

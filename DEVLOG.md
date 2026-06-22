@@ -2,6 +2,94 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## Phase 50.4 — Community metadata expansion (2026-06-22)
+
+**Trigger**: qiaoxux on community detail page after the 50.3 cleanup landed —
+"Add all you mentioned in tier 1 and 2, make input user friendly, less
+friction. Users only need to make minimal changes and each input is
+self-explained."
+
+**What's added.** 10 new optional metadata fields on `communities`:
+
+- **Tier 1 (high-ROI buyer questions)**: `zip`, `county`, `hoa_fee_text`,
+  `year_built_text`, `price_range_text`, `property_types text[]`
+- **Tier 2 (nice-to-have)**: `highlights text[]`, `builder`, `website`,
+  `tagline`
+
+Migration `0036_community_metadata_fields.sql` — all `add column if not
+exists ... text` (or `text[]`), all nullable. Existing rows stay valid.
+RLS unchanged — the existing creator-only update policy already covers any
+column on `communities`.
+
+**Why "_text" suffixes on numeric-ish fields.** Agents routinely write
+ranges like `$450k–$1.2M`, `2018–2024`, `$220/mo + one-time initiation`.
+Forcing strict numeric types would create more friction than it saves
+(every range needs a workaround) and make the UI worse for the 80% case.
+Filterability traded for input ergonomics — V1 trade-off.
+
+**`property_types`** is the one enum we kept strict. Capped to a small
+canonical list (`COMMUNITY_PROPERTY_TYPES` in `lib/zod/community.ts`) so
+the eventual buyer-side filter UI has stable values: Single Family,
+Townhome, Condo, Active Adult 55+, New Construction, Resale, Custom Build.
+Surfaced as multi-select chips in the editor — agents click to toggle
+instead of remembering a CSV format.
+
+**Friction-minimization patterns** baked into the editor rewrite:
+
+1. **Real example placeholders**, not format hints. e.g. price-range
+   placeholder is `$450k – $1.2M`, not `<low>-<high>`. Agents start typing
+   without thinking about format.
+2. **Short purpose hints** under each field (5–7 words). Tells the agent
+   *why* the field exists, not how to fill it.
+3. **Chip-style inputs for arrays.** `highlights` and `property_types` use
+   chip UI — Enter or comma to commit, ✕ to remove. The input *is* the
+   format; agents don't have to learn a serialization. Inspired by Linear's
+   label picker.
+4. **Sectioned form**, not a flat wall of inputs. Identity / Location /
+   Pitch / Property / Contact — reads as a story.
+5. **Save button gates on dirty state.** `isDirty` memo compares all
+   fields against the loaded row; button disables when nothing changed.
+   Removes the "did it actually save?" foot-gun. Adds a small
+   "No unsaved changes" hint when idle and clean.
+6. **Empty arrays normalize to NULL** server-side. Distinguishes "agent
+   never touched this" from "agent set and then cleared", which matters
+   for future feature-flagging like "communities missing price range".
+
+**Files**:
+- `supabase/migrations/0036_community_metadata_fields.sql` — added (10 cols)
+- `lib/zod/community.ts` — extended `UpdateCommunityInput` with 10 fields,
+  added `COMMUNITY_PROPERTY_TYPES` const + `CommunityPropertyType` type,
+  added `optionalText` and `optionalUrl` helpers
+- `app/dashboard/communities/actions.ts` — `updateCommunity` writes the 10
+  new columns; arrays collapse to NULL when empty
+- `app/dashboard/communities/[id]/page.tsx` — `CommunityRow` type extended,
+  `select(...)` widened to include the 10 cols
+- `app/dashboard/communities/[id]/CommunityEditor.tsx` — full rewrite of
+  the form: 5 grouped fieldsets, ChipInput primitive for arrays, real
+  example placeholders, isDirty-gated submit, single Save button at the
+  bottom (no per-field auto-save — community editor has always been
+  explicit-save unlike listings)
+
+**Build & validation**:
+- `npx tsc --noEmit` clean
+- `npm run build` clean — `/dashboard/communities/[id]` route 13 kB / 191 kB
+  (was 10.5 kB / 189 kB; +2.5 kB for 10 new fields and the chip primitive
+  is acceptable)
+- `npm run db:push --include-all` applied — 0034/0035/0036 all pushed
+  successfully (0034 community drafts, 0035 community events, 0036 metadata
+  fields — 0034/0035 had been authored earlier but not yet pushed)
+
+**Known follow-ups** (not in this phase):
+- Buyer-facing public community page (`/c/[slug]`) doesn't yet render the
+  new fields. Currently only name/city/state/description show. Next phase
+  should surface `tagline` near hero, `highlights` as a chip strip,
+  `property_types`/`builder`/`year_built`/`price_range`/`hoa_fee` as a
+  fact panel, `website` as an outbound link, `zip`/`county` discreetly.
+- Search/filter doesn't index `property_types` yet. When buyer search gets
+  a property-type filter, this column is what it queries.
+- The agent-side community list (`/dashboard/communities`) doesn't show
+  `tagline` on the card. Quick win.
+
 ## Phase 50.2 — Community hub: hero parity + flatten Details (2026-06-22)
 
 **Trigger**: qiaoxux on community detail page — "Preview and state at top
