@@ -43,12 +43,7 @@ export function CategoryPicker({ selected, onPick, disabled }: CategoryPickerPro
     <div className={disabled ? 'opacity-50 pointer-events-none' : ''}>
       <div className="flex flex-wrap gap-1.5">
         {COMMUNITY_VIDEO_CATEGORIES.map((c) => (
-          <Chip
-            key={c.id}
-            meta={c}
-            selected={c.id === selected}
-            onPick={() => onPick(c.id)}
-          />
+          <Chip key={c.id} meta={c} selected={c.id === selected} onPick={() => onPick(c.id)} />
         ))}
       </div>
       <SpecCard meta={meta} />

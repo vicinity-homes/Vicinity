@@ -10,8 +10,8 @@
  * active-listings grid.
  */
 
-import { resolveCommunityCoverWithCfIds } from '@/lib/community/cover';
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
+import { resolveCommunityCoverWithCfIds } from '@/lib/community/cover';
 import { demoCoverFor } from '@/lib/demo-media';
 import { fetchBrowseCardsByCommunitySlug } from '@/lib/feed/browse-cards';
 import { createClient } from '@/lib/supabase/server';
@@ -48,7 +48,9 @@ export default async function CommunityPage({
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
   const { data: community } = (await (supabase as any)
     .from('communities')
-    .select('id, name, slug, city, state, description, created_by, cover_video_id, cover_storage_path, status')
+    .select(
+      'id, name, slug, city, state, description, created_by, cover_video_id, cover_storage_path, status',
+    )
     .eq('slug', slug)
     .maybeSingle()) as { data: (CommunityRow & { status: string }) | null };
 
@@ -83,7 +85,7 @@ export default async function CommunityPage({
   // Hero cover.
   const firstReadyVideo = videos[0] ?? null;
   const coverVideoCfId = community.cover_video_id
-    ? videos.find((v) => v.id === community.cover_video_id)?.cf_video_id ?? null
+    ? (videos.find((v) => v.id === community.cover_video_id)?.cf_video_id ?? null)
     : null;
   const heroCover = resolveCommunityCoverWithCfIds({
     cover_video_id: community.cover_video_id,
@@ -94,12 +96,13 @@ export default async function CommunityPage({
   void thumbnailUrl; // kept for transitive demoCoverFor needs in CommunityBody
 
   const heroCoverUrl = heroCover
-    ? demoCoverFor(community.slug, heroCover.url) ?? heroCover.url
+    ? (demoCoverFor(community.slug, heroCover.url) ?? heroCover.url)
     : null;
 
   return (
     <CommunityBody
       community={{
+        id: community.id,
         name: community.name,
         slug: community.slug,
         city: community.city,

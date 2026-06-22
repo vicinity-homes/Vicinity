@@ -33,19 +33,18 @@ import Hls from 'hls.js';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LeadModal } from '../../../_components/LeadModal';
-import { CommunityListingCarousel } from './_components/CommunityListingCarousel';
-import { CommunityListingsSheet } from './_components/CommunityListingsSheet';
+import { ActionButton } from '../../../_components/feed/ActionButton';
+import { FeedShell } from '../../../_components/feed/FeedShell';
+import { FEED_RAIL_BOTTOM, FEED_Z } from '../../../_components/feed/constants';
 import {
   BackArrowIcon,
   BookmarkIcon,
   CommentIcon,
   HeartIcon,
-  HouseIcon,
   ShareIcon,
 } from '../../../_components/feed/icons';
-import { ActionButton } from '../../../_components/feed/ActionButton';
-import { FEED_RAIL_BOTTOM, FEED_Z } from '../../../_components/feed/constants';
-import { FeedShell } from '../../../_components/feed/FeedShell';
+import { CommunityListingCarousel } from './_components/CommunityListingCarousel';
+import { CommunityListingsSheet } from './_components/CommunityListingsSheet';
 
 export type CommunityFeedVideo = {
   id: string;
@@ -528,7 +527,9 @@ export function CommunityVideoFeed({
       })}
     >
       {/* Top header — Back + community name pill. */}
-      <div className={`absolute inset-x-0 top-0 ${FEED_Z.topbar} flex items-center justify-between px-3 pt-3`}>
+      <div
+        className={`absolute inset-x-0 top-0 ${FEED_Z.topbar} flex items-center justify-between px-3 pt-3`}
+      >
         <button
           type="button"
           onClick={onBack}
@@ -577,12 +578,7 @@ export function CommunityVideoFeed({
         className={`absolute right-3 ${FEED_Z.rail} flex flex-col items-center gap-3`}
         style={{ bottom: FEED_RAIL_BOTTOM }}
       >
-        <ActionButton
-          onClick={toggleLike}
-          label="Like"
-          active={liked}
-          activeColor="rose"
-        >
+        <ActionButton onClick={toggleLike} label="Like" active={liked} activeColor="rose">
           <HeartIcon filled={liked} />
         </ActionButton>
         <ActionButton onClick={toggleSave} label="Save" active={saved}>

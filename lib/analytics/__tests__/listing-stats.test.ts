@@ -1,25 +1,31 @@
+/**
+ * Tests for the per-entity analytics aggregator.
+ *
+ * Phase 50 (2026-06-22): the impl moved to `entity-stats.ts` (listing
+ * + community). The legacy `listing-stats` exports still work — they
+ * delegate to the generic functions. We keep coverage on both call
+ * shapes here.
+ */
+
 import { describe, expect, it, vi } from 'vitest';
+import { type EntityStats, getEntityStats, getRollupEntityStats } from '../entity-stats';
 import { getListingStats, getRollupStats } from '../listing-stats';
 
 interface EventRow {
   event_type: string;
   session_id: string | null;
+  card_id?: string | null;
 }
 
 function fakeSupabase(events: EventRow[], leadsCount: number) {
-  // events query path: .from('events').select(...).eq(...) | .in(...)  → resolves to {data, error}
-  // leads query path:  .from('leads').select('id', {head, count}).eq/in(...) → {count, error}
-
   const eventsSelectChain = {
     eq: vi.fn().mockResolvedValue({ data: events, error: null }),
     in: vi.fn().mockResolvedValue({ data: events, error: null }),
   };
-
   const leadsSelectChain = {
     eq: vi.fn().mockResolvedValue({ count: leadsCount, error: null }),
     in: vi.fn().mockResolvedValue({ count: leadsCount, error: null }),
   };
-
   const from = vi.fn().mockImplementation((table: string) => {
     if (table === 'events') {
       return { select: vi.fn().mockReturnValue(eventsSelectChain) };
@@ -29,44 +35,46 @@ function fakeSupabase(events: EventRow[], leadsCount: number) {
     }
     throw new Error(`unexpected table: ${table}`);
   });
-  return { from };
+  return { from, eventsSelectChain, leadsSelectChain };
 }
 
-const LID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+const ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 
-describe('getListingStats', () => {
+// ─── Listing-shape (legacy compat) ────────────────────────────────
+describe('getListingStats (compat shim)', () => {
   it('counts page_view, video_complete, unique sessions, leads', async () => {
     const events: EventRow[] = [
       { event_type: 'page_view', session_id: 's1' },
-      { event_type: 'page_view', session_id: 's1' }, // same session
+      { event_type: 'page_view', session_id: 's1' },
       { event_type: 'page_view', session_id: 's2' },
       { event_type: 'card_view', session_id: 's2' },
       { event_type: 'video_complete', session_id: 's3' },
       { event_type: 'video_complete', session_id: 's3' },
-      { event_type: 'lead_submit', session_id: 's4' }, // contributes to sessions only
-      { event_type: 'page_view', session_id: null }, // null session ignored
+      { event_type: 'lead_submit', session_id: 's4' },
+      { event_type: 'page_view', session_id: null },
     ];
     const sb = fakeSupabase(events, 2);
     // biome-ignore lint/suspicious/noExplicitAny: test stub
-    const stats = await getListingStats(sb as any, LID);
-    expect(stats.pageViews).toBe(4); // 4 page_view rows including null-session one
+    const stats = await getListingStats(sb as any, ID);
+    expect(stats.pageViews).toBe(4);
     expect(stats.videoCompletes).toBe(2);
-    expect(stats.uniqueSessions).toBe(4); // s1, s2, s3, s4
+    expect(stats.uniqueSessions).toBe(4);
     expect(stats.leads).toBe(2);
-    // 2 / 4 = 50.0%
     expect(stats.leadConversionPct).toBe(50);
   });
 
   it('handles zero events / zero leads', async () => {
     const sb = fakeSupabase([], 0);
     // biome-ignore lint/suspicious/noExplicitAny: test stub
-    const stats = await getListingStats(sb as any, LID);
-    expect(stats).toEqual({
+    const stats = await getListingStats(sb as any, ID);
+    expect(stats).toEqual<EntityStats>({
       pageViews: 0,
       uniqueSessions: 0,
+      cardViews: 0,
       videoCompletes: 0,
       leads: 0,
       leadConversionPct: 0,
+      topCards: [],
     });
   });
 
@@ -77,20 +85,19 @@ describe('getListingStats', () => {
     }));
     const sb = fakeSupabase(events, 1);
     // biome-ignore lint/suspicious/noExplicitAny: test stub
-    const stats = await getListingStats(sb as any, LID);
-    // 1 / 7 = 14.285…% → 14.3
+    const stats = await getListingStats(sb as any, ID);
     expect(stats.leadConversionPct).toBe(14.3);
   });
 });
 
-describe('getRollupStats', () => {
+describe('getRollupStats (listing compat)', () => {
   it('returns zeros when listingIds is empty', async () => {
     const sb = fakeSupabase([], 0);
     // biome-ignore lint/suspicious/noExplicitAny: test stub
     const stats = await getRollupStats(sb as any, []);
     expect(stats.pageViews).toBe(0);
     expect(stats.leadConversionPct).toBe(0);
-    expect(sb.from).not.toHaveBeenCalled(); // short-circuit
+    expect(sb.from).not.toHaveBeenCalled();
   });
 
   it('aggregates across multiple listings', async () => {
@@ -106,5 +113,77 @@ describe('getRollupStats', () => {
     expect(stats.videoCompletes).toBe(1);
     expect(stats.uniqueSessions).toBe(2);
     expect(stats.leads).toBe(3);
+  });
+});
+
+// ─── Community-shape (Phase 50) ───────────────────────────────────
+describe('getEntityStats — community', () => {
+  it('queries by community_id when entityType=community', async () => {
+    const events: EventRow[] = [
+      { event_type: 'page_view', session_id: 's1' },
+      { event_type: 'page_view', session_id: 's2' },
+    ];
+    const sb = fakeSupabase(events, 1);
+    // biome-ignore lint/suspicious/noExplicitAny: test stub
+    const stats = await getEntityStats(sb as any, {
+      entityType: 'community',
+      entityId: ID,
+    });
+    expect(stats.pageViews).toBe(2);
+    expect(stats.uniqueSessions).toBe(2);
+    expect(stats.leads).toBe(1);
+    expect(stats.leadConversionPct).toBe(50);
+    // Confirms the query path used the community column, not listing.
+    expect(sb.eventsSelectChain.eq).toHaveBeenCalledWith('community_id', ID);
+    expect(sb.leadsSelectChain.eq).toHaveBeenCalledWith('community_id', ID);
+  });
+
+  it('aggregates top cards on community events', async () => {
+    const events: EventRow[] = [
+      { event_type: 'card_view', session_id: 's1', card_id: 'c1' },
+      { event_type: 'card_view', session_id: 's2', card_id: 'c1' },
+      { event_type: 'card_view', session_id: 's3', card_id: 'c2' },
+      { event_type: 'card_view', session_id: 's4', card_id: null },
+    ];
+    const sb = fakeSupabase(events, 0);
+    // biome-ignore lint/suspicious/noExplicitAny: test stub
+    const stats = await getEntityStats(sb as any, {
+      entityType: 'community',
+      entityId: ID,
+    });
+    expect(stats.cardViews).toBe(4);
+    expect(stats.topCards).toEqual([
+      { cardId: 'c1', views: 2 },
+      { cardId: 'c2', views: 1 },
+    ]);
+  });
+});
+
+describe('getRollupEntityStats — community', () => {
+  it('short-circuits empty community list', async () => {
+    const sb = fakeSupabase([], 0);
+    // biome-ignore lint/suspicious/noExplicitAny: test stub
+    const stats = await getRollupEntityStats(sb as any, {
+      entityType: 'community',
+      entityIds: [],
+    });
+    expect(stats.pageViews).toBe(0);
+    expect(sb.from).not.toHaveBeenCalled();
+  });
+
+  it('rolls up community events via .in(community_id, ids)', async () => {
+    const events: EventRow[] = [
+      { event_type: 'page_view', session_id: 's1' },
+      { event_type: 'page_view', session_id: 's2' },
+    ];
+    const sb = fakeSupabase(events, 4);
+    // biome-ignore lint/suspicious/noExplicitAny: test stub
+    const stats = await getRollupEntityStats(sb as any, {
+      entityType: 'community',
+      entityIds: ['c1', 'c2'],
+    });
+    expect(stats.pageViews).toBe(2);
+    expect(stats.leads).toBe(4);
+    expect(sb.eventsSelectChain.in).toHaveBeenCalledWith('community_id', ['c1', 'c2']);
   });
 });

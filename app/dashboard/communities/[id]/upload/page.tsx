@@ -138,10 +138,7 @@ export default async function CommunityUploadPage({
             </Link>
           </p>
         </div>
-        <Link
-          href="/dashboard/communities"
-          className="shrink-0 text-xs text-ink2 hover:text-ink"
-        >
+        <Link href="/dashboard/communities" className="shrink-0 text-xs text-ink2 hover:text-ink">
           ← all communities
         </Link>
       </header>

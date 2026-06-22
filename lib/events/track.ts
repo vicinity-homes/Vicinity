@@ -16,12 +16,17 @@
  * block UX.
  */
 
+/**
+ * Phase 50 (2026-06-22) — events now attribute to either a listing or a
+ * community (not both). Caller MUST set exactly one of `listing_id` /
+ * `community_id`. The server route enforces the same shape; emitting
+ * both gets the batch rejected.
+ */
 export type EventInput = {
   event_type: 'page_view' | 'card_view' | 'video_complete';
-  listing_id: string;
   card_id?: string;
   meta?: Record<string, unknown>;
-};
+} & ({ listing_id: string; community_id?: never } | { community_id: string; listing_id?: never });
 
 type QueuedEvent = EventInput & { session_id: string };
 

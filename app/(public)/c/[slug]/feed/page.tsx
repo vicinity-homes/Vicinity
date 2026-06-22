@@ -12,13 +12,13 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { photoPublicUrl } from '@/lib/supabase/storage';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { photoPublicUrl } from '@/lib/supabase/storage';
 import {
-  CommunityVideoFeed,
   type CommunityFeedVideo,
   type CommunityListingItem,
+  CommunityVideoFeed,
 } from './CommunityVideoFeed';
 
 export const dynamic = 'force-dynamic';
@@ -167,9 +167,7 @@ export default async function CommunityFeedPage({
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
   const { data: listingRows } = (await (supabase as any)
     .from('listings')
-    .select(
-      'id, slug, address, city, state, price, beds, baths, sqft, created_at',
-    )
+    .select('id, slug, address, city, state, price, beds, baths, sqft, created_at')
     .eq('community_id', community.id)
     .eq('status', 'active')
     .order('created_at', { ascending: false })) as {

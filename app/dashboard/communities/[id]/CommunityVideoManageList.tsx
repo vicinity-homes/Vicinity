@@ -24,10 +24,10 @@
  */
 
 import {
+  type CommunityVideoVisibility,
   deleteCommunityVideo,
   updateCommunityVideoCategory,
   updateCommunityVideoVisibility,
-  type CommunityVideoVisibility,
 } from '@/app/dashboard/communities/actions';
 import { thumbnailUrl } from '@/lib/cloudflare/stream';
 import {
@@ -151,12 +151,7 @@ function Group({
       {open ? (
         <ul className="space-y-2">
           {items.map((v) => (
-            <ManageRow
-              key={v.id}
-              video={v}
-              communityId={communityId}
-              myAgentId={myAgentId}
-            />
+            <ManageRow key={v.id} video={v} communityId={communityId} myAgentId={myAgentId} />
           ))}
         </ul>
       ) : null}
@@ -183,8 +178,7 @@ function ManageRow({
   // already been shot in this community) but every mutating action is
   // hidden — RLS now enforces the same rule server-side, this is just the
   // UI matching the policy so we don't show buttons that 403.
-  const isOwner =
-    myAgentId != null && video.uploaded_by != null && video.uploaded_by === myAgentId;
+  const isOwner = myAgentId != null && video.uploaded_by != null && video.uploaded_by === myAgentId;
   // Legacy rows with NULL uploaded_by: nobody owns them, nobody can edit.
   // The "by …" caption stays blank for those.
 
@@ -192,7 +186,9 @@ function ManageRow({
     ? COMMUNITY_VIDEO_CATEGORIES.find((c) => c.id === video.category)
     : undefined;
 
-  function run<T>(fn: () => Promise<{ ok: true } | { ok: true; data: T } | { ok: false; error: string }>) {
+  function run<T>(
+    fn: () => Promise<{ ok: true } | { ok: true; data: T } | { ok: false; error: string }>,
+  ) {
     setError(null);
     startTransition(async () => {
       const r = await fn();
@@ -230,9 +226,7 @@ function ManageRow({
           }}
         />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium text-ink">
-            {video.title ?? '(untitled)'}
-          </div>
+          <div className="truncate text-sm font-medium text-ink">{video.title ?? '(untitled)'}</div>
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-ink2">
             <span className="rounded border border-line px-1.5 py-0.5">
               {catMeta?.label ?? video.category ?? 'uncategorized'}
@@ -261,11 +255,7 @@ function ManageRow({
               the agent has to wait or re-upload.
             */}
             {video.status !== 'ready' ? (
-              <span
-                className={
-                  video.status === 'error' ? 'text-red-400' : 'text-muted'
-                }
-              >
+              <span className={video.status === 'error' ? 'text-red-400' : 'text-muted'}>
                 {video.status === 'error' ? 'Upload failed' : 'Processing…'}
               </span>
             ) : null}
@@ -306,9 +296,7 @@ function ManageRow({
 
       {editingCat && isOwner ? (
         <div className="mt-3 rounded border border-line bg-bg p-3">
-          <div className="mb-2 text-[11px] uppercase tracking-wide text-ink2">
-            Re-categorize
-          </div>
+          <div className="mb-2 text-[11px] uppercase tracking-wide text-ink2">Re-categorize</div>
           <CategoryPicker
             mode="edit"
             selected={(video.category as CommunityVideoCategoryId) ?? 'walk_the_block'}
@@ -325,18 +313,12 @@ function ManageRow({
 
 function VisibilityChip({ visibility }: { visibility: CommunityVideoVisibility }) {
   if (visibility === 'public') {
-    return (
-      <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-emerald-300">live</span>
-    );
+    return <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-emerald-300">live</span>;
   }
   if (visibility === 'private') {
-    return (
-      <span className="rounded bg-surface/10 px-1.5 py-0.5 text-ink2">private</span>
-    );
+    return <span className="rounded bg-surface/10 px-1.5 py-0.5 text-ink2">private</span>;
   }
-  return (
-    <span className="rounded bg-ink2/30 px-1.5 py-0.5 text-ink2">archived</span>
-  );
+  return <span className="rounded bg-ink2/30 px-1.5 py-0.5 text-ink2">archived</span>;
 }
 
 function ActionButton({

@@ -69,12 +69,7 @@ interface PendingItem {
   error?: string;
 }
 
-export function CommunityPhotoPanel({
-  communityId,
-  initialPhotos,
-  category,
-  prefillFiles,
-}: Props) {
+export function CommunityPhotoPanel({ communityId, initialPhotos, category, prefillFiles }: Props) {
   const [photos, setPhotos] = useState<CommunityPhotoRow[]>(initialPhotos);
   const [pending, setPending] = useState<PendingItem[]>([]);
   const [globalError, setGlobalError] = useState<string | null>(null);

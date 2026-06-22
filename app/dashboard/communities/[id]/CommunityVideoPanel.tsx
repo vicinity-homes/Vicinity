@@ -212,11 +212,7 @@ export function CommunityVideoPanel({
                       {v.status !== 'ready' ? (
                         <>
                           {' · '}
-                          <span
-                            className={
-                              v.status === 'error' ? 'text-red-400' : 'text-muted'
-                            }
-                          >
+                          <span className={v.status === 'error' ? 'text-red-400' : 'text-muted'}>
                             {v.status === 'error' ? 'Upload failed' : 'Processing…'}
                           </span>
                         </>

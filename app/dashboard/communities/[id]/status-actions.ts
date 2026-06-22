@@ -8,8 +8,8 @@
  * recommended but not blocking). Only the creating agent may toggle.
  */
 
-import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
 
 export type CommunityStatusResult = { ok: true } | { ok: false; error: string };
 
@@ -55,9 +55,7 @@ export async function setCommunityStatus(
   return { ok: true };
 }
 
-export async function deleteCommunityAction(
-  communityId: string,
-): Promise<CommunityStatusResult> {
+export async function deleteCommunityAction(communityId: string): Promise<CommunityStatusResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -84,10 +82,7 @@ export async function deleteCommunityAction(
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-  const { error } = await (supabase as any)
-    .from('communities')
-    .delete()
-    .eq('id', communityId);
+  const { error } = await (supabase as any).from('communities').delete().eq('id', communityId);
   if (error) return { ok: false, error: error.message };
 
   revalidatePath('/dashboard/communities');
