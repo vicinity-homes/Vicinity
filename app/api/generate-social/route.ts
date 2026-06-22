@@ -36,6 +36,16 @@ const Input = z.object({
   // through the token budget and the agent doesn't need 9 platforms at once.
   platforms: z.array(PlatformEnum).min(1).max(6),
   languages: z.array(LanguageEnum).min(1).max(4),
+  // Optional refine-from-edits seed. Map of platform → language → body.
+  // When the requested cell has a non-empty seed, the model treats it as
+  // the agent's edited starting point rather than generating fresh.
+  // 8 KB column-cap per cell (matches saved_social_drafts), defended in lib.
+  previous_drafts: z
+    .record(
+      PlatformEnum,
+      z.record(LanguageEnum, z.string().trim().min(1).max(8192)),
+    )
+    .optional(),
 });
 
 function originFor(req: Request): string {
@@ -158,6 +168,7 @@ export async function POST(req: Request) {
       videoTitles: videoTitles.length > 0 ? videoTitles : undefined,
       platforms: parsed.data.platforms,
       languages: parsed.data.languages,
+      previousDrafts: parsed.data.previous_drafts,
     });
     return NextResponse.json(out, { status: 200 });
   } catch (err) {

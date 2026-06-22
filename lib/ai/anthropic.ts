@@ -244,6 +244,14 @@ export interface SocialCopyContext {
   photoAltText?: string[];
   /** listing_videos.title values, in sort_order. Empty strings dropped upstream. */
   videoTitles?: string[];
+  /**
+   * Previous user-edited draft for a (platform, language) cell. When present
+   * the model treats it as the seed to refine — preserve the agent's voice,
+   * tighten/extend per the platform brief, don't throw it away. Only the
+   * cells the agent actually edited should be passed; everything else gets
+   * generated fresh. Map shape mirrors SocialCopyOutput.
+   */
+  previousDrafts?: Partial<Record<SocialPlatform, Partial<Record<SocialLanguage, string>>>>;
 }
 
 export type SocialCopyOutput = Partial<
@@ -316,6 +324,30 @@ export async function generateSocialCopy(
     userPayload.photo_captions = input.photoAltText;
   if (input.videoTitles && input.videoTitles.length > 0)
     userPayload.video_titles = input.videoTitles;
+
+  // Forward only the cells that match the requested platforms/languages,
+  // and only non-empty bodies. Cap each at 8 KB defensively (matches
+  // the saved_social_drafts column constraint).
+  if (input.previousDrafts) {
+    const seeds: Record<string, Record<string, string>> = {};
+    for (const p of platforms) {
+      const cell = input.previousDrafts[p];
+      if (!cell) continue;
+      const langMap: Record<string, string> = {};
+      for (const l of languages) {
+        const v = cell[l];
+        if (typeof v === 'string' && v.trim().length > 0) {
+          langMap[l] = v.length > 8192 ? v.slice(0, 8192) : v;
+        }
+      }
+      if (Object.keys(langMap).length > 0) seeds[p] = langMap;
+    }
+    if (Object.keys(seeds).length > 0) {
+      userPayload.previous_drafts = seeds;
+      userPayload.previous_drafts_note =
+        'For any (platform, language) present in previous_drafts, treat that string as the agent-edited seed. Preserve the agent\'s voice, phrasing, and any specific facts they added; refine only to better match the platform brief and the requested language. Do not regress edits back to a generic listing summary.';
+    }
+  }
 
   // Token budget: ~250 tokens per (platform, language) cell + system overhead.
   const cells = platforms.length * languages.length;

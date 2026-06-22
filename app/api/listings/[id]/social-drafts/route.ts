@@ -45,6 +45,12 @@ const SaveInput = z.object({
   highlights: z.array(z.string().trim().min(1).max(80)).max(5).optional(),
 });
 
+const PatchInput = z.object({
+  draft_id: z.string().uuid(),
+  body: z.string().trim().min(1).max(8192),
+  language: LanguageEnum.optional(),
+});
+
 const DeleteInput = z.object({
   draft_id: z.string().uuid(),
 });
@@ -56,6 +62,7 @@ interface DraftRow {
   body: string;
   highlights: string[] | null;
   created_at: string;
+  updated_at: string;
 }
 
 async function resolveAgentAndListing(
@@ -110,9 +117,9 @@ export async function GET(
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
   const res = await (ctx.supabase as any)
     .from('saved_social_drafts')
-    .select('id, platform, language, body, highlights, created_at')
+    .select('id, platform, language, body, highlights, created_at, updated_at')
     .eq('listing_id', listingId)
-    .order('created_at', { ascending: false })
+    .order('updated_at', { ascending: false })
     .limit(60);
   if (res.error) {
     return NextResponse.json({ error: 'internal' }, { status: 500 });
@@ -163,7 +170,7 @@ export async function POST(
       body: parsed.data.body,
       highlights: parsed.data.highlights ?? null,
     })
-    .select('id, platform, language, body, highlights, created_at')
+    .select('id, platform, language, body, highlights, created_at, updated_at')
     .single();
   if (ins.error) {
     // Trigger raises 'saved_drafts_cap_reached' as a check_violation.
@@ -174,6 +181,59 @@ export async function POST(
     return NextResponse.json({ error: 'internal' }, { status: 500 });
   }
   return NextResponse.json({ draft: ins.data as DraftRow }, { status: 201 });
+}
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id: listingId } = await params;
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
+  }
+  const parsed = PatchInput.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
+  }
+  const ctx = await resolveAgentAndListing(listingId);
+  if (!ctx.ok) {
+    return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+  }
+
+  // Edits are cheap but still subject to the same per-agent rate limit
+  // as generation/save. Prevents a malicious client from churning
+  // updated_at to spam the audit ledger or chew up Postgres write IO.
+  const service = createServiceClient();
+  const limit = await checkAndRecord(service, ctx.agentId, 'social_copy');
+  if (!limit.ok) {
+    if (limit.reason === 'rate_limited') {
+      return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
+    }
+    return NextResponse.json({ error: 'internal' }, { status: 500 });
+  }
+
+  const updates: Record<string, unknown> = { body: parsed.data.body };
+  if (parsed.data.language) updates.language = parsed.data.language;
+
+  // RLS-gated; the listing_id filter pins the row to this listing.
+  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
+  const upd = await (ctx.supabase as any)
+    .from('saved_social_drafts')
+    .update(updates)
+    .eq('id', parsed.data.draft_id)
+    .eq('listing_id', listingId)
+    .select('id, platform, language, body, highlights, created_at, updated_at')
+    .maybeSingle();
+  if (upd.error) {
+    return NextResponse.json({ error: 'internal' }, { status: 500 });
+  }
+  if (!upd.data) {
+    return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  }
+  return NextResponse.json({ draft: upd.data as DraftRow });
 }
 
 export async function DELETE(

@@ -9,15 +9,18 @@
  *   - Phase 48: Multi-platform × multi-language checkbox grid.
  *   - Phase 48.1 (2026-06-22): L/R split, single platform × single
  *     language per click via dropdowns.
- *   - Phase 48.3 (2026-06-22): Save button + saved drafts list under
- *     the output. Drafts persist to `saved_social_drafts` table —
- *     refresh-safe. Hints trimmed to bare word-count caps.
+ *   - Phase 48.3 (2026-06-22): Save button + saved drafts list. Drafts
+ *     persist to `saved_social_drafts`. Hints trimmed to word counts.
+ *   - Phase 48.4 (2026-06-22): Editable output + inline edit on saved
+ *     drafts. Edits feed back into Regenerate as seed (server forwards
+ *     `previous_drafts` to the model so it refines instead of starting
+ *     fresh — agent voice & specifics survive a regen click).
  *
- * Backend (`/api/generate-social`) still takes platform/language arrays
- * for forward compat — we send 1-element arrays.
+ * Backend (`/api/generate-social`) takes platform/language arrays for
+ * forward compat — we send 1-element arrays.
  */
 
-import { Copy, Loader2, Save, Sparkles, Trash2 } from 'lucide-react';
+import { Copy, Loader2, Pencil, Save, Sparkles, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 interface Props {
@@ -46,6 +49,7 @@ interface Draft {
   body: string;
   highlights: string[] | null;
   created_at: string;
+  updated_at: string;
 }
 
 const PLATFORMS: Array<{ id: Platform; label: string }> = [
@@ -88,7 +92,12 @@ export function SocialCopyPanel({ listingId }: Props) {
   const [language, setLanguage] = useState<Language>('en');
   const [state, setState] = useState<GenState>('idle');
   const [error, setError] = useState<string | null>(null);
+  // `output` is the live editable buffer in the right pane. The user can
+  // tweak it; we send it back as the seed on Regenerate.
   const [output, setOutput] = useState<string | null>(null);
+  // Once the user types into `output`, we set this so Regenerate forwards
+  // it as `previous_drafts`. Reset whenever a fresh response comes in.
+  const [outputEdited, setOutputEdited] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -128,6 +137,14 @@ export function SocialCopyPanel({ listingId }: Props) {
       .filter((s) => s.length > 0)
       .slice(0, 5);
 
+    // If the agent edited the right-pane output for THIS (platform,
+    // language) cell, forward it as a refine seed. The model preserves
+    // their phrasing/facts and just polishes per the platform brief.
+    const previous_drafts =
+      output && outputEdited
+        ? { [platform]: { [language]: output } }
+        : undefined;
+
     try {
       const res = await fetch('/api/generate-social', {
         method: 'POST',
@@ -137,6 +154,7 @@ export function SocialCopyPanel({ listingId }: Props) {
           platforms: [platform],
           languages: [language],
           ...(highlights.length > 0 ? { highlights } : {}),
+          ...(previous_drafts ? { previous_drafts } : {}),
         }),
       });
       if (!res.ok) {
@@ -151,6 +169,7 @@ export function SocialCopyPanel({ listingId }: Props) {
       const text = data?.[platform]?.[language] ?? '';
       if (!text) throw new Error('Empty response');
       setOutput(text);
+      setOutputEdited(false);
       setState('idle');
     } catch (err) {
       setState('error');
@@ -209,6 +228,47 @@ export function SocialCopyPanel({ listingId }: Props) {
     } catch {
       setDrafts(prev);
     }
+  }
+
+  async function onPatchDraft(draftId: string, body: string): Promise<string | null> {
+    try {
+      const res = await fetch(`/api/listings/${listingId}/social-drafts`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ draft_id: draftId, body }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        if (res.status === 429) return 'Edited too fast — wait a minute.';
+        if (res.status === 404) return 'Draft not found (may have been deleted).';
+        return data.error ?? `HTTP ${res.status}`;
+      }
+      const data = (await res.json()) as { draft: Draft };
+      // Replace the row and re-sort by updated_at desc to match server order.
+      setDrafts((prev) => {
+        const next = prev.map((d) => (d.id === draftId ? data.draft : d));
+        next.sort((a, b) =>
+          (b.updated_at ?? b.created_at).localeCompare(a.updated_at ?? a.created_at),
+        );
+        return next;
+      });
+      return null;
+    } catch (err) {
+      return err instanceof Error ? err.message : 'unknown';
+    }
+  }
+
+  /**
+   * Pull a saved draft into the right pane for regeneration. Sets the
+   * platform/language to match so the generate call hits the same cell.
+   */
+  function onRefineDraft(d: Draft) {
+    setPlatform(d.platform);
+    setLanguage(d.language);
+    setOutput(d.body);
+    setOutputEdited(true); // treat as a seed by default
+    setError(null);
+    setSaveError(null);
   }
 
   return (
@@ -299,7 +359,11 @@ export function SocialCopyPanel({ listingId }: Props) {
               ) : (
                 <>
                   <Sparkles size={14} />
-                  {output ? 'Regenerate' : 'Generate'}
+                  {output
+                    ? outputEdited
+                      ? 'Refine from edits'
+                      : 'Regenerate'
+                    : 'Generate'}
                 </>
               )}
             </button>
@@ -313,7 +377,7 @@ export function SocialCopyPanel({ listingId }: Props) {
 
         {/* Right: output */}
         <div className="rounded-2xl border border-line bg-surface p-4 sm:p-6">
-          {output ? (
+          {output !== null ? (
             <>
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className="text-ink text-sm font-medium">
@@ -322,6 +386,11 @@ export function SocialCopyPanel({ listingId }: Props) {
                 <span className="text-muted text-[11px]">
                   {languageLabel(language)}
                 </span>
+                {outputEdited && (
+                  <span className="rounded bg-ink2/15 px-1.5 py-0.5 text-ink2 text-[10px]">
+                    edited
+                  </span>
+                )}
                 <div className="ml-auto flex items-center gap-1.5">
                   <button
                     type="button"
@@ -343,11 +412,18 @@ export function SocialCopyPanel({ listingId }: Props) {
                 <p className="mb-2 text-red-400 text-[11px]">{saveError}</p>
               )}
               <textarea
-                readOnly
                 value={output}
+                onChange={(e) => {
+                  setOutput(e.target.value);
+                  setOutputEdited(true);
+                }}
                 rows={Math.min(20, Math.max(8, output.split('\n').length + 1))}
                 className={`${INPUT_CLASS} resize-y font-mono text-xs`}
               />
+              <p className="mt-1 text-muted text-[11px]">
+                Edit freely. Click <strong>Refine from edits</strong> to
+                regenerate while keeping your changes as the seed.
+              </p>
             </>
           ) : (
             <div className="flex h-full min-h-[200px] items-center justify-center text-muted text-xs">
@@ -378,41 +454,158 @@ export function SocialCopyPanel({ listingId }: Props) {
         ) : (
           <ul className="space-y-2">
             {drafts.map((d) => (
-              <li
+              <DraftRow
                 key={d.id}
-                className="rounded-lg border border-line bg-bg p-3"
-              >
-                <div className="mb-1 flex flex-wrap items-center gap-2">
-                  <span className="text-ink text-xs font-medium">
-                    {platformLabel(d.platform)}
-                  </span>
-                  <span className="text-muted text-[11px]">
-                    {languageLabel(d.language)}
-                  </span>
-                  <span className="text-muted text-[11px]">
-                    · {new Date(d.created_at).toLocaleString()}
-                  </span>
-                  <div className="ml-auto flex items-center gap-1.5">
-                    <CopyButton value={d.body} />
-                    <button
-                      type="button"
-                      onClick={() => onDeleteDraft(d.id)}
-                      title="Delete draft"
-                      className="inline-flex items-center gap-1 rounded border border-line px-2 py-1 text-[11px] text-ink2 hover:border-red-400 hover:text-red-400"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                </div>
-                <pre className="whitespace-pre-wrap break-words font-mono text-ink2 text-[11px] leading-relaxed">
-                  {d.body}
-                </pre>
-              </li>
+                draft={d}
+                onDelete={() => onDeleteDraft(d.id)}
+                onPatch={(body) => onPatchDraft(d.id, body)}
+                onRefine={() => onRefineDraft(d)}
+              />
             ))}
           </ul>
         )}
       </div>
     </div>
+  );
+}
+
+interface DraftRowProps {
+  draft: Draft;
+  onDelete: () => void;
+  onPatch: (body: string) => Promise<string | null>;
+  onRefine: () => void;
+}
+
+function DraftRow({ draft, onDelete, onPatch, onRefine }: DraftRowProps) {
+  const [editing, setEditing] = useState(false);
+  const [buffer, setBuffer] = useState(draft.body);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  // Re-sync buffer when the draft prop changes (e.g. after a successful PATCH
+  // returns the updated row, or after a Refine cycle).
+  useEffect(() => {
+    if (!editing) setBuffer(draft.body);
+  }, [draft.body, editing]);
+
+  async function commit() {
+    if (buffer.trim().length === 0) {
+      setErr('Body cannot be empty.');
+      return;
+    }
+    if (buffer === draft.body) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    setErr(null);
+    const result = await onPatch(buffer);
+    setSaving(false);
+    if (result) {
+      setErr(result);
+      return;
+    }
+    setEditing(false);
+  }
+
+  function cancel() {
+    setBuffer(draft.body);
+    setErr(null);
+    setEditing(false);
+  }
+
+  const stamp = draft.updated_at ?? draft.created_at;
+  const edited =
+    draft.updated_at && draft.updated_at !== draft.created_at;
+
+  return (
+    <li className="rounded-lg border border-line bg-bg p-3">
+      <div className="mb-1 flex flex-wrap items-center gap-2">
+        <span className="text-ink text-xs font-medium">
+          {platformLabel(draft.platform)}
+        </span>
+        <span className="text-muted text-[11px]">
+          {languageLabel(draft.language)}
+        </span>
+        <span className="text-muted text-[11px]">
+          · {new Date(stamp).toLocaleString()}
+          {edited && ' (edited)'}
+        </span>
+        <div className="ml-auto flex items-center gap-1.5">
+          {!editing && (
+            <>
+              <button
+                type="button"
+                onClick={onRefine}
+                title="Load into the editor above to refine with AI"
+                className="inline-flex items-center gap-1 rounded border border-line px-2 py-1 text-[11px] text-ink hover:bg-ink2/20"
+              >
+                <Sparkles size={12} />
+                Refine
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                title="Edit this draft in place"
+                className="inline-flex items-center gap-1 rounded border border-line px-2 py-1 text-[11px] text-ink hover:bg-ink2/20"
+              >
+                <Pencil size={12} />
+                Edit
+              </button>
+              <CopyButton value={draft.body} />
+              <button
+                type="button"
+                onClick={onDelete}
+                title="Delete draft"
+                className="inline-flex items-center gap-1 rounded border border-line px-2 py-1 text-[11px] text-ink2 hover:border-red-400 hover:text-red-400"
+              >
+                <Trash2 size={12} />
+              </button>
+            </>
+          )}
+          {editing && (
+            <>
+              <button
+                type="button"
+                onClick={commit}
+                disabled={saving}
+                className="inline-flex items-center gap-1 rounded border border-line px-2 py-1 text-[11px] text-ink hover:bg-ink2/20 disabled:opacity-50"
+              >
+                {saving ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <Save size={12} />
+                )}
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={cancel}
+                disabled={saving}
+                className="inline-flex items-center gap-1 rounded border border-line px-2 py-1 text-[11px] text-ink2 hover:bg-ink2/20 disabled:opacity-50"
+              >
+                <X size={12} />
+                Cancel
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      {err && <p className="mb-1 text-red-400 text-[11px]">{err}</p>}
+      {editing ? (
+        <textarea
+          value={buffer}
+          onChange={(e) => setBuffer(e.target.value)}
+          rows={Math.min(20, Math.max(6, buffer.split('\n').length + 1))}
+          maxLength={8192}
+          className={`${INPUT_CLASS} resize-y font-mono text-xs`}
+        />
+      ) : (
+        <pre className="whitespace-pre-wrap break-words font-mono text-ink2 text-[11px] leading-relaxed">
+          {draft.body}
+        </pre>
+      )}
+    </li>
   );
 }
 
