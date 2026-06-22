@@ -94,6 +94,28 @@ function composeLotSize(num: string, unit: LotUnit): string | null {
   return `${trimmed} ${unit}`;
 }
 
+// HOA stored as free text (legacy). UI now collects a number ($/month).
+// Read: extract first integer from a stored string like "$120/mo" → "120".
+// Write: compose "$<n>/month" so existing buyer-side renderers keep working.
+function parseHoaAmount(value: string | null): string {
+  if (!value) return '';
+  const m = value.match(/\d[\d,]*/);
+  return m ? m[0].replace(/,/g, '') : '';
+}
+
+function composeHoa(amount: string): string | null {
+  const n = amount.trim();
+  if (n === '') return null;
+  return `$${n}/month`;
+}
+
+function buildYearOptions(): string[] {
+  const current = new Date().getFullYear();
+  const out: string[] = [];
+  for (let y = current; y >= 1900; y--) out.push(y.toString());
+  return out;
+}
+
 export function EditListingForm({ listingId, initial, communities, listingContext }: Props) {
   const [price, setPrice] = useState(initial.price?.toString() ?? '');
 
@@ -112,13 +134,20 @@ export function EditListingForm({ listingId, initial, communities, listingContex
   const [baths, setBaths] = useState(initialBaths);
 
   const [sqft, setSqft] = useState(initial.sqft?.toString() ?? '');
-  const [yearBuilt, setYearBuilt] = useState(initial.year_built?.toString() ?? '');
+  const initialYearBuilt = initial.year_built?.toString() ?? '';
+  const [yearBuilt, setYearBuilt] = useState(initialYearBuilt);
 
   const initialLot = useMemo(() => parseLotSize(initial.lot_size), [initial.lot_size]);
   const [lotNum, setLotNum] = useState(initialLot.num);
   const [lotUnit, setLotUnit] = useState<LotUnit>(initialLot.unit);
 
-  const [hoa, setHoa] = useState(initial.hoa ?? '');
+  const [hoa, setHoa] = useState(parseHoaAmount(initial.hoa));
+
+  const yearOptions = useMemo(() => buildYearOptions(), []);
+  const initialYearInList = initialYearBuilt !== '' && yearOptions.includes(initialYearBuilt);
+  const [yearBuiltMode, setYearBuiltMode] = useState<'list' | 'custom'>(
+    initialYearBuilt === '' || initialYearInList ? 'list' : 'custom',
+  );
 
   const initialStyleInList = initial.style
     ? (STYLE_OPTIONS as readonly string[]).includes(initial.style)
@@ -160,7 +189,7 @@ export function EditListingForm({ listingId, initial, communities, listingContex
       sqft: parseIntOrNull(sqft),
       year_built: parseIntOrNull(yearBuilt),
       lot_size: composeLotSize(lotNum, lotUnit),
-      hoa: hoa.trim() === '' ? null : hoa.trim(),
+      hoa: composeHoa(hoa),
       style: style.trim() === '' ? null : style.trim(),
       description,
       community_id: communityId === '' ? null : communityId,
@@ -317,10 +346,7 @@ export function EditListingForm({ listingId, initial, communities, listingContex
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3 text-xs text-muted">
-        <span>
-          <span className="text-red-300">*</span> = required to publish
-        </span>
+      <div className="flex items-center justify-end gap-3 text-xs text-muted">
         <SaveBadge state={saveState} error={errorMsg} />
       </div>
 
@@ -337,18 +363,23 @@ export function EditListingForm({ listingId, initial, communities, listingContex
           />
         </Field>
         <Field label="Square feet" optional>
-          <input
-            type="number"
-            min="0"
-            step="10"
-            value={sqft}
-            onChange={(e) => setSqft(e.target.value)}
-            placeholder="e.g. 3200"
-            className={INPUT_CLASS}
-          />
+          <div className="relative">
+            <input
+              type="number"
+              min="0"
+              step="10"
+              value={sqft}
+              onChange={(e) => setSqft(e.target.value)}
+              placeholder="e.g. 3200"
+              className={`${INPUT_CLASS} pr-12`}
+            />
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-muted">
+              sq ft
+            </span>
+          </div>
         </Field>
 
-        <Field label="Bedrooms" required hint="0 = studio. Pick 7 or more for larger homes.">
+        <Field label="Bedrooms" required>
           {bedsMode === 'list' ? (
             <select
               value={beds}
@@ -399,7 +430,6 @@ export function EditListingForm({ listingId, initial, communities, listingContex
         <Field
           label="Bathrooms"
           required
-          hint="Half baths count as 0.5. Pick more than 5 for custom."
         >
           {bathsMode === 'list' ? (
             <select
@@ -449,15 +479,51 @@ export function EditListingForm({ listingId, initial, communities, listingContex
         </Field>
 
         <Field label="Year built" optional>
-          <input
-            type="number"
-            min="1800"
-            max="2100"
-            value={yearBuilt}
-            onChange={(e) => setYearBuilt(e.target.value)}
-            placeholder="e.g. 2008"
-            className={INPUT_CLASS}
-          />
+          {yearBuiltMode === 'list' ? (
+            <select
+              value={yearBuilt}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === '__custom__') {
+                  setYearBuiltMode('custom');
+                  setYearBuilt('');
+                } else {
+                  setYearBuilt(v);
+                }
+              }}
+              className={INPUT_CLASS}
+            >
+              <option value="">— Select —</option>
+              {yearOptions.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+              <option value="__custom__">Type a year…</option>
+            </select>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min="1800"
+                max="2100"
+                value={yearBuilt}
+                onChange={(e) => setYearBuilt(e.target.value)}
+                placeholder="e.g. 1898"
+                className={INPUT_CLASS}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setYearBuiltMode('list');
+                  setYearBuilt('');
+                }}
+                className="shrink-0 rounded border border-line px-2 text-xs text-ink2 hover:bg-ink2/10"
+              >
+                Use list
+              </button>
+            </div>
+          )}
         </Field>
 
         <Field label="Lot size" optional>
@@ -482,15 +548,24 @@ export function EditListingForm({ listingId, initial, communities, listingContex
           </div>
         </Field>
 
-        <Field label="HOA" optional hint="Leave blank if none.">
-          <input
-            type="text"
-            value={hoa}
-            onChange={(e) => setHoa(e.target.value)}
-            placeholder="e.g. $120/mo"
-            maxLength={80}
-            className={INPUT_CLASS}
-          />
+        <Field label="HOA" optional>
+          <div className="relative">
+            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs text-muted">
+              $
+            </span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={hoa}
+              onChange={(e) => setHoa(e.target.value)}
+              placeholder="e.g. 120"
+              className={`${INPUT_CLASS} pl-7 pr-16`}
+            />
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-muted">
+              /month
+            </span>
+          </div>
         </Field>
 
         <Field label="Style" optional>
@@ -544,7 +619,6 @@ export function EditListingForm({ listingId, initial, communities, listingContex
       <Field
         label="Community"
         optional
-        hint="Links this listing to a shared community for school + POI data. Manage communities at /dashboard/communities."
       >
         <select
           value={communityId}
@@ -564,7 +638,6 @@ export function EditListingForm({ listingId, initial, communities, listingContex
       <Field
         label="Description"
         optional
-        hint="One paragraph per blank line. Up to 10 paragraphs, English only."
       >
         <div className="mb-2 flex items-center gap-3">
           <button
@@ -597,11 +670,7 @@ const INPUT_CLASS =
 
 function SaveBadge({ state, error }: { state: SaveState; error: string | null }) {
   if (state === 'idle') {
-    return (
-      <span className="shrink-0 rounded border border-line px-2 py-1 text-[11px] text-muted">
-        Auto-save on
-      </span>
-    );
+    return null;
   }
   if (state === 'pending') {
     return (
