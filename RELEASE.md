@@ -2,6 +2,21 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.51.7 — Agent hub Details panel cleanup (2026-06-22)
+
+### ✨ Improvements
+
+- Listing /edit **Details** panel: removed redundant helper text from
+  Bedrooms, Bathrooms, HOA, Community, and Description — every input now
+  speaks for itself. The "* = required to publish" line and the always-on
+  "Auto-save on" pill are gone too; the save indicator now only shows when
+  there's something to say (Editing… / Saving… / ✓ Saved / Save failed).
+- **Square feet** field gained a clear `sq ft` suffix inside the input.
+- **HOA** is now a number field with a `$` prefix and a `/month` suffix,
+  so agents type `120` instead of `$120/mo`.
+- **Year built** is now a dropdown listing current year → 1900, with a
+  "Type a year…" option for older homes (mirrors how Beds/Baths work).
+
 ## v0.51.6 — One upload button for photos and videos (2026-06-21)
 
 ### ✨ Improvements

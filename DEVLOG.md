@@ -2,6 +2,68 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## Phase 47.17 — Agent hub Details panel cleanup (2026-06-22)
+
+User asked for a "cleanup" of the listing /edit Details panel — explicitly *"do
+not remove any sections or features, just delete hints if the input is
+self-explained"*. Plus three concrete additions: units for **Square feet**,
+units for **HOA**, and a **Year built** dropdown that also accepts free typing
+(same pattern as Beds/Baths).
+
+Changes (all in `app/dashboard/listings/[id]/edit/EditListingForm.tsx`):
+
+- **Hints removed** (every input is self-evident from its label/placeholder):
+  - Top legend `* = required to publish` → row collapses to just the
+    `<SaveBadge>` aligned right.
+  - Bedrooms `0 = studio. Pick 7 or more for larger homes.`
+  - Bathrooms `Half baths count as 0.5. Pick more than 5 for custom.`
+  - HOA `Leave blank if none.`
+  - Community `Links this listing to a shared community for school + POI data…`
+  - Description `One paragraph per blank line. Up to 10 paragraphs, English only.`
+  - `<SaveBadge>` `idle` state (`"Auto-save on"` pill) → returns `null`. Pill
+    only shows for the meaningful states: `pending` / `saving` / `saved` / `error`.
+- **Square feet** input: gray `sq ft` suffix inside the right edge of the field
+  (`pointer-events-none absolute inset-y-0 right-3`).
+- **HOA** input: type changed from free `text` to `number`. Gray `$` prefix on
+  the left, gray `/month` suffix on the right. Schema column `listings.hoa`
+  stays `text` (legacy callers + buyer-facing renderers untouched). New helpers
+  `parseHoaAmount` (read: extract first integer from any stored string like
+  `"$120/mo"` or `"None"` → `"120"`) and `composeHoa` (write: `"$<n>/month"`)
+  bridge the UI ↔ DB. Old free-text values that have no digit become an empty
+  input — agent re-enters once.
+- **Year built** input: number input → hybrid select↔custom, mirroring the
+  Beds/Baths pattern. Default mode is `<select>` showing current year → 1900
+  (reverse chronological) plus a `Type a year…` option that switches to a
+  number input with a `Use list` revert button. Initial mode picks `custom`
+  if the stored value falls outside 1900..currentYear, else `list`.
+
+Did **not** touch:
+
+- `NewListingForm.tsx` (the create page) — request was scoped to the agent
+  hub Details tab.
+- Any schema, server action validator, buyer-facing renderer, or autosave
+  behavior.
+- The `description` field, AI generate button, community dropdown options,
+  required-field red `*` markers — only their *hint* text was deleted.
+
+Verification:
+
+- `npx tsc --noEmit` clean.
+- Manual UI verification pending after Vercel preview build.
+
+Concerns surfaced before patching:
+
+- `* = required` legend removal: required fields still carry a red `*` next
+  to the label — the legend was redundant. Server-side publish errors should
+  still name the missing field; if not, follow-up work needed.
+- HOA schema mismatch (text vs number) handled by the `parseHoaAmount`/
+  `composeHoa` adapter; explicit DEVLOG entry here so the next person doesn't
+  silently switch `listings.hoa` to integer and break legacy rows.
+- User flagged that eventually these data should be **prepopulated from MLS**.
+  That's a separate phase (ATTOM Data Property API is the cheapest first step
+  — $0.15-0.30/lookup, no MLS-board approval needed; full RESO Web API
+  integration is V2). Not in scope here.
+
 ## Phase 47.16 — Media tab: unified upload (B2) (2026-06-21)
 
 User asked to merge the upload UI for photos and videos on the listing /edit
