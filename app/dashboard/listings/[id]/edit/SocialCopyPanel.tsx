@@ -99,9 +99,6 @@ export function SocialCopyPanel({ listingId }: Props) {
   // Once the user types into `output`, we set this so Regenerate forwards
   // it as `previous_drafts`. Reset whenever a fresh response comes in.
   const [outputEdited, setOutputEdited] = useState(false);
-  // Set when the API short-circuited via the saved-drafts cache so we
-  // can label the response as "loaded from saved draft, no AI call".
-  const [outputCached, setOutputCached] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -174,7 +171,6 @@ export function SocialCopyPanel({ listingId }: Props) {
       if (!text) throw new Error('Empty response');
       setOutput(text);
       setOutputEdited(false);
-      setOutputCached(Boolean(data.cached));
       setState('idle');
     } catch (err) {
       setState('error');
@@ -272,14 +268,12 @@ export function SocialCopyPanel({ listingId }: Props) {
   function onChangeOutput(v: string) {
     setOutput(v);
     setOutputEdited(true);
-    setOutputCached(false);
   }
   function onRefineDraft(d: Draft) {
     setPlatform(d.platform);
     setLanguage(d.language);
     setOutput(d.body);
     setOutputEdited(true); // treat as a seed by default
-    setOutputCached(false);
     setError(null);
     setSaveError(null);
   }
@@ -402,14 +396,6 @@ export function SocialCopyPanel({ listingId }: Props) {
                 {outputEdited && (
                   <span className="rounded bg-ink2/15 px-1.5 py-0.5 text-ink2 text-[10px]">
                     edited
-                  </span>
-                )}
-                {outputCached && !outputEdited && (
-                  <span
-                    title="Loaded from your saved draft — no AI call made"
-                    className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-emerald-300 text-[10px]"
-                  >
-                    cached
                   </span>
                 )}
                 <div className="ml-auto flex items-center gap-1.5">
@@ -570,8 +556,9 @@ function DraftRow({ draft, onDelete, onPatch, onRefine }: DraftRowProps) {
   const edited =
     draft.updated_at && draft.updated_at !== draft.created_at;
 
-  // Default heading: title if set, otherwise platform · language.
-  const heading = draft.title ?? null;
+  // Heading: agent-set title, or fall back to "Platform · Language".
+  const heading = draft.title ?? `${platformLabel(draft.platform)} · ${languageLabel(draft.language)}`;
+  const hasCustomTitle = draft.title !== null && draft.title.length > 0;
 
   return (
     <li className="rounded-lg border border-line bg-bg p-3">
@@ -607,23 +594,19 @@ function DraftRow({ draft, onDelete, onPatch, onRefine }: DraftRowProps) {
           </button>
         </div>
       ) : (
-        heading && (
-          <div className="mb-1 flex items-center gap-2">
-            <span className="text-ink text-sm font-medium">{heading}</span>
-          </div>
-        )
+        <div className="mb-1 flex items-center gap-2">
+          <span
+            className={`text-sm ${hasCustomTitle ? 'text-ink font-medium' : 'text-ink2'}`}
+          >
+            {heading}
+          </span>
+        </div>
       )}
 
       {/* Meta + actions row */}
       <div className="mb-1 flex flex-wrap items-center gap-2">
-        <span className="text-ink2 text-xs">
-          {platformLabel(draft.platform)}
-        </span>
         <span className="text-muted text-[11px]">
-          {languageLabel(draft.language)}
-        </span>
-        <span className="text-muted text-[11px]">
-          · {new Date(stamp).toLocaleString()}
+          {new Date(stamp).toLocaleString()}
           {edited && ' (edited)'}
         </span>
         <div className="ml-auto flex items-center gap-1.5">
@@ -641,11 +624,11 @@ function DraftRow({ draft, onDelete, onPatch, onRefine }: DraftRowProps) {
               <button
                 type="button"
                 onClick={() => setRenaming(true)}
-                title={heading ? 'Rename this draft' : 'Add a title to this draft'}
+                title="Rename this draft"
                 className="inline-flex items-center gap-1 rounded border border-line px-2 py-1 text-[11px] text-ink hover:bg-ink2/20"
               >
                 <Tag size={12} />
-                {heading ? 'Rename' : 'Title'}
+                Rename
               </button>
               <button
                 type="button"
