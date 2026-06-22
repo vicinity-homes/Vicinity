@@ -2,6 +2,65 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## Phase 49 — Leads + Analytics tab redesign (2026-06-22)
+
+**Objective**: qiaoxux: drop the count from the Leads tab, redesign the
+Leads and Analytics panels to be more concise and focused. Picked
+**Leads B** (left status bar) + **Analytics A** (3 KPIs + funnel) from
+prototype `/prototype/leads-analytics-redesign.html`.
+
+**Changes**:
+- `app/dashboard/listings/[id]/edit/page.tsx`:
+  - Tab label hardcoded to `Leads` (was `Leads · ${openLeads}`).
+  - Removed the open-leads SSR fetch that fed the badge — no consumer
+    left, kills one Supabase round-trip per page load.
+- `ListingLeadsPanel.tsx` — Leads B redesign:
+  - Sage left bar (`#6b7a5a`) marks awaiting-follow-up rows; line-color
+    bar marks followed-up. Replaces the "New" pill so status is readable
+    at a glance without a chip.
+  - Email + phone collapsed to one muted meta line.
+  - `source` column dropped (agent already knows where they shared).
+  - Message `line-clamp` reduced 2 → 1.
+  - Section header still carries `N total · M awaiting follow-up`.
+  - Sage color is inline (no Tailwind token — Vicinity has no `accent`
+    that isn't aliased to ink).
+- `AnalyticsPanel.tsx` — Analytics A redesign:
+  - Six headline KPIs (Page views, Unique sessions, Card views, Video
+    completes, Leads, Conv. %) collapsed to three: **Views · Leads ·
+    Conv. %**. Conv. % is **hidden when leads = 0** (per owner: don't
+    show a 0% number that's just "no data" — Leads card already says).
+  - Grid auto-switches `grid-cols-3` ↔ `grid-cols-2` based on Conv. %
+    visibility.
+  - Top-cards section dropped (rarely actioned at the listing-agent
+    level; still computable from `getListingStats` if a global rollup
+    wants it later).
+  - Engagement funnel kept verbatim — it's the one number set Vivian
+    actually digs into.
+  - Funnel header subtitle changed `% relative to N page views` →
+    `% of step before` to match what the right column actually computes.
+
+**Verification**:
+- Prototype reviewed at `https://www.vicinities.cc/prototype/leads-analytics-redesign.html`.
+  Owner picked Leads B + Analytics A explicitly with the
+  hide-Conv%-when-leads=0 caveat.
+- `npx tsc --noEmit` clean.
+- `npx next build` clean.
+
+**Decisions**:
+- Sage color inlined as a single hex constant rather than adding a
+  token. Single-purpose, single file. Tailwind JIT only emits classes
+  that exist, and there's no broader theme need yet.
+- Kept the "Conv. % hidden when leads=0" logic in the panel rather
+  than a `lib/analytics/listing-stats.ts` shape change. The stat library
+  still returns the full ListingStats; only the UI elides the card.
+  This keeps `getRollupStats` (dashboard rollup) unchanged.
+
+**Next steps**:
+- Watch for owner pushback on the dropped Top cards / Unique sessions /
+  Video completes / Card views KPIs. They're still present in
+  `ListingStats`; we can resurface any of them as a secondary panel
+  if Vivian asks.
+
 ## Phase 48.6 — Quiet cache + default heading (2026-06-22)
 
 **Objective**: qiaoxux 48.5 follow-up. Two trims:

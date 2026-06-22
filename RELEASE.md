@@ -2,6 +2,29 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.53.0 — Cleaner Leads + Analytics tabs (2026-06-22)
+
+### ✨ Improvements
+
+- **Leads tab** got a quieter look:
+  - The "· N" count is gone from the tab label itself (it was double
+    information — the section header already says "N total · M awaiting
+    follow-up").
+  - A small sage bar on the left of each lead now marks who you still
+    need to follow up with — replaces the old "New" pill. Followed-up
+    leads get a muted bar so they fade into the background.
+  - Each lead is one line tighter: contact info collapsed to a single
+    muted line, the "via …" source label dropped, message preview
+    trimmed to one line.
+- **Analytics tab** is now focused on the three numbers that actually
+  matter:
+  - **Views · Leads · Conv. %** — three big cards instead of six.
+  - Conversion rate hides itself until you have at least one lead, so
+    you don't stare at a "0%" that just means "no leads yet".
+  - The engagement funnel is unchanged — still the place to see where
+    viewers drop off. Top-cards table removed (rarely useful at the
+    per-listing level).
+
 ## v0.52.5 — Cleaner Marketing tab (2026-06-22)
 
 ### 🧹 Polish

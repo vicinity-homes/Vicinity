@@ -1,15 +1,17 @@
 /**
- * ListingLeadsPanel — per-listing leads view embedded in the edit hub
- * (Phase 47.7).
+ * ListingLeadsPanel — per-listing leads view embedded in the edit hub.
  *
- * Server component. Fetches leads scoped to one listing_id (RLS already
- * gates to agent-owned listings). Renders a compact list with the same
- * mailto/sms/follow-up affordances as the global /dashboard/leads inbox,
- * but without realtime/polling — this panel is mounted per page-view, so
- * a refresh on hub navigation is sufficient.
+ * Phase 49 redesign (Leads B — left status bar):
+ *   - Sage left bar = awaiting follow-up; muted line = followed up.
+ *     Replaces the old "New" pill so status is readable at a glance.
+ *   - Email + phone collapsed to one muted meta line. `source` dropped
+ *     (agent already knows where their listing is shared).
+ *   - Message clamped to one line.
+ *   - Section header keeps `N total · M awaiting follow-up` count.
  *
- * If you need realtime here later, swap to the LeadsLive client component
- * with a listing_id filter.
+ * Server component. Fetches leads scoped to one listing_id (RLS gates to
+ * agent-owned listings). No realtime — refreshes on hub navigation, which
+ * is sufficient for this panel.
  */
 
 import { createClient } from '@/lib/supabase/server';
@@ -21,7 +23,6 @@ type LeadRow = {
   email: string | null;
   phone: string | null;
   message: string | null;
-  source: string | null;
   followed_up_at: string | null;
   created_at: string;
 };
@@ -34,12 +35,17 @@ function timeAgo(iso: string): string {
   return `${Math.floor(sec / 86400)}d ago`;
 }
 
+// Sage accent for the open-status left bar. Hardcoded — Vicinity has no
+// "accent" token (the legacy `accent` is aliased to ink; see tailwind config).
+// Single-purpose color, scoped to this file.
+const OPEN_BAR_COLOR = '#6b7a5a';
+
 export async function ListingLeadsPanel({ listingId }: { listingId: string }) {
   const supabase = await createClient();
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
   const { data } = (await (supabase as any)
     .from('leads')
-    .select('id, name, email, phone, message, source, followed_up_at, created_at')
+    .select('id, name, email, phone, message, followed_up_at, created_at')
     .eq('listing_id', listingId)
     .order('created_at', { ascending: false })
     .limit(50)) as { data: LeadRow[] | null };
@@ -50,9 +56,7 @@ export async function ListingLeadsPanel({ listingId }: { listingId: string }) {
     return (
       <section className="rounded-2xl border border-line bg-surface p-6 sm:p-8">
         <div className="mx-auto max-w-md py-8 text-center">
-          <p className="text-ink2 text-sm">
-            No leads on this listing yet.
-          </p>
+          <p className="text-ink2 text-sm">No leads on this listing yet.</p>
           <p className="mt-1 text-muted text-xs">
             Leads from the public listing page will appear here in real time.
           </p>
@@ -90,26 +94,31 @@ export async function ListingLeadsPanel({ listingId }: { listingId: string }) {
       <ul className="divide-y divide-line">
         {leads.map((l) => {
           const open = !l.followed_up_at;
+          // ── Left status bar: sage when open, line-color when followed up.
+          // Inline style so we don't need a Tailwind token.
+          const barColor = open ? OPEN_BAR_COLOR : 'rgba(49, 49, 49, 0.14)';
+          const meta = [l.email, l.phone].filter(Boolean).join(' · ');
           return (
-            <li key={l.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between">
+            <li
+              key={l.id}
+              className="relative flex flex-col gap-2 py-3 pl-4 sm:flex-row sm:items-start sm:justify-between"
+            >
+              <span
+                aria-hidden
+                className="absolute top-3 bottom-3 left-0 w-[3px] rounded-sm"
+                style={{ backgroundColor: barColor }}
+              />
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-ink">{l.name}</span>
-                  {open && (
-                    <span className="rounded-full bg-ink/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-ink2">
-                      New
-                    </span>
-                  )}
+                <div className="flex items-baseline gap-2">
+                  <span className={`font-medium ${open ? 'text-ink' : 'text-ink2'}`}>
+                    {l.name}
+                  </span>
                   <span className="text-muted text-xs">{timeAgo(l.created_at)}</span>
                 </div>
                 {l.message && (
-                  <p className="mt-1 line-clamp-2 text-ink2 text-sm">{l.message}</p>
+                  <p className="mt-1 line-clamp-1 text-ink2 text-sm">{l.message}</p>
                 )}
-                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-muted text-xs">
-                  {l.email && <span>{l.email}</span>}
-                  {l.phone && <span>{l.phone}</span>}
-                  {l.source && <span>via {l.source}</span>}
-                </div>
+                {meta && <p className="mt-0.5 text-muted text-xs">{meta}</p>}
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
                 {l.email && (

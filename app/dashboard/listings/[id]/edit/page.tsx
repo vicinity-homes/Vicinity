@@ -119,19 +119,6 @@ export default async function EditListingPage({
     .order('name', { ascending: true })) as { data: CommunityOption[] | null };
   const communities = communitiesRaw ?? [];
 
-  // ── Hero stats: open Leads count for tab badge ────────────────────────
-  // Stats themselves moved out of the hero (Phase 47.11). We still need a
-  // lightweight count of un-followed-up leads to badge the Leads tab.
-  // biome-ignore lint/suspicious/noExplicitAny: stub generated types
-  const { data: leadRowsRaw } = (await (supabase as any)
-    .from('leads')
-    .select('id, followed_up_at')
-    .eq('listing_id', listing.id)) as {
-    data: Array<{ id: string; followed_up_at: string | null }> | null;
-  };
-  const leadRows = leadRowsRaw ?? [];
-  const openLeads = leadRows.filter((l) => !l.followed_up_at).length;
-
   // ── Cover resolution (unchanged from phase 46) ───────────────────────
   let initialCoverVideoId: string | null = null;
   if (listing.cover_url) {
@@ -208,7 +195,7 @@ export default async function EditListingPage({
           { id: 'details', label: 'Details' },
           { id: 'media', label: 'Media' },
           { id: 'marketing', label: 'Marketing' },
-          { id: 'leads', label: openLeads > 0 ? `Leads · ${openLeads}` : 'Leads' },
+          { id: 'leads', label: 'Leads' },
           { id: 'analytics', label: 'Analytics' },
         ]}
         defaultTab="details"
