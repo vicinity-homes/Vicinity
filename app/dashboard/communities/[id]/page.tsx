@@ -28,7 +28,6 @@ import { resolveCommunityCoverWithCfIds } from '@/lib/community/cover';
 import { demoCoverFor } from '@/lib/demo-media';
 import { createClient } from '@/lib/supabase/server';
 import { FileText, ImageIcon, LineChart, Megaphone } from 'lucide-react';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { AnalyticsPanel } from '@/app/dashboard/_components/AnalyticsPanel';
@@ -278,22 +277,6 @@ export default async function CommunityEditorPage({
           details: (
             <div className="space-y-6">
               <section className="rounded-2xl border border-line bg-surface p-4 sm:p-6">
-                <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
-                  <div className="flex items-baseline gap-2">
-                    <h2 className="text-base font-semibold">Community details</h2>
-                    {!canEditMetadata && (
-                      <span className="rounded-full border border-line px-2 py-0.5 text-[10px] uppercase tracking-wider text-ink2">
-                        View only
-                      </span>
-                    )}
-                  </div>
-                  <Link
-                    href={`/c/${community.slug}`}
-                    className="inline-flex items-center gap-1 text-xs text-ink2 hover:text-ink"
-                  >
-                    View public page →
-                  </Link>
-                </div>
                 {!canEditMetadata && (
                   <p className="mb-4 rounded border border-line bg-bg px-3 py-2 text-xs text-ink2">
                     Only the agent who created this community can edit metadata. You can still
