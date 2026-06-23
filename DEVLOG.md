@@ -2,6 +2,36 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## Phase 50.15 — Prune dead community upload code (2026-06-23)
+
+**Objective**: qiaoxux: "清理所有不用的老页面 老逻辑". After Phase 50.12 lifted the prefill consumer into `<CommunityMediaPanel>` and collapsed `/upload` to a redirect, three legacy components became orphans + the `/upload` route itself was dead weight.
+
+**Approach**: dependency-walk first to confirm nothing reachable.
+- `CommunityUploadPrefillBridge` only referenced by itself + `CommunityUploadShell`.
+- `CommunityUploadShell` only by `CommunityUploadPrefillBridge`.
+- `CommunityVideoPanel` only by `CommunityUploadShell` (component usage). The exported `CommunityVideoRow` / `CommunityOption` types DO appear elsewhere (`lib/feed/browse-cards.ts`, `EditListingForm.tsx`) but those are local re-declarations or live in a different file with the same name — no cross-import. Confirmed via `rg "from '\\./CommunityVideoPanel'"` → only the two orphans.
+- `/upload` route: nothing redirects to it after Phase 50.12 (`createCommunity()` already lands on `?tab=media`). `/photos` + `/videos` redirected to `/upload`, which then bounced to `?tab=media` — collapse that double-hop into one.
+
+**Files deleted**:
+- `app/dashboard/communities/[id]/CommunityUploadPrefillBridge.tsx`
+- `app/dashboard/communities/[id]/CommunityUploadShell.tsx`
+- `app/dashboard/communities/[id]/CommunityVideoPanel.tsx`
+- `app/dashboard/communities/[id]/upload/page.tsx` (and its parent dir)
+
+**Files updated**:
+- `app/dashboard/communities/[id]/photos/page.tsx` — redirect destination from `/upload` to `?tab=media` (single hop).
+- `app/dashboard/communities/[id]/videos/page.tsx` — same.
+- `app/dashboard/communities/[id]/CommunityMediaPanel.tsx` — strip "/upload subroute keeps working", "Same picker the /upload subroute uses", "bridge that used to live on /upload" comments. Replace with Phase 50.13 note clarifying this is the only upload surface now.
+- `app/dashboard/communities/actions.ts` — drop "(The legacy /upload route now just redirects here too.)" comment.
+- `app/dashboard/communities/[id]/page.tsx` — "match what /upload loads" → "Photos for the Media tab.".
+
+**Verification**: `npx tsc --noEmit` clean (after `rm -rf .next` to flush stale typed-routes), `npm run build` clean. `rg "/upload"` under `app/dashboard/communities/` returns zero hits.
+
+**Lessons**:
+- **Single-hop redirects are kinder than chains.** `/photos → /upload → ?tab=media` worked but `/photos → ?tab=media` is the same outcome with one fewer round trip and one fewer thing to maintain.
+- **Stale `.next/types` after deleting a route**: `tsc` complained about `.next/types/app/.../upload/page.ts` referencing the now-gone module. `rm -rf .next` fixes it; this is a Next.js typed-routes artifact, not a real source error.
+- **Dependency walk before delete.** Before removing a component, `rg -l "from '\\./X'"` AND `rg "<X" -g '*.tsx'` — the first catches type-only imports, the second catches JSX-only callers. Deleting the file shows up in both if it's the last one standing.
+
 ## Phase 50.14 — BrandMark: drop gold fill, use ink (2026-06-23)
 
 **Objective**: qiaoxux follow-up: 50.13 cleaned the chrome but the wordmark "颜色不搭配 其他地方没有金色的". Confirmed via prod CSS audit on `/login`: `body` text `#313131`, `h1` `#313131`, `Continue` button bg `#313131`, `Sign up` link `#313131`, `Forgot password?` `#5a5651` (muted) — gold `#c9a24a` is the only chromatic accent on the entire surface. Same situation on dashboard chrome (SiteHeader uses BrandMark too).

@@ -174,7 +174,7 @@ export default async function CommunityEditorPage({
   // separate `coverVideos` derivation needed — CommunityVideoManageList
   // gates "Set as cover" on `status === 'ready'` itself.
 
-  // Photos for the inline Photos tab — match what /upload loads.
+  // Photos for the Media tab.
   // biome-ignore lint/suspicious/noExplicitAny: stub generated types
   const { data: photoRows } = (await (supabase as any)
     .from('community_photos')

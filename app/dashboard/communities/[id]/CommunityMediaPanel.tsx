@@ -7,27 +7,19 @@
  * card with a single "Click to upload" button (image/* + video/*) and stacked
  * Videos / Photos sub-sections. Plus what the listing version doesn't need:
  * a shared <CategoryPicker> at the top that tags BOTH the uploaded video and
- * the uploaded photos with the same community category. Same picker the
- * /upload subroute uses — just lifted up to the hub so the agent doesn't
- * bounce off the page just to add a clip.
+ * the uploaded photos with the same community category.
  *
- * Why this replaces the previous two-card layout: the agent's mental model
- * is "this community's media", not "manage videos AND manage photos
- * separately". Listing already merged them; community now matches.
+ * Phase 50.15 (2026-06-23): this is now the only upload surface for
+ * communities — the legacy /upload, /photos, /videos subroutes are
+ * redirect-only stubs. The FAB → /communities/new → ?tab=media&prefill=…
+ * handoff lands here directly and a useEffect below consumes the queued
+ * File[] (see prefill consumer block).
  *
  * Pipeline:
  *   image/* → CommunityPhotoPanel.addFiles() (existing Supabase batch path)
  *   video/* → spawn one <VideoUploader> per file (existing tus pipeline w/
  *             category in `target`). On success we router.refresh() so the
  *             new row shows up in CommunityVideoManageList below.
- *
- * What does NOT change:
- *   - Photo upload pipeline (Supabase batch, JPEG/PNG/WebP, 10 MB).
- *   - Video upload pipeline (Cloudflare Stream tus, 2 GB) + the per-video
- *     "edit title before start" step (VideoUploader gets `initialFile`).
- *   - CommunityVideoManageList rich edit UX (category edit, visibility
- *     toggle, archive/restore, delete) — still the bottom sub-section.
- *   - /upload subroute keeps working (FAB prefill flow goes there).
  */
 
 import { Upload } from 'lucide-react';
@@ -109,12 +101,11 @@ export function CommunityMediaPanel({
   }, []);
 
   // Phase 50.12 (2026-06-23): consume `?prefill=<id>` from the URL once on
-  // mount. This is the bridge that used to live on /upload — when the
-  // UploadFAB → /communities/new flow lands here, we feed the queued File[]
-  // straight into handlePicked() so videos and photos auto-flow into the
-  // same panel without bouncing through the legacy /upload screen. We also
-  // strip the param so a refresh doesn't double-consume (consumePrefill is
-  // already one-shot, but the URL param looks suspicious otherwise).
+  // mount — when the UploadFAB → /communities/new flow lands here, we feed
+  // the queued File[] straight into handlePicked() so videos and photos
+  // auto-flow into this same panel. We also strip the param so a refresh
+  // doesn't double-consume (consumePrefill is already one-shot, but the
+  // URL param looks suspicious otherwise).
   const prefillId = searchParams?.get('prefill') ?? null;
   // biome-ignore lint/correctness/useExhaustiveDependencies: handlePicked is
   // stable enough (useCallback w/ []), and we deliberately want this effect

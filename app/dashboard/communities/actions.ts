@@ -99,7 +99,6 @@ export async function createCommunity(
         // Phase 50.12 (2026-06-23): land directly on the hub Media tab with
         // the prefill query param. CommunityMediaPanel consumes it on mount
         // and feeds the queued File[] into its single Click-to-upload path.
-        // (The legacy /upload route now just redirects here too.)
         redirect(
           `/dashboard/communities/${created.id}?tab=media&prefill=${encodeURIComponent(prefillId)}`,
         );

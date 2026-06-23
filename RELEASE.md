@@ -2,6 +2,14 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.54.16 — Community upload: prune the dead /upload page (2026-06-23)
+
+**For anyone uploading media to a community:**
+
+### 🧹 Cleanup
+- **Deleted the standalone "Upload media" page.** Everything lives on the community Media tab now — picking the category and dropping files into one Click-to-upload happens in the same card. Old `/upload`, `/photos`, `/videos` URLs still work; they redirect to `?tab=media` so any bookmarked link or link from a chat agent still lands on the right place.
+- **Internal:** removed `CommunityUploadShell`, `CommunityUploadPrefillBridge`, and `CommunityVideoPanel` — all unreferenced after Phase 50.12.
+
 ## v0.54.15 — Login wordmark: ink, not gold (2026-06-23)
 
 **For anyone visiting the login / signup / forgot-password pages (and the dashboard top-bar):**
