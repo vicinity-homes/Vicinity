@@ -167,47 +167,52 @@ export function CommunityMediaPanel({
         </span>
       </div>
 
-      {/* Unified upload entry point. One button, both media types. */}
-      <div className="mb-6">
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*,video/*"
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            if (e.target.files && e.target.files.length > 0) {
-              handlePicked(e.target.files);
-              e.target.value = '';
-            }
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="inline-flex items-center gap-2 rounded-md border border-line bg-bg px-4 py-2 text-ink2 text-sm hover:border-bronze hover:text-ink"
-        >
-          <Upload size={16} aria-hidden="true" />
-          Click to upload
-        </button>
-        <p className="mt-2 text-muted text-xs">
-          Photos (JPEG / PNG / WebP, up to 10 MB) and videos (MP4 / MOV, up to 2 GB).
-        </p>
-        {unsupportedNotice ? (
-          <p className="mt-2 text-xs text-red-300">{unsupportedNotice}</p>
-        ) : null}
-      </div>
-
-      {/* Shared category picker — drives both uploads. Sits below the upload
-          button so the visual flow is "what do I want to add → tag it" — the
-          dropdown is also the in-place control if the agent wants to switch
-          tagging mid-batch. */}
-      <div className="mb-6 rounded border border-line bg-bg p-4">
-        <div className="mb-3 text-sm font-medium text-ink">Category</div>
-        <CategoryPicker mode="create" selected={category} onPick={setCategory} />
-        <p className="mt-3 text-[11px] text-muted">
-          Applies to videos and photos uploaded next.
-        </p>
+      {/* Phase 50.10: Category (left) + Upload (right) side-by-side. The
+          dropdown drives the category for both videos AND photos uploaded
+          next, so it lives next to the upload button instead of below.
+          Stacks on mobile (flex-wrap) so neither field gets squeezed. */}
+      <div className="mb-6 flex flex-wrap items-end gap-4">
+        <div className="min-w-[12rem] flex-1">
+          <label
+            htmlFor="community-media-category"
+            className="mb-1.5 block text-xs font-medium text-ink2"
+          >
+            Category
+          </label>
+          <CategoryPicker mode="create" selected={category} onPick={setCategory} />
+          <p className="mt-1.5 text-[11px] text-muted">
+            Applies to videos and photos uploaded next.
+          </p>
+        </div>
+        <div className="min-w-[12rem]">
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0) {
+                handlePicked(e.target.files);
+                e.target.value = '';
+              }
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="inline-flex items-center gap-2 rounded-md border border-line bg-bg px-4 py-2 text-ink2 text-sm hover:border-bronze hover:text-ink"
+          >
+            <Upload size={16} aria-hidden="true" />
+            Click to upload
+          </button>
+          <p className="mt-1.5 text-[11px] text-muted">
+            Photos (JPEG / PNG / WebP, up to 10 MB) and videos (MP4 / MOV, up to 2 GB).
+          </p>
+          {unsupportedNotice ? (
+            <p className="mt-1.5 text-[11px] text-red-300">{unsupportedNotice}</p>
+          ) : null}
+        </div>
       </div>
 
       {/* Per-file video uploaders. Each owns its own pick→title→progress flow;

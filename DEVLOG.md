@@ -2,6 +2,42 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## Phase 50.11 — Community Media: side-by-side controls + video descriptions (2026-06-23)
+
+**Objective**: Two follow-ups to the Phase 50.9 community Media tab refactor:
+(1) Move the Category dropdown and Upload button onto a single row (left/right
+side-by-side) instead of stacked. (2) Replace the yellow "needs review" pill
+on video rows with an inline editable description, which doesn't currently
+exist on the schema.
+
+**Actions**:
+- New migration `supabase/migrations/0040_community_video_description.sql` — adds nullable `description text` column to `community_videos`, plus a comment column. Applied to remote via `npx supabase db push --include-all`.
+- `app/dashboard/communities/actions.ts` — added `updateCommunityVideoDescription(videoId, communityId, description)` server action. Trims, caps at 280 chars, stores empty as NULL, owner-only, revalidates the community page.
+- `app/dashboard/communities/[id]/page.tsx` — added `description` to the manage video select + mapper.
+- `app/dashboard/communities/[id]/CommunityVideoManageList.tsx` — added `description` to `ManageVideoRow`. Removed yellow `needs_review` badge from the row meta line. Added `<DescriptionEditor>` sub-component: three states (view-text, view-empty-owner, edit). Click-to-edit textarea with Enter-saves / Shift+Enter-newline / Esc-cancel / blur-saves; optimistic local state synced from props on `router.refresh()`.
+- `app/dashboard/communities/[id]/CommunityMediaPanel.tsx` — wrapped Category and Upload in a single `flex flex-wrap items-end gap-4` row. Category gets `flex-1 min-w-[12rem]` so it grows; Upload sits to the right with its own `min-w-[12rem]`. Stacks on narrow viewports via flex-wrap.
+
+**Decisions**:
+- *Inline editor instead of a sheet/modal*: matches the listing edit page's "click-the-thing-to-edit-the-thing" pattern. No extra page chrome.
+- *Empty string → NULL in DB*: lets a future buyer-facing surface use `description IS NOT NULL` to gate display without worrying about whitespace-only strings sneaking through.
+- *Kept the `category_needs_review` column intact*: the bot still flips it on AI-categorized rows; only the manage-UI surface was removed. Bringing the badge back is a one-line restore if agents miss it.
+- *280-char cap*: tweet-sized — enough for a one-line context blurb, short enough to discourage long-form copy that belongs on the listing description instead. Cap enforced both client-side (textarea `maxLength`) and server-side (action validation).
+- *Side-by-side via flex-wrap*, not a CSS grid: agents on narrow widths still get a clean stack; no breakpoint plumbing needed.
+- *Owner-only edit*: non-owners see the description as static text if present, nothing if empty.
+
+**Issues**: None during implementation.
+
+**Resolution**: tsc clean, `npm run build` clean, route bundle stayed at 12.4 kB / 209 kB First Load (description editor is small enough it doesn't move the needle). Migration applied to remote.
+
+**Learnings**:
+- `supabase.storage.from(X).copy()` cross-bucket limitation noted in 50.9 still relevant for any future media moves; not in play here.
+- Three-state inline editor (view-text / view-empty-owner / edit) is becoming the canonical pattern for optional free-text fields in this codebase — worth lifting into a shared component if a third surface picks it up.
+
+**Next steps**: Wait for real-flow verdict from qiaoxux. Possible follow-ups:
+- Surface description on the public community page (currently agent-side only).
+- Re-add the "needs review" badge as a folded "advanced" indicator if agents miss the AI-confidence signal.
+- Lift `<DescriptionEditor>` into `components/ui/` if a third call site appears.
+
 ## Phase 50.10 — Community editor form-level cleanup (2026-06-23)
 
 **Owner ask in 5 lines** (Slack, 2026-06-23, Vivian):

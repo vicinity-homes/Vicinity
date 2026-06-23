@@ -445,6 +445,42 @@ export async function updateCommunityVideoVisibility(
   return { ok: true };
 }
 
+const COMMUNITY_VIDEO_DESCRIPTION_MAX = 280;
+
+export async function updateCommunityVideoDescription(
+  videoId: string,
+  communityId: string,
+  description: string,
+): Promise<ActionResult> {
+  // Trim + length cap. Empty string is valid (= clear the description; we
+  // store NULL so the row reverts to the "Add a description" placeholder).
+  const trimmed = description.trim();
+  if (trimmed.length > COMMUNITY_VIDEO_DESCRIPTION_MAX) {
+    return { ok: false, error: 'description_too_long' };
+  }
+  const supabase = await createClient();
+  const owned = await requireOwnedVideo(supabase, videoId);
+  if (!owned.ok) return owned;
+  const { error } = await (
+    supabase as unknown as {
+      from: (t: string) => {
+        update: (v: { description: string | null }) => {
+          eq: (col: string, val: string) => Promise<{ error: unknown }>;
+        };
+      };
+    }
+  )
+    .from('community_videos')
+    .update({ description: trimmed.length === 0 ? null : trimmed })
+    .eq('id', videoId);
+  if (error) {
+    console.error('[updateCommunityVideoDescription] failed', error);
+    return { ok: false, error: 'update_failed' };
+  }
+  revalidatePath(`/dashboard/communities/${communityId}`);
+  return { ok: true };
+}
+
 const COMMUNITY_VIDEO_CATEGORY_IDS = [
   'walk_the_block',
   'listen_here',

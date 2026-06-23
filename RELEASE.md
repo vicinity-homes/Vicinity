@@ -2,6 +2,17 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.54.10 — Community Media: side-by-side controls + video descriptions (2026-06-23)
+
+**For agents on `/dashboard/communities/[id]` → Media tab:**
+
+### ✨ Improvements
+- **Category and Upload sit side by side** at the top of the Media tab — no more vertical hop between picking a tag and picking a file.
+- **Video descriptions**: each video row now has a free-text caption you can click to add or edit (Enter to save, Esc to cancel). Up to 280 characters. Useful for context like "filmed at golden hour from the corner of Main & 3rd."
+
+### ✂️ Removed
+- **Yellow "needs review" pill** on video rows. The flag's still tracked under the hood, but the manage UI doesn't surface it — re-tagging an existing video would need its own control to come back, and the description editor is more useful in that slot.
+
 ## v0.54.9 — Community editor cleanup: simpler form, official property types (2026-06-23)
 
 **For agents on `/dashboard/communities/[id]`:**

@@ -136,7 +136,7 @@ export default async function CommunityEditorPage({
   let manageQuery = (supabase as any)
     .from('community_videos')
     .select(
-      'id, cf_video_id, title, category, category_needs_review, status, visibility, created_at, uploaded_by, uploader:agents!community_videos_uploaded_by_fkey(slug, name)',
+      'id, cf_video_id, title, description, category, category_needs_review, status, visibility, created_at, uploaded_by, uploader:agents!community_videos_uploaded_by_fkey(slug, name)',
     )
     .eq('community_id', community.id);
   if (myAgentId != null) {
@@ -159,6 +159,7 @@ export default async function CommunityEditorPage({
     id: row.id,
     cf_video_id: row.cf_video_id,
     title: row.title,
+    description: row.description ?? null,
     category: row.category,
     category_needs_review: row.category_needs_review,
     status: row.status,
