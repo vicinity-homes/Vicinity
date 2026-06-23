@@ -3,27 +3,30 @@
 /**
  * CommunityEditor — Phase 4.4; Phase 23 (2026-06-14) trimmed; Phase 50
  * (2026-06-22) flattened; Phase 50.4 (2026-06-22) expanded with 10 metadata
- * fields.
+ * fields; Phase 50.5 (2026-06-22) typed numerics + unit adornments to match
+ * the listing editor.
  *
- * Phase 50.4 design notes — friction-minimization:
- *   - Every field has a placeholder showing a *real* example so the agent
- *     can start typing without thinking about format. Hints below explain
- *     the field's purpose in 5–7 words.
- *   - All new fields are optional. A community with just name/city/state is
- *     still valid. Empty strings normalize to NULL on submit.
- *   - property_types and highlights use chip-style UI (click to toggle / press
- *     Enter to add) rather than comma-separated text — agents shouldn't have
- *     to learn a serialization format.
- *   - Free-text "_text" fields (HOA fee, year built, price range) accept
- *     ranges like "$220/mo", "2018–2024", "$450k–$1.2M". Forcing strict
- *     numeric types creates more friction than it saves.
- *   - Fields are grouped into Identity / Location / Pitch / Property /
- *     Contact so the page reads as a story, not a form-bingo card.
+ * Phase 50.5 design notes — input parity with listing:
+ *   - Year built: single year (1800–2100). Same dual-mode UI as listing —
+ *     a select of recent years with a "Type a year…" escape hatch into a
+ *     number input. Don't make agents reinvent format choices.
+ *   - HOA fee: integer dollars/month with `$` prefix and `/month` suffix
+ *     adornments, exactly like the listing HOA field.
+ *   - Price: split into From / To integers, both with `$` prefix. Min ≤ max
+ *     enforced server-side. Two number inputs is friendlier than free-text
+ *     "$450k – $1.2M" because the agent never has to think about hyphens,
+ *     "k" abbreviations, or which dash character to use.
+ *   - All hints removed per owner ask 2026-06-22 — placeholders + adornments
+ *     should communicate everything a hint would have. If a field needs a
+ *     hint to be usable, the field's design is the bug.
  *
- * Phase 50 changes:
- *   - Removed inner `<section>` wrapper + duplicate "Community details"
- *     heading. The page-level details panel is now the sole framing card.
- *   - DangerZone moved out — page.tsx renders it as a sibling section.
+ * Earlier phases:
+ *   - Phase 50.4: 10 metadata fields, chip inputs for property_types and
+ *     highlights, isDirty Save gate, 5-section grouping (Identity / Location
+ *     / Pitch / Property / Contact).
+ *   - Phase 50: removed inner `<section>` wrapper + duplicate "Community
+ *     details" heading. The page-level details panel is now the sole frame.
+ *   - Phase 50: DangerZone moved out — page.tsx renders it as a sibling.
  */
 
 import { deleteCommunity, updateCommunity } from '@/app/dashboard/communities/actions';
@@ -40,6 +43,24 @@ function inputCls(hasError: boolean) {
   return `${INPUT_BASE} ${hasError ? INPUT_ERR : INPUT_OK}`;
 }
 
+// Mirrors the listing editor's `buildYearOptions` — current year + 24 prior
+// years + a "Type a year…" escape hatch covers the realistic "when was this
+// new community delivered" case without pretending to support 1860 colonial
+// pre-revival builds. Anything earlier falls through to the custom input.
+function buildYearOptions(): string[] {
+  const now = new Date().getFullYear();
+  const out: string[] = [];
+  for (let y = now; y >= now - 24; y--) out.push(String(y));
+  return out;
+}
+
+function parseIntOrNull(v: string): number | null {
+  const t = v.trim();
+  if (t === '') return null;
+  const n = Number.parseInt(t, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
 interface CommunityRow {
   id: string;
   name: string;
@@ -48,9 +69,10 @@ interface CommunityRow {
   description: string | null;
   zip: string | null;
   county: string | null;
-  hoa_fee_text: string | null;
-  year_built_text: string | null;
-  price_range_text: string | null;
+  hoa_fee_monthly: number | null;
+  year_built: number | null;
+  price_min: number | null;
+  price_max: number | null;
   property_types: string[] | null;
   highlights: string[] | null;
   builder: string | null;
@@ -76,9 +98,20 @@ export function CommunityEditor({
   const [description, setDescription] = useState(community.description ?? '');
   const [propertyTypes, setPropertyTypes] = useState<string[]>(community.property_types ?? []);
   const [builder, setBuilder] = useState(community.builder ?? '');
-  const [yearBuilt, setYearBuilt] = useState(community.year_built_text ?? '');
-  const [priceRange, setPriceRange] = useState(community.price_range_text ?? '');
-  const [hoaFee, setHoaFee] = useState(community.hoa_fee_text ?? '');
+
+  // Year built — dual mode like listing. Stored value is a stringified int
+  // for input compatibility; parsed to number on submit.
+  const initialYearBuilt = community.year_built?.toString() ?? '';
+  const [yearBuilt, setYearBuilt] = useState(initialYearBuilt);
+  const yearOptions = useMemo(() => buildYearOptions(), []);
+  const initialYearInList = initialYearBuilt !== '' && yearOptions.includes(initialYearBuilt);
+  const [yearBuiltMode, setYearBuiltMode] = useState<'list' | 'custom'>(
+    initialYearBuilt === '' || initialYearInList ? 'list' : 'custom',
+  );
+
+  const [priceMin, setPriceMin] = useState(community.price_min?.toString() ?? '');
+  const [priceMax, setPriceMax] = useState(community.price_max?.toString() ?? '');
+  const [hoaFee, setHoaFee] = useState(community.hoa_fee_monthly?.toString() ?? '');
   const [website, setWebsite] = useState(community.website ?? '');
 
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -92,6 +125,7 @@ export function CommunityEditor({
   const isDirty = useMemo(() => {
     const trimOrNull = (v: string) => (v.trim() === '' ? null : v.trim());
     const same = (a: string | null, b: string | null) => (a ?? null) === (b ?? null);
+    const sameInt = (a: number | null, b: string) => (a ?? null) === parseIntOrNull(b);
     const sameArray = (a: string[] | null, b: string[]) =>
       JSON.stringify(a ?? []) === JSON.stringify(b);
     return !(
@@ -103,9 +137,10 @@ export function CommunityEditor({
       same(community.tagline, trimOrNull(tagline)) &&
       same(community.description, trimOrNull(description)) &&
       same(community.builder, trimOrNull(builder)) &&
-      same(community.year_built_text, trimOrNull(yearBuilt)) &&
-      same(community.price_range_text, trimOrNull(priceRange)) &&
-      same(community.hoa_fee_text, trimOrNull(hoaFee)) &&
+      sameInt(community.year_built, yearBuilt) &&
+      sameInt(community.price_min, priceMin) &&
+      sameInt(community.price_max, priceMax) &&
+      sameInt(community.hoa_fee_monthly, hoaFee) &&
       same(community.website, trimOrNull(website)) &&
       sameArray(community.property_types, propertyTypes) &&
       sameArray(community.highlights, highlights)
@@ -121,7 +156,8 @@ export function CommunityEditor({
     description,
     builder,
     yearBuilt,
-    priceRange,
+    priceMin,
+    priceMax,
     hoaFee,
     website,
     propertyTypes,
@@ -157,9 +193,10 @@ export function CommunityEditor({
         description: trimOrNull(description),
         zip: trimOrNull(zip),
         county: trimOrNull(county),
-        hoa_fee_text: trimOrNull(hoaFee),
-        year_built_text: trimOrNull(yearBuilt),
-        price_range_text: trimOrNull(priceRange),
+        hoa_fee_monthly: parseIntOrNull(hoaFee),
+        year_built: parseIntOrNull(yearBuilt),
+        price_min: parseIntOrNull(priceMin),
+        price_max: parseIntOrNull(priceMax),
         property_types: propertyTypes.length > 0 ? propertyTypes : null,
         highlights: highlights.length > 0 ? highlights : null,
         builder: trimOrNull(builder),
@@ -184,7 +221,7 @@ export function CommunityEditor({
     <form onSubmit={onSubmit} className="space-y-8" noValidate>
       {/* — Identity ——————————————————————————————————————— */}
       <FieldGroup title="Identity">
-        <Field label="Name" required error={fieldErrors.name} hint="2–120 characters">
+        <Field label="Name" required error={fieldErrors.name}>
           <input
             type="text"
             value={name}
@@ -199,11 +236,7 @@ export function CommunityEditor({
             className={inputCls(!!fieldErrors.name)}
           />
         </Field>
-        <Field
-          label="Tagline"
-          error={fieldErrors.tagline}
-          hint="One-line pitch shown on the community card. Optional."
-        >
+        <Field label="Tagline" error={fieldErrors.tagline}>
           <input
             type="text"
             value={tagline}
@@ -269,7 +302,7 @@ export function CommunityEditor({
             />
           </Field>
         </div>
-        <Field label="County" error={fieldErrors.county} hint="Optional. Helps property-tax lookups.">
+        <Field label="County" error={fieldErrors.county}>
           <input
             type="text"
             value={county}
@@ -288,29 +321,21 @@ export function CommunityEditor({
 
       {/* — Pitch ——————————————————————————————————————— */}
       <FieldGroup title="Pitch">
-        <Field
-          label="Highlights"
-          error={fieldErrors.highlights}
-          hint="Up to 8 short phrases. Press Enter to add one."
-        >
+        <Field label="Highlights" error={fieldErrors.highlights}>
           <ChipInput
             values={highlights}
             onChange={(next) => {
               setHighlights(next);
               clearFieldError('highlights');
             }}
-            placeholder="e.g. Top-rated schools"
+            placeholder="e.g. Top-rated schools  (press Enter)"
             maxItems={8}
             maxLength={80}
             disabled={!canEditMetadata}
             ariaInvalid={!!fieldErrors.highlights}
           />
         </Field>
-        <Field
-          label="Description"
-          error={fieldErrors.description}
-          hint="Longer story for the community page. Up to 2000 characters."
-        >
+        <Field label="Description" error={fieldErrors.description}>
           <textarea
             value={description}
             onChange={(e) => {
@@ -329,11 +354,7 @@ export function CommunityEditor({
 
       {/* — Property ——————————————————————————————————————— */}
       <FieldGroup title="Property">
-        <Field
-          label="Property types"
-          error={fieldErrors.property_types}
-          hint="Pick all that apply."
-        >
+        <Field label="Property types" error={fieldErrors.property_types}>
           <div className="flex flex-wrap gap-2">
             {COMMUNITY_PROPERTY_TYPES.map((t) => {
               const active = propertyTypes.includes(t);
@@ -358,7 +379,7 @@ export function CommunityEditor({
         </Field>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Builder" error={fieldErrors.builder} hint="Optional.">
+          <Field label="Builder" error={fieldErrors.builder}>
             <input
               type="text"
               value={builder}
@@ -373,72 +394,119 @@ export function CommunityEditor({
               className={inputCls(!!fieldErrors.builder)}
             />
           </Field>
-          <Field label="Year built" error={fieldErrors.year_built_text} hint="A year or a range.">
-            <input
-              type="text"
-              value={yearBuilt}
-              onChange={(e) => {
-                setYearBuilt(e.target.value);
-                clearFieldError('year_built_text');
-              }}
-              maxLength={40}
-              placeholder="e.g. 2018–2024"
-              disabled={!canEditMetadata}
-              aria-invalid={!!fieldErrors.year_built_text}
-              className={inputCls(!!fieldErrors.year_built_text)}
-            />
+          {/* Year built — dual mode (select + custom input), copied from
+              EditListingForm so the two editors feel identical. */}
+          <Field label="Year built" error={fieldErrors.year_built}>
+            {yearBuiltMode === 'list' ? (
+              <select
+                value={yearBuilt}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === '__custom__') {
+                    setYearBuiltMode('custom');
+                    setYearBuilt('');
+                  } else {
+                    setYearBuilt(v);
+                  }
+                  clearFieldError('year_built');
+                }}
+                disabled={!canEditMetadata}
+                aria-invalid={!!fieldErrors.year_built}
+                className={inputCls(!!fieldErrors.year_built)}
+              >
+                <option value="">— Select —</option>
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+                <option value="__custom__">Type a year…</option>
+              </select>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="1800"
+                  max="2100"
+                  value={yearBuilt}
+                  onChange={(e) => {
+                    setYearBuilt(e.target.value);
+                    clearFieldError('year_built');
+                  }}
+                  placeholder="e.g. 1998"
+                  disabled={!canEditMetadata}
+                  aria-invalid={!!fieldErrors.year_built}
+                  className={inputCls(!!fieldErrors.year_built)}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setYearBuiltMode('list');
+                    setYearBuilt('');
+                  }}
+                  disabled={!canEditMetadata}
+                  className="shrink-0 rounded border border-line px-2 text-xs text-ink2 hover:bg-ink2/10 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Use list
+                </button>
+              </div>
+            )}
           </Field>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field
-            label="Price range"
-            error={fieldErrors.price_range_text}
-            hint="Type any format you like."
-          >
-            <input
-              type="text"
-              value={priceRange}
-              onChange={(e) => {
-                setPriceRange(e.target.value);
-                clearFieldError('price_range_text');
+        {/* Price range — split into From / To, both with `$` prefix and
+            comma-grouped placeholder so agents type plain integers (450000)
+            instead of formatted strings ($450k–$1.2M). Server validates
+            min ≤ max. */}
+        <Field
+          label="Price range"
+          error={fieldErrors.price_min || fieldErrors.price_max}
+        >
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <DollarInput
+              value={priceMin}
+              onChange={(v) => {
+                setPriceMin(v);
+                clearFieldError('price_min');
+                clearFieldError('price_max');
               }}
-              maxLength={80}
-              placeholder="e.g. $450k – $1.2M"
+              placeholder="450,000"
+              suffix="from"
               disabled={!canEditMetadata}
-              aria-invalid={!!fieldErrors.price_range_text}
-              className={inputCls(!!fieldErrors.price_range_text)}
+              hasError={!!fieldErrors.price_min}
             />
-          </Field>
-          <Field
-            label="HOA fee"
-            error={fieldErrors.hoa_fee_text}
-            hint="Monthly, annual, whatever's accurate."
-          >
-            <input
-              type="text"
-              value={hoaFee}
-              onChange={(e) => {
-                setHoaFee(e.target.value);
-                clearFieldError('hoa_fee_text');
+            <DollarInput
+              value={priceMax}
+              onChange={(v) => {
+                setPriceMax(v);
+                clearFieldError('price_max');
               }}
-              maxLength={80}
-              placeholder="e.g. $220/mo + one-time initiation"
+              placeholder="1,200,000"
+              suffix="to"
               disabled={!canEditMetadata}
-              aria-invalid={!!fieldErrors.hoa_fee_text}
-              className={inputCls(!!fieldErrors.hoa_fee_text)}
+              hasError={!!fieldErrors.price_max}
             />
-          </Field>
-        </div>
+          </div>
+        </Field>
+
+        <Field label="HOA fee" error={fieldErrors.hoa_fee_monthly}>
+          <DollarInput
+            value={hoaFee}
+            onChange={(v) => {
+              setHoaFee(v);
+              clearFieldError('hoa_fee_monthly');
+            }}
+            placeholder="220"
+            suffix="/month"
+            disabled={!canEditMetadata}
+            hasError={!!fieldErrors.hoa_fee_monthly}
+          />
+        </Field>
       </FieldGroup>
 
       {/* — Contact ——————————————————————————————————————— */}
       <FieldGroup title="Contact">
-        <Field
-          label="Website"
-          error={fieldErrors.website}
-          hint="Builder or HOA site. Must start with https://."
-        >
+        <Field label="Website" error={fieldErrors.website}>
           <input
             type="url"
             value={website}
@@ -501,39 +569,32 @@ export function CommunityDangerZone({ communityId }: { communityId: string }) {
   }
 
   return (
-    <section>
-      <div className="rounded-2xl border border-rose-300/60 bg-rose-50/40 p-5 sm:p-6">
-        <h2 className="font-semibold text-ink text-sm">Danger zone</h2>
-        <p className="mt-1 text-ink2 text-xs">
-          Permanently delete this community. Schools, POIs, photos, videos and saved entries will be
-          removed. Listings will be detached but not deleted. This cannot be undone.
-        </p>
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={isPending}
-          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-rose-600 px-5 py-3 font-medium text-sm text-white transition hover:bg-rose-700 active:scale-[0.99] disabled:opacity-60 sm:w-auto sm:min-w-[240px]"
-        >
-          {isPending ? 'Deleting…' : 'Delete this community'}
-        </button>
-        {err && (
-          <p className="mt-3 rounded border border-red-500/40 bg-red-500/10 p-2 text-red-600 text-xs">
-            Error: {err}
-          </p>
-        )}
-      </div>
-    </section>
+    <div className="rounded border border-red-500/40 bg-red-500/5 p-5">
+      <h3 className="font-medium text-red-300 text-sm">Danger zone</h3>
+      <p className="mt-1 text-muted text-xs">
+        Deleting a community is permanent and removes its schools, POIs, photos, videos, and saved
+        entries. Listings will be detached but not deleted.
+      </p>
+      <button
+        type="button"
+        onClick={handleDelete}
+        disabled={isPending}
+        className="mt-3 rounded border border-red-500/60 px-3 py-1.5 text-red-300 text-xs hover:bg-red-500/10 disabled:opacity-50"
+      >
+        {isPending ? 'Deleting…' : 'Delete community'}
+      </button>
+      {err && <p className="mt-2 text-red-300 text-xs">{err}</p>}
+    </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-// — small UI primitives —
-// ─────────────────────────────────────────────────────────────────
+// ————————————————————————————————————————————————————————————————
+// Local UI helpers
 
 function FieldGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <fieldset className="space-y-4">
-      <legend className="-mb-1 font-semibold text-ink text-sm">{title}</legend>
+      <legend className="font-medium text-ink2 text-xs uppercase tracking-wide">{title}</legend>
       {children}
     </fieldset>
   );
@@ -542,40 +603,76 @@ function FieldGroup({ title, children }: { title: string; children: React.ReactN
 function Field({
   label,
   required,
-  hint,
   error,
   children,
 }: {
   label: string;
   required?: boolean;
-  hint?: string;
   error?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="block">
-      <span className="mb-1 block font-medium text-ink2 text-xs">
+    <label className="block space-y-1">
+      <span className="text-ink2 text-xs">
         {label}
-        {required && <span className="ml-0.5 text-ink">*</span>}
+        {required && <span className="ml-0.5 text-red-400">*</span>}
       </span>
       {children}
-      {error ? (
-        <span className="mt-1 block text-[11px] text-red-400">{error}</span>
-      ) : hint ? (
-        <span className="mt-1 block text-[11px] text-muted">{hint}</span>
-      ) : null}
-    </div>
+      {error && <span className="block text-red-400 text-xs">{error}</span>}
+    </label>
   );
 }
 
 /**
- * ChipInput — accumulates short phrases as removable chips. Press Enter or
- * comma to commit the current text; click ✕ to remove an existing chip.
+ * DollarInput — number input with `$` prefix and an optional right-side
+ * suffix (e.g. "/month", "from", "to"). Value is the raw integer string;
+ * parent component handles parseIntOrNull on submit.
  *
- * Why this UI: agents would otherwise need to remember a comma-separated
- * format. With chips, the input *is* the format — what they see is what
- * gets saved.
+ * Mirrors the listing editor's HOA input shape so price/HOA across the two
+ * editors render and feel identical.
  */
+function DollarInput({
+  value,
+  onChange,
+  placeholder,
+  suffix,
+  disabled,
+  hasError,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  suffix?: string;
+  disabled?: boolean;
+  hasError?: boolean;
+}) {
+  const suffixWidth = suffix ? `${Math.max(suffix.length * 0.55 + 1.25, 4)}rem` : '0.75rem';
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted text-xs">
+        $
+      </span>
+      <input
+        type="number"
+        min="0"
+        step="1"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        disabled={disabled}
+        aria-invalid={hasError}
+        className={`${inputCls(!!hasError)} pl-7`}
+        style={{ paddingRight: suffixWidth }}
+      />
+      {suffix && (
+        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted text-xs">
+          {suffix}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function ChipInput({
   values,
   onChange,
@@ -587,57 +684,54 @@ function ChipInput({
 }: {
   values: string[];
   onChange: (next: string[]) => void;
-  placeholder?: string;
+  placeholder: string;
   maxItems: number;
   maxLength: number;
   disabled?: boolean;
   ariaInvalid?: boolean;
 }) {
   const [draft, setDraft] = useState('');
-  const atMax = values.length >= maxItems;
+  const atCap = values.length >= maxItems;
 
-  function commit() {
-    const v = draft.trim();
-    if (!v) return;
-    if (atMax) return;
-    if (values.includes(v)) {
+  function addCurrent() {
+    const t = draft.trim();
+    if (t === '' || atCap || values.includes(t)) {
       setDraft('');
       return;
     }
-    onChange([...values, v.slice(0, maxLength)]);
+    onChange([...values, t.slice(0, maxLength)]);
     setDraft('');
   }
 
-  function removeAt(idx: number) {
-    onChange(values.filter((_, i) => i !== idx));
+  function removeAt(i: number) {
+    onChange(values.filter((_, idx) => idx !== i));
   }
 
   return (
     <div
-      className={`flex flex-wrap items-center gap-2 rounded border bg-surface px-2 py-2 ${
-        ariaInvalid ? 'border-red-500/70' : 'border-line focus-within:border-line-strong'
-      } ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
+      className={`flex flex-wrap items-center gap-2 rounded border bg-surface px-2 py-2 text-sm ${
+        ariaInvalid ? 'border-red-500/70' : 'border-line'
+      } ${disabled ? 'opacity-60' : ''}`}
     >
       {values.map((v, i) => (
         <span
-          // biome-ignore lint/suspicious/noArrayIndexKey: chip identity = position+value, and onChange swaps the array wholesale
-          key={`${i}-${v}`}
-          className="inline-flex items-center gap-1 rounded-full border border-line bg-bg px-2 py-0.5 text-ink2 text-xs"
+          key={`${v}-${i}`}
+          className="inline-flex items-center gap-1 rounded-full bg-ink/10 px-2.5 py-0.5 text-ink text-xs"
         >
-          <span>{v}</span>
+          {v}
           {!disabled && (
             <button
               type="button"
               onClick={() => removeAt(i)}
-              className="text-muted text-xs hover:text-ink"
               aria-label={`Remove ${v}`}
+              className="text-ink2 hover:text-ink"
             >
               ×
             </button>
           )}
         </span>
       ))}
-      {!atMax && (
+      {!atCap && !disabled && (
         <input
           type="text"
           value={draft}
@@ -645,20 +739,21 @@ function ChipInput({
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ',') {
               e.preventDefault();
-              commit();
+              addCurrent();
             } else if (e.key === 'Backspace' && draft === '' && values.length > 0) {
-              onChange(values.slice(0, -1));
+              removeAt(values.length - 1);
             }
           }}
-          onBlur={commit}
-          placeholder={values.length === 0 ? placeholder : ''}
+          onBlur={addCurrent}
           maxLength={maxLength}
-          disabled={disabled}
-          className="min-w-[8rem] flex-1 bg-transparent px-1 py-1 text-ink text-sm placeholder:text-muted focus:outline-none disabled:cursor-not-allowed"
+          placeholder={values.length === 0 ? placeholder : ''}
+          className="flex-1 min-w-[8rem] bg-transparent px-1 outline-none placeholder:text-muted"
         />
       )}
-      {atMax && (
-        <span className="px-1 text-muted text-[11px]">Max {maxItems} reached</span>
+      {atCap && (
+        <span className="px-1 text-muted text-xs">
+          Max {maxItems} reached
+        </span>
       )}
     </div>
   );

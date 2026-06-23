@@ -2,6 +2,112 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## Phase 50.5 — Community editor input parity with listing (2026-06-22)
+
+**Trigger**: qiaoxux feedback on the 50.4 community editor —
+"Remove hints. Add units. Year built — see how it is done in my listing,
+you should do the same for my community. Proactively check others as well.
+Be consistent with all inputs."
+
+**Objective**: bring the community metadata form's three free-text numeric
+fields (year built / HOA / price range) up to the same typed-numeric +
+unit-adornment shape as the listing editor, and strip the per-field hint
+strings the 50.4 pass had introduced.
+
+**Actions**:
+- New migration `supabase/migrations/0037_community_metadata_typed.sql` —
+  drops the three `_text` columns added 4 hours ago in 0036 (no agent had
+  populated them yet) and adds typed replacements:
+    * `year_built integer` (CHECK 1800–2100)
+    * `hoa_fee_monthly integer` (CHECK ≥ 0)
+    * `price_min integer` + `price_max integer` (CHECK both ≥ 0 AND
+      `price_min <= price_max`).
+  All constraints `NOT VALID` then `VALIDATE` so existing rows are
+  unaffected. Pushed via `npm run db:push` — supabase CLI applied 0037 to
+  prod.
+- `lib/zod/community.ts` — replaced `hoa_fee_text` / `year_built_text` /
+  `price_range_text` schemas with `z.number().int()` schemas matching the
+  DB constraints, plus a `.refine()` cross-field check so the UI shows
+  "Price (from) must be ≤ price (to)" before round-tripping. JSDoc updated.
+- `app/dashboard/communities/actions.ts` — `updateCommunity` writes the new
+  typed columns instead of the dropped text columns; null-coalescing logic
+  unchanged.
+- `app/dashboard/communities/[id]/page.tsx` — `CommunityRow` interface +
+  `.select(...)` updated.
+- `app/dashboard/communities/[id]/CommunityEditor.tsx` — full rewrite of
+  the affected fields:
+    * **Year built**: copied the listing editor's dual-mode pattern verbatim
+      — `<select>` of current-year + 24 prior years with a "Type a year…"
+      escape hatch into a `<input type=number min=1800 max=2100>`. Same UI,
+      same affordances, same "Use list" toggle.
+    * **HOA fee**: `<input type=number>` with absolute-positioned `$` prefix
+      and `/month` suffix, matching the listing HOA field exactly.
+    * **Price range**: split into two `$`-prefixed number inputs labeled
+      "from" / "to" in a 2-column grid. This is friendlier than free-text
+      "$450k–$1.2M" because agents never have to think about which dash
+      character to use, "k" abbreviations, or whether to put a space around
+      the en-dash.
+    * Extracted a small `DollarInput` helper (12 lines) to keep the three
+      `$`-prefixed inputs DRY.
+    * Removed every `hint=` prop on `<Field>` calls per owner ask. Kept all
+      placeholders showing real example values — those communicate format
+      without the visual noise of hint lines.
+    * `isDirty` and `onSubmit` logic now compares numeric state via a
+      `sameInt(a, b)` helper that parses the input string before comparison.
+- DEVLOG (this entry) + RELEASE.md v0.54.4 entry added.
+
+**Decisions**:
+- *Why drop+rebuild the 0036 columns instead of in-place ALTER COLUMN
+  TYPE?* 0036 was applied to prod ~4 hours before this migration and no
+  agent had touched a community since. A clean drop+add avoids `USING`
+  cast clauses that would have to handle "$450k–$1.2M"-style free-text
+  values that we know don't exist yet. Cheaper now than in two weeks.
+- *Why split price into min/max instead of a single `price_text`?* The
+  owner specifically asked for input parity with the listing editor. The
+  listing editor uses typed numerics with adornments; the community editor
+  now does too. Splitting also unlocks a future "filter communities by
+  price range" buyer search that needs structured data.
+- *Why a single year (not a range) for year_built?* Listing's year_built
+  is `int`. The owner asked for the same shape. Communities that span
+  multiple build years (2018–2024) lose some fidelity, but the listing
+  editor treats the same trade-off as acceptable, and the description /
+  highlights / tagline fields can carry "phased delivery 2018–2024" if it
+  matters. If this proves too lossy in practice, a `year_built_end` int
+  is a one-column add — but YAGNI for now.
+- *Why remove all hints?* Owner explicit ask. Placeholders + adornments
+  (`$` / `/month`) carry the same information; hints below the input were
+  visual clutter once the form already has clear labels and example
+  placeholders. The Tagline field's "Optional" hint and the County's
+  "Helps property-tax lookups" gloss are gone — if either becomes
+  confusing in user testing we add them back as lighter inline help.
+
+**Verification**:
+- `npx tsc --noEmit` → clean.
+- `npm run build` → clean. `/dashboard/communities/[id]` 13.5 kB / 192 kB
+  (50.4 was 13 / 191 — 0.5 kB delta from the DollarInput helper +
+  dual-mode year selector).
+- DB: 0037 applied to remote.
+- Awaiting Vercel preview + qiaoxux UI sign-off.
+
+**Pitfalls / learnings**:
+- `parseIntOrNull` matters at three sites — initial state hydration,
+  isDirty comparison, and onSubmit payload — and they all need to agree
+  on "empty string ↔ null". Centralizing the helper meant one of those
+  three didn't silently disagree.
+- The listing editor already had the exact `buildYearOptions()` /
+  dual-mode pattern. Cargo-culting it byte-for-byte is the right call here
+  — once the same field starts diverging across two editors, the inputs
+  feel "almost-but-not-quite" alike and that's the worst kind of UX.
+
+**Next steps**:
+- Buyer-side `/c/[slug]` rendering of `year_built` / `hoa_fee_monthly` /
+  `price_min..price_max` (will need a small `formatPriceRange` helper).
+- Community list cards on `/dashboard/communities` could show the
+  `price_min` "from $X" badge if present.
+- Search filter by `property_types` (still pending from 50.4).
+
+---
+
 ## Phase 50.4 — Community metadata expansion (2026-06-22)
 
 **Trigger**: qiaoxux on community detail page after the 50.3 cleanup landed —

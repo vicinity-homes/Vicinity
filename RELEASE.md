@@ -2,6 +2,25 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.54.4 — Community editor matches the listing editor (2026-06-22)
+
+✨ **Improvements**
+- Community detail page: **Year built**, **HOA fee**, and **Price range**
+  now use the same input style as the listing editor. Year built is a
+  dropdown of recent years with a "Type a year…" escape hatch. HOA shows
+  a `$` prefix and `/month` suffix. Price is two `$`-prefixed boxes for
+  the low end and high end of the range — no more wrestling with dash
+  characters or "k" abbreviations.
+- Removed the small grey hint lines under each form field. Clear labels
+  and example placeholders inside the boxes carry the same information
+  with less visual noise.
+
+🔧 **Technical**
+- Numeric fields are stored as integers in the database with sanity
+  checks (year between 1800 and 2100, prices non-negative, low price
+  ≤ high price). This prep work also unlocks a future buyer-side
+  "filter communities by price range" search.
+
 ## v0.54.3 — Richer community profiles (2026-06-22)
 
 ### ✨ New fields on the Community editor

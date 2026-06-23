@@ -165,9 +165,10 @@ export async function updateCommunity(id: string, raw: unknown): Promise<ActionR
           // the editor normalizes before submit.
           zip: parsed.data.zip ?? null,
           county: parsed.data.county ?? null,
-          hoa_fee_text: parsed.data.hoa_fee_text ?? null,
-          year_built_text: parsed.data.year_built_text ?? null,
-          price_range_text: parsed.data.price_range_text ?? null,
+          hoa_fee_monthly: parsed.data.hoa_fee_monthly ?? null,
+          year_built: parsed.data.year_built ?? null,
+          price_min: parsed.data.price_min ?? null,
+          price_max: parsed.data.price_max ?? null,
           property_types:
             parsed.data.property_types && parsed.data.property_types.length > 0
               ? parsed.data.property_types

@@ -8,9 +8,15 @@
  *
  * Phase 50.4 (2026-06-22): adds 10 optional metadata fields to
  * UpdateCommunityInput so agents can describe communities richly without
- * being forced into rigid numeric/enum types. Free-text "_text" fields are
- * intentional — agents routinely write ranges like "$450k–$1.2M" or
- * "2018–2024" and strict numeric types create more friction than they save.
+ * being forced into rigid numeric/enum types.
+ *
+ * Phase 50.5 (2026-06-22): owner asked for input parity with the listing
+ * editor — year built / HOA / price are all typed numerics on the listing
+ * side with `$` and `/month` adornments, so we mirror that exactly:
+ *   - year_built_text   → year_built       (int, 1800–2100)
+ *   - hoa_fee_text      → hoa_fee_monthly  (int dollars/month)
+ *   - price_range_text  → price_min/price_max (int dollars, min ≤ max)
+ * Other 50.4 fields keep their string/array shapes.
  */
 
 import { z } from 'zod';
@@ -69,9 +75,21 @@ export const UpdateCommunityInput = z.object({
   // (empty string → null, empty array → null) lives in updateCommunity().
   zip: optionalText(10, 'ZIP'),
   county: optionalText(80, 'County'),
-  hoa_fee_text: optionalText(80, 'HOA fee'),
-  year_built_text: optionalText(40, 'Year built'),
-  price_range_text: optionalText(80, 'Price range'),
+  year_built: z
+    .number()
+    .int('Year built must be a whole number')
+    .min(1800, 'Year built must be 1800 or later')
+    .max(2100, 'Year built must be 2100 or earlier')
+    .optional()
+    .nullable(),
+  hoa_fee_monthly: z
+    .number()
+    .int('HOA fee must be a whole number of dollars')
+    .min(0, 'HOA fee cannot be negative')
+    .optional()
+    .nullable(),
+  price_min: z.number().int().min(0, 'Price cannot be negative').optional().nullable(),
+  price_max: z.number().int().min(0, 'Price cannot be negative').optional().nullable(),
   property_types: z
     .array(z.enum(COMMUNITY_PROPERTY_TYPES))
     .max(COMMUNITY_PROPERTY_TYPES.length, 'Too many property types selected')
@@ -85,7 +103,17 @@ export const UpdateCommunityInput = z.object({
   builder: optionalText(120, 'Builder'),
   website: optionalUrl,
   tagline: optionalText(120, 'Tagline'),
-});
+})
+  .refine(
+    (data) =>
+      data.price_min == null ||
+      data.price_max == null ||
+      data.price_min <= data.price_max,
+    {
+      message: 'Price (from) must be less than or equal to price (to)',
+      path: ['price_max'],
+    },
+  );
 export type UpdateCommunityInput = z.infer<typeof UpdateCommunityInput>;
 
 // Source URL is the fair-housing guard. Must be a real http(s) URL.
