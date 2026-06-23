@@ -2,6 +2,18 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-23 05:05 UTC — Remove "Community marketing copy" panel title
+
+**Objective**: qiaoxux: "remove title of Community marketing copy" on the community agent hub.
+
+**Actions**: deleted the `<h2>Community marketing copy</h2>` line in `app/dashboard/communities/[id]/CommunityMarketingPanel.tsx`. Description paragraph below it kept.
+
+**Decisions**: surgical one-line removal. Kept the wrapping `<div className="mb-4">` since the paragraph still needs that spacing.
+
+**Verification**: `npx tsc --noEmit` clean.
+
+**Next steps**: none.
+
 ## Phase 50.15 — Prune dead community upload code (2026-06-23)
 
 **Objective**: qiaoxux: "清理所有不用的老页面 老逻辑". After Phase 50.12 lifted the prefill consumer into `<CommunityMediaPanel>` and collapsed `/upload` to a redirect, three legacy components became orphans + the `/upload` route itself was dead weight.

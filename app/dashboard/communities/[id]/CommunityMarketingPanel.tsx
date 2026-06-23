@@ -188,7 +188,6 @@ export function CommunityMarketingPanel({ communityId }: Props) {
   return (
     <section className="rounded-2xl border border-line bg-surface p-4 sm:p-6">
       <div className="mb-4">
-        <h2 className="font-serif text-lg">Community marketing copy</h2>
         <p className="mt-1 text-muted text-xs">
           Generate a 150–250 word body grounded in your videos, schools, and nearby points of
           interest. Edit inline, save per language. The model is told it must not invent

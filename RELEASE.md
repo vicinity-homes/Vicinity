@@ -2,6 +2,11 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.54.17 — Community marketing: drop redundant panel title (2026-06-23)
+
+### ✨ Improvements
+- The community marketing copy panel no longer shows a "Community marketing copy" heading — the surrounding context already makes it clear, the heading was redundant chrome.
+
 ## v0.54.16 — Community upload: prune the dead /upload page (2026-06-23)
 
 **For anyone uploading media to a community:**
