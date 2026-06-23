@@ -71,7 +71,7 @@ applied to remote via `npm run db:push`).
   drop FieldGroup helper, simplify year + price
 - `supabase/migrations/0039_drop_community_tagline.sql` — new
 
-**Commit:** `${COMMIT_SHA_PLACEHOLDER}`
+**Commit:** `2430754`
 
 ---
 
