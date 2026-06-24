@@ -2,6 +2,16 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.58.0 — Real listings show real media (2026-06-24)
+
+### 🔧 Technical
+- Removed the pre-launch curated-stock media override. Listings now show
+  the agent's actual photos and videos exclusively — no more substitution
+  with luxury stock imagery. The "Stock" badge that flagged stock-overridden
+  cards is gone (no cards show stock anymore). Internal: deletes
+  `NEXT_PUBLIC_DEMO_MEDIA` flag and the Unsplash/Pexels remote-image
+  allow-list.
+
 ## v0.57.2 — Site-wide responsiveness boost (2026-06-24)
 
 **✨ Improvements**

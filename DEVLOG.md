@@ -2,6 +2,71 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-24 — Phase 54: delete demo-media fake-data layer
+
+**Objective**: User asked to "删除所有 fake data 和测试数据". Confirmed scope =
+only the runtime curated-stock override layer (`lib/demo-media.ts` + 14
+callers). Design-mock HTML prototypes under `public/design-mocks/` and
+`public/prototype/` and the vitest `__tests__/` suites stay (they are
+visual-sign-off assets and unit tests, not fake data).
+
+**Actions**:
+- Deleted `lib/demo-media.ts` (DEMO_MEDIA_ENABLED, demoCoverFor,
+  demoHeadshotFor, demoVideoFor, demoPhotosFor, DemoVideoPool).
+- Deleted `public/demo/villa-music.mp4` (only file under public/demo/, the
+  one bespoke ambient-music demo asset wired to listing
+  655c43c6-…dd9b9d via DEMO_LISTING_VIDEO_OVERRIDE).
+- Cleaned all 14 callers: removed import lines, simplified
+  `demoCoverFor(id, real) → real`, `demoHeadshotFor(real) → real`,
+  `demoVideoFor(...) → null` (drop demo-video branch, keep HLS path),
+  `demoPhotosFor(id, real) → real`. Dropped now-orphaned `isDemoStock`,
+  `demoVideoUrl`, `isDemoVideo`, `realSrc` locals and the "Stock" badge
+  UI gated on isDemoStock (in `/a/[agentSlug]`, `/search`, `/browse`).
+- `next.config.mjs`: removed remote-image patterns for
+  `images.unsplash.com`, `images.pexels.com`, `videos.pexels.com` plus
+  the surrounding "Demo-media curated stock" comment block. Kept
+  Supabase + Cloudflare Stream entries.
+- `app/dashboard/communities/[id]/page.tsx`: also dropped now-unused
+  `import { thumbnailUrl }` and the `void thumbnailUrl;` stub line that
+  existed only to keep the import alive for transitive demoCoverFor needs
+  in CommunityBody. CommunityBody still imports thumbnailUrl directly.
+- `app/(public)/a/[agentSlug]/page.tsx`: also dropped now-unused
+  `GridCardBadgeDark` named import (only used to render the Stock badge).
+
+**Decisions**: The override layer existed for pre-launch demo polish
+(curated Unsplash/Pexels CDN stock to make sparse listings look like a
+luxury portfolio). Project comments + CLAUDE.md already had a "no fake
+data" rule the override was a transitional violation of. Deleting the
+whole layer is cleaner than gating it behind a flag that's been off in
+prod since launch — the kill-switch + override pattern adds branching
+to every render path with no production payoff.
+
+**Issues**: First subagent attempt hit the 50-call delegation limit at
+9/14 files (hit the same threshold flagged in my memory at ~15 files).
+Parent finished the remaining 5 files directly via patch — net 22 patch
+calls, which lines up with the "≤11 files mechanical → parent does it"
+heuristic from prior phases.
+
+**Resolution**: tsc clean, `next build` successful, branch merged to
+main (squashed below into a single phase commit).
+
+**Learnings**:
+- The 11-file threshold for direct parent execution holds: 14 files +
+  some non-trivial cleanup (Stock badge UI, unused imports) was right
+  on the edge — subagent + finish-parent split was the right call but
+  required 50 + 22 = ~72 calls total vs. probably 30-35 if I'd done it
+  all in parent. Next time, files that involve UI removal (not pure
+  call-site replace) should bump the threshold up.
+- `public/demo/` had exactly one asset and was demo-only — `rm -rf
+  public/demo/` was safe. If the directory had had production assets
+  alongside the demo MP4, that would have been a footgun.
+
+**Next steps**: Pre-launch the platform was built around a `DEMO_MEDIA`
+kill-switch — flipping it to false was the launch lever. Now removed,
+real listings show real media unconditionally. If demo polish is needed
+again for sales/marketing, do it via per-listing seeded fixtures in
+Supabase, not a runtime override.
+
 ## 2026-06-24 — Phase 53 Phase D: getSession() sweep across all render paths
 
 **Trigger.** Phase C proved swapping `getUser()` → `getSession()` saves ~150ms
