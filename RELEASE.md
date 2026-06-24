@@ -2,6 +2,11 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.55.1 — Listing Save button moved to bottom (2026-06-24)
+
+### ✨ Improvements
+- **Save button on the listing editor moved from the top to the bottom of the form**, matching the community editor layout. After hitting Save you'll see a "✓ Saved" confirmation appear next to the button. (qiaoxux: "move the save button to the end of the inputs. Similar to my community page!")
+
 ## v0.55.0 — Save button on the listing editor + auto-save on community editor (2026-06-24)
 
 **For listing agents who edit listings or communities from the hub:**
