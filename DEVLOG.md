@@ -2,6 +2,23 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-24 — Phase 51 follow-up: move listing Save button to the bottom
+
+**Objective**: qiaoxux: "My listing - move the save button to the end of the inputs. Similar to my community page! Also when clicking save, show something indicating the changes are saved." Initial Phase 51 put the Save button + SaveBadge in the header (above the inputs); owner wants the community-style footer placement.
+
+**Actions**:
+- `app/dashboard/listings/[id]/edit/EditListingForm.tsx`:
+  - Removed the header row containing `<SaveBadge>` + the Save button.
+  - Added a footer row at the very bottom of the form (after the Description field), mirroring `CommunityEditor`'s pattern: `border-line border-t pt-4`, primary `Save` button, inline `✓ Saved` flash on success, inline error text on failure.
+  - Deleted the now-unused `<SaveBadge>` component (orphan from this change — CLAUDE.md §0.3 cleanup).
+  - File-header note updated to mark the Phase 51 follow-up move and quote the owner ask verbatim.
+
+**Decisions**:
+- The `✓ Saved` inline text already satisfies "show something indicating the changes are saved" — same treatment as community, no new affordance needed.
+- Did NOT add a separate "Editing… / Saving…" status anywhere else in the form. The Save button label flips to `Saving…` mid-flight, and the auto-save still runs silently; that's all the inline feedback the community surface has, and parity was the explicit ask.
+
+**Verification**: `npx tsc --noEmit` clean, `npm run build` clean.
+
 ## 2026-06-24 — Phase 51: Save button parity (listing + community auto-save)
 
 **Objective**: qiaoxux on the agent hub: "my listing details page should have a save button similar to my community page". Picked option 2 (auto-save + explicit Save button coexist) and asked to apply to both surfaces. Two follow-up constraints: button label is `Save` (not `Save changes`), and the `No unsaved changes` hint goes away.

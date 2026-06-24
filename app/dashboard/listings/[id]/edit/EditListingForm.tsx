@@ -11,13 +11,13 @@
  * race the debounce.
  *
  * Phase 51/save-button-parity (2026-06-24): added an explicit "Save" button
- * next to the SaveBadge so agents have an instant-confirm escape hatch.
- * Auto-save still runs on every edit; the button just calls flushNow() to
- * cancel the debounce and round-trip immediately. Disabled when there's
- * nothing dirty to save or a save is in flight.
- *
- * Save status is shown as a small pill ("Saving…" / "✓ Saved" / "Error")
- * so the agent has continuous feedback that work isn't lost.
+ * at the bottom of the form (matching the community editor layout) so agents
+ * have an instant-confirm escape hatch. Auto-save still runs on every edit;
+ * the button just calls flushNow() to cancel the debounce and round-trip
+ * immediately. On success, an inline "✓ Saved" flash appears next to the
+ * button. The earlier top-of-form SaveBadge pill was removed in favour of
+ * this footer pattern (owner ask 2026-06-24: "move the save button to the
+ * end of the inputs. Similar to my community page!").
  *
  * UI conventions otherwise unchanged from phase 8/listing-form-ux:
  * Required/Optional badges, dropdowns for beds/baths/style with escape
@@ -352,20 +352,6 @@ export function EditListingForm({ listingId, initial, communities, listingContex
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end gap-3 text-xs text-muted">
-        <SaveBadge state={saveState} error={errorMsg} />
-        <button
-          type="button"
-          onClick={() => {
-            void flushNow();
-          }}
-          disabled={saveState === 'idle' || saveState === 'saved' || saveState === 'saving'}
-          className="rounded bg-ink px-3 py-1.5 text-xs font-medium text-cream transition hover:opacity-90 disabled:opacity-40"
-        >
-          {saveState === 'saving' ? 'Saving…' : 'Save'}
-        </button>
-      </div>
-
       <fieldset className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="List price (USD)" required>
           <input
@@ -677,47 +663,29 @@ export function EditListingForm({ listingId, initial, communities, listingContex
           className={`${INPUT_CLASS} min-h-[10rem] resize-y`}
         />
       </Field>
+
+      <div className="flex items-center gap-3 border-line border-t pt-4">
+        <button
+          type="button"
+          onClick={() => {
+            void flushNow();
+          }}
+          disabled={saveState === 'idle' || saveState === 'saved' || saveState === 'saving'}
+          className="rounded bg-ink px-4 py-2 text-sm font-medium text-cream transition hover:opacity-90 disabled:opacity-50"
+        >
+          {saveState === 'saving' ? 'Saving…' : 'Save'}
+        </button>
+        {saveState === 'saved' && <span className="text-sm text-emerald-400">✓ Saved</span>}
+        {saveState === 'error' && errorMsg && (
+          <span className="text-sm text-red-400">Error: {errorMsg}</span>
+        )}
+      </div>
     </div>
   );
 }
 
 const INPUT_CLASS =
   'w-full rounded border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-line-strong focus:outline-none focus:ring-1 focus:ring-line-strong';
-
-function SaveBadge({ state, error }: { state: SaveState; error: string | null }) {
-  if (state === 'idle') {
-    return null;
-  }
-  if (state === 'pending') {
-    return (
-      <span className="shrink-0 rounded border border-line px-2 py-1 text-[11px] text-ink2">
-        Editing…
-      </span>
-    );
-  }
-  if (state === 'saving') {
-    return (
-      <span className="shrink-0 rounded border border-line bg-ink2/10 px-2 py-1 text-[11px] text-ink2">
-        Saving…
-      </span>
-    );
-  }
-  if (state === 'saved') {
-    return (
-      <span className="shrink-0 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-300">
-        ✓ Saved
-      </span>
-    );
-  }
-  return (
-    <span
-      title={error ?? undefined}
-      className="shrink-0 rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-[11px] text-red-300"
-    >
-      Save failed
-    </span>
-  );
-}
 
 function Field({
   label,
