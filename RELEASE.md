@@ -2,6 +2,31 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.59.1 — Feed swipe is now snappy on iPhone (2026-06-25)
+
+**✨ Improvements**
+
+- Swiping between videos on iPhone is dramatically smoother. Each card
+  now starts playing in well under half a second instead of the previous
+  one-second pause-and-stutter.
+- Sound stays on through every swipe. Previously the audio would silently
+  drop on each new card and you had to swipe back-and-forth to "wake it
+  up" — that's gone.
+
+**🔧 Technical**
+
+- Added active HLS prefetch on iOS Safari (`feedPrefetch.ts`). On the
+  native HLS path, `<video preload="auto">` is silently downgraded to
+  `"metadata"` — so we now `fetch()` the manifest + first 2 segments for
+  each neighbor card ourselves. Browser HTTP cache holds them; when the
+  card activates, segments hit cache instead of starting cold.
+- Switched both feeds to muted-first autoplay. iOS sticky activation
+  only blesses the original `<video>` element from the user gesture,
+  not freshly-mounted ones — so `play()` with sound was rejected on
+  every swipe and the fallback dropped users into silence. Now we
+  always start muted, then unmute the moment the `playing` event fires.
+  No more sound-rejection round-trip.
+
 ## v0.59.0 — Smoother feed playback on phones (2026-06-25)
 
 **✨ Improvements**
