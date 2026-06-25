@@ -2,6 +2,64 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-25 — Phase 57: feed prefetch + muted-first autoplay (B' + E)
+
+**Objective**: After phase56 shipped vdbg instrumentation, Vivian's iPhone screenshots showed a clear pattern on every swipe:
+```
+activate          buf:ø          ← cold cache, segments not yet fetched
+play-call(muted:false)
+stall-waiting     buf:ø
+autoplay-blocked-retry-muted     ← iOS rejects sound on freshly-loaded video
+canplay/playing/first-frame  ≈ 1000–1300ms after activate
+```
+Two compounding causes:
+1. `preload="auto"` on iOS is silently downgraded to `metadata` on cellular/low-power → neighbor cards never warm their byte cache.
+2. iOS Safari sticky activation only "blesses" the original `<video>` element from the user gesture, not new ones loaded after — so `play()` with sound on a freshly-mounted card is rejected, and the muted-fallback dropped users into silence ("must swipe back-and-forth to wake up sound").
+
+**Branch**: `phase57/feed-prefetch-muted-first` (merged to main).
+
+**Fixes shipped**:
+
+1. **Plan B' — Active HLS prefetch for iOS native path** (`app/(public)/browse/_components/feedPrefetch.ts`).
+   - For each card in `shouldMount` window where `canPlayType('application/vnd.apple.mpegurl')` is truthy, fire `fetch()` of the master manifest, parse first variant, fetch variant playlist, then fetch first 2 segment URLs in parallel.
+   - All requests `credentials: 'omit'` (Cloudflare Stream is anonymous).
+   - Module-level `inflight` map + `completed` set dedupe — same masterUrl never fetched twice within the session.
+   - AbortController returned from each call site → fetch cancels on card unmount or source change.
+   - Logs every stage to vdbg overlay: `prefetch-start`, `prefetch-master`, `prefetch-variant`, `prefetch-segment`, `prefetch-error`.
+   - Bandwidth bound: 2 segs × ~6s × low variant bitrate ≈ 300–600 KB per neighbor; with `shouldMount` ±1, max 2 prefetches in flight.
+   - Skipped on hls.js path (it has its own 20s rolling buffer).
+
+2. **Plan E — Muted-first autoplay** in BrowseFeed.tsx + CommunityVideoFeed.tsx.
+   - Always `v.muted = true` before `v.play()` on activation, regardless of global `muted` prop.
+   - Attach `once`-listener on `playing`: when frame is on screen, flip `v.muted` to the user's desired mute state.
+   - Eliminates the `play-call(muted:false) → autoplay-blocked-retry-muted` round-trip (~200–300ms) and guarantees the user's unmuted state is preserved through every swipe.
+   - Catch-handler now only fires for the truly-rare "muted play() also rejected" case (OS-level autoplay disabled or unrecoverable media error).
+
+**Phase55 anti-pattern guard maintained**:
+- No `setState` writes added to the play/pause effect's hot path. The `playing` listener mutates the DOM (`v.muted`) directly, no React re-render.
+- Effect deps unchanged (`[isActive, shouldMount, setPaused, sel.cfVideoId]` for BrowseFeed; `[isActive, shouldMount, muted, onAutoplayBlocked]` for CommunityVideoFeed).
+
+**Verification**:
+- `npx tsc --noEmit` clean.
+- `pnpm build` clean.
+- vdbg overlay still active for follow-up QA.
+
+**Files**:
+- `app/(public)/browse/_components/feedPrefetch.ts` (new, ~110 lines)
+- `app/(public)/browse/_components/BrowseFeed.tsx` — prefetch effect + muted-first play/pause effect.
+- `app/(public)/c/[slug]/feed/CommunityVideoFeed.tsx` — same mirror.
+
+**Expected log signature post-fix** (compare to phase56 baseline):
+```
+activate         buf:0.0-6.0     ← prefetch primed cache
+play-call(muted:true)            ← muted-first
+playing          buf:0.0-6.0     ← <300ms after activate
+unmute-after-playing             ← seamless audio
+```
+No more `autoplay-blocked-retry-muted` events on swipes.
+
+---
+
 ## 2026-06-25 — Phase 56: feed autoplay redux + iPhone perf debug overlay
 
 **Objective**: Fix-forward after phase55 rollback. Vivian's two original bugs ("black frame + no sound on first card", "play-button flash on every swipe") plus a follow-up report that iPhone playback is choppier than desktop.

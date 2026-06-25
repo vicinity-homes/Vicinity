@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LeadModal } from '../../_components/LeadModal';
 import { FeedPerfDebugPanel } from './FeedPerfDebugPanel';
 import { vdbgBuffered, vdbgLog } from './feedPerfDebug';
+import { prefetchHlsHead } from './feedPrefetch';
 import { CommunityCarousel } from './CommunityCarousel';
 import { CommunitySheet, type CommunitySheetData } from './CommunitySheet';
 import { ActionButton } from '../../_components/feed/ActionButton';
@@ -531,22 +532,69 @@ function Card({
     };
   }, [shouldMount, sel.cfVideoId]);
 
+  // Phase57 (Plan B'): active prefetch of HLS head on iOS native-HLS path.
+  // `preload="auto"` is silently downgraded to `metadata` on cellular/low-power,
+  // so neighbor cards never warm their byte cache. We `fetch()` the manifest +
+  // first 2 segments ourselves; browser HTTP cache holds them and the active
+  // `<video>.src = url` later hits cache → first-frame in <300ms instead of 1s.
+  // Aborted on unmount or source change. Skipped on hls.js path (it has its
+  // own buffer). Skipped when shouldMount is false (out of pool window).
+  useEffect(() => {
+    if (!shouldMount) return;
+    const video = videoRef.current;
+    if (!video) return;
+    if (!video.canPlayType('application/vnd.apple.mpegurl')) return;
+    let src: string;
+    try {
+      src = hlsUrl(sel.cfVideoId);
+    } catch {
+      return;
+    }
+    const cancel = prefetchHlsHead(src, idx, sel.cfVideoId);
+    return cancel;
+  }, [shouldMount, sel.cfVideoId, idx]);
+
   // Play/pause on active changes.
-  // Try with current mute state first; if browser blocks autoplay-with-sound
-  // (no sticky activation), fall back to muted and signal parent to flip
-  // the global mute state so the Sound button reflects reality.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: sel.cfVideoId triggers replay after source switch
+  //
+  // Phase57 (Plan E): muted-first start.
+  //   iOS Safari rejects `play()` with sound on a freshly-loaded video element
+  //   even though the page has sticky activation — the activation only
+  //   "blesses" the *original* video element from the user gesture, not new
+  //   ones loaded after the gesture. The phase56 logs showed every swipe doing
+  //   `play-call(muted:false) -> stall-waiting -> autoplay-blocked-retry-muted
+  //   -> first-frame ≈ 1000ms`. The retry succeeded MUTED, dropping the user
+  //   into silence and forcing them to swipe back-and-forth to "wake up sound".
+  //
+  //   Fix: ALWAYS start muted. Once `playing` fires (frame on screen), flip
+  //   `v.muted` to the global `muted` prop. This matches TikTok/Reels
+  //   behavior and never trips the sound-autoplay rejection path.
+  //
+  // Phase55 anti-pattern guard: NO `setState` writes in this effect's hot path.
+  //   `setPaused` is the only state-write callback and it's a no-op in this
+  //   feed (parent uses local `userTappedToPause` for the overlay).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: muted intentionally read fresh inside without re-running
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     if (isActive && shouldMount) {
       vdbgLog(idx, sel.cfVideoId, 'activate', { rs: v.readyState, buf: vdbgBuffered(v) });
-      v.muted = muted;
+      // Plan E: start muted unconditionally.
+      v.muted = true;
+      const desiredMuted = muted;
       vdbgLog(idx, sel.cfVideoId, 'play-call', {
         muted: v.muted,
+        desiredMuted,
         rs: v.readyState,
         buf: vdbgBuffered(v),
       });
+      const onPlaying = () => {
+        // Frame on screen — safe to apply user's desired mute state.
+        if (!desiredMuted) {
+          v.muted = false;
+          vdbgLog(idx, sel.cfVideoId, 'unmute-after-playing', {});
+        }
+      };
+      v.addEventListener('playing', onPlaying, { once: true });
       v.play()
         .then(() => {
           vdbgLog(idx, sel.cfVideoId, 'play-resolved', {
@@ -556,22 +604,17 @@ function Card({
           setPaused(false);
         })
         .catch(() => {
-          // Autoplay-with-sound was blocked. Retry muted — this always works.
-          if (!v.muted) {
-            vdbgLog(idx, sel.cfVideoId, 'autoplay-blocked-retry-muted', {});
-            v.muted = true;
-            onAutoplayBlocked?.();
-            v.play()
-              .then(() => setPaused(false))
-              .catch(() => {
-                vdbgLog(idx, sel.cfVideoId, 'play-rejected-muted', {});
-                setPaused(true);
-              });
-          } else {
-            vdbgLog(idx, sel.cfVideoId, 'play-rejected', {});
-            setPaused(true);
-          }
+          // Even muted play() failed — extremely rare (autoplay disabled at OS
+          // level or unrecoverable media error). Surface to parent so the
+          // global Sound button flips to muted to match reality.
+          vdbgLog(idx, sel.cfVideoId, 'play-rejected-muted', {});
+          v.removeEventListener('playing', onPlaying);
+          onAutoplayBlocked?.();
+          setPaused(true);
         });
+      return () => {
+        v.removeEventListener('playing', onPlaying);
+      };
     } else {
       v.pause();
       setPaused(true);

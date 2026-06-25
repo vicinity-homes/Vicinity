@@ -24,6 +24,7 @@ import {
 import { getOrCreateDeviceId } from '@/lib/buyer/device-id';
 import { listLiked, toggleLike as toggleLikeAction } from '@/lib/buyer/likes';
 import { hlsUrl, thumbnailUrl } from '@/lib/cloudflare/stream';
+import { prefetchHlsHead } from '@/app/(public)/browse/_components/feedPrefetch';
 
 import {
   COMMUNITY_VIDEO_CATEGORIES,
@@ -171,21 +172,47 @@ function VideoCard({
     };
   }, [shouldMount, video.cfVideoId]);
 
-  // Play/pause on activation; honor mute, fall back if blocked.
-  // Note: NO state writes inside this effect (phase55 anti-pattern). Overlay
-  // visibility is driven by `userTappedToPause` only — set in onTap.
+  // Phase57 (Plan B'): active prefetch on iOS native-HLS path. See BrowseFeed
+  // for full rationale. -1 idx means "not tracked in vdbg overlay" (this feed
+  // doesn't render the panel; logs flow to console only).
+  useEffect(() => {
+    if (!shouldMount) return;
+    const el = videoElRef.current;
+    if (!el) return;
+    if (!el.canPlayType('application/vnd.apple.mpegurl')) return;
+    let src: string;
+    try {
+      src = hlsUrl(video.cfVideoId);
+    } catch {
+      return;
+    }
+    return prefetchHlsHead(src, -1, video.cfVideoId);
+  }, [shouldMount, video.cfVideoId]);
+
+  // Play/pause on activation.
+  // Phase57 (Plan E): muted-first start, then flip to desired mute state once
+  //   `playing` fires. Avoids the iOS Safari sound-autoplay rejection that
+  //   forced users to swipe back-and-forth to "wake up sound" on every card.
+  // Phase55 anti-pattern guard: NO state writes in this effect.
   useEffect(() => {
     const v = videoElRef.current;
     if (!v) return;
     if (isActive && shouldMount) {
-      v.muted = muted;
+      v.muted = true;
+      const desiredMuted = muted;
+      const onPlaying = () => {
+        if (!desiredMuted) v.muted = false;
+      };
+      v.addEventListener('playing', onPlaying, { once: true });
       v.play().catch(() => {
-        if (!v.muted) {
-          v.muted = true;
-          onAutoplayBlocked();
-          v.play().catch(() => {});
-        }
+        // Even muted play() failed — surface to parent so the global Sound
+        // button reflects reality. Extremely rare on iOS.
+        v.removeEventListener('playing', onPlaying);
+        onAutoplayBlocked();
       });
+      return () => {
+        v.removeEventListener('playing', onPlaying);
+      };
     } else {
       v.pause();
     }
