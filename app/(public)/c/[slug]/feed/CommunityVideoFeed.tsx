@@ -109,7 +109,12 @@ function VideoCard({
 }: VideoCardProps) {
   const videoElRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
-  const [paused, setPaused] = useState(true);
+  const [userTappedToPause, setUserTappedToPause] = useState(false);
+  // Reset overlay state when the card deactivates so a paused-then-swiped
+  // card replays cleanly when it next becomes active.
+  useEffect(() => {
+    if (!isActive) setUserTappedToPause(false);
+  }, [isActive]);
 
   let poster: string | null = null;
   try {
@@ -167,27 +172,22 @@ function VideoCard({
   }, [shouldMount, video.cfVideoId]);
 
   // Play/pause on activation; honor mute, fall back if blocked.
+  // Note: NO state writes inside this effect (phase55 anti-pattern). Overlay
+  // visibility is driven by `userTappedToPause` only — set in onTap.
   useEffect(() => {
     const v = videoElRef.current;
     if (!v) return;
     if (isActive && shouldMount) {
       v.muted = muted;
-      v.play()
-        .then(() => setPaused(false))
-        .catch(() => {
-          if (!v.muted) {
-            v.muted = true;
-            onAutoplayBlocked();
-            v.play()
-              .then(() => setPaused(false))
-              .catch(() => setPaused(true));
-          } else {
-            setPaused(true);
-          }
-        });
+      v.play().catch(() => {
+        if (!v.muted) {
+          v.muted = true;
+          onAutoplayBlocked();
+          v.play().catch(() => {});
+        }
+      });
     } else {
       v.pause();
-      setPaused(true);
     }
   }, [isActive, shouldMount, muted, onAutoplayBlocked]);
 
@@ -202,12 +202,11 @@ function VideoCard({
     const v = videoElRef.current;
     if (!v) return;
     if (v.paused) {
-      v.play()
-        .then(() => setPaused(false))
-        .catch(() => {});
+      setUserTappedToPause(false);
+      v.play().catch(() => {});
     } else {
       v.pause();
-      setPaused(true);
+      setUserTappedToPause(true);
     }
   };
 
@@ -234,7 +233,7 @@ function VideoCard({
             poster={poster ?? undefined}
             className="relative h-full w-full object-cover md:object-contain"
             playsInline
-            muted
+            muted={muted}
             loop
             preload="metadata"
           />
@@ -254,7 +253,7 @@ function VideoCard({
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-black/85 via-black/50 to-transparent" />
 
       {/* Pause indicator. */}
-      {paused && shouldMount && (
+      {userTappedToPause && shouldMount && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-black/40 text-cream backdrop-blur">
             <svg viewBox="0 0 24 24" width={36} height={36} fill="currentColor" aria-hidden="true">

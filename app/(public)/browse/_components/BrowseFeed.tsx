@@ -147,7 +147,6 @@ interface CardProps {
   shouldMount: boolean;
   isActive: boolean;
   cardRef: (el: HTMLElement | null) => void;
-  paused: boolean;
   setPaused: (b: boolean) => void;
   onSwipe: (delta: 1 | -1) => void;
   poolSize: number;
@@ -368,7 +367,6 @@ function Card({
   shouldMount,
   isActive,
   cardRef,
-  paused,
   setPaused,
   onSwipe,
   poolSize,
@@ -379,6 +377,16 @@ function Card({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  // Show the play-button overlay ONLY when the user has actively tapped to
+  // pause this card. Decoupled from `paused` (which flips true during the
+  // play().then() round-trip on every swipe → caused a play-icon flash on
+  // every new card per phase55 root-cause). Resets when the card deactivates
+  // so a paused-then-swiped card replays from clean state next time it's
+  // active.
+  const [userTappedToPause, setUserTappedToPause] = useState(false);
+  useEffect(() => {
+    if (!isActive) setUserTappedToPause(false);
+  }, [isActive]);
 
   const sel = useMemo(() => pickVideo(card, source, cycleIdx), [card, source, cycleIdx]);
 
@@ -485,12 +493,14 @@ function Card({
     const v = videoRef.current;
     if (!v) return;
     if (v.paused) {
+      setUserTappedToPause(false);
       v.play()
         .then(() => setPaused(false))
         .catch(() => {});
     } else {
       v.pause();
       setPaused(true);
+      setUserTappedToPause(true);
     }
   };
 
@@ -568,7 +578,7 @@ function Card({
             poster={poster ?? undefined}
             className="relative h-full w-full object-cover md:object-contain"
             playsInline
-            muted
+            muted={muted}
             loop
             preload="metadata"
           />
@@ -667,7 +677,7 @@ function Card({
         </>
       )}
 
-      {paused && shouldMount && (
+      {userTappedToPause && shouldMount && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-black/40 text-cream backdrop-blur">
             <PlayIcon />
@@ -840,7 +850,11 @@ export function BrowseFeed({
   // per-card source + cycle index. key = listing.id
   const [sourceByCard, setSourceByCard] = useState<Record<string, Source>>({});
   const [cycleByCard, setCycleByCard] = useState<Record<string, number>>({});
-  const [pausedActive, setPausedActive] = useState(true);
+  // `setPaused` plumbed to Card lets the play/pause effect signal play-state
+  // upstream if needed. Currently consumed only as a hook for the
+  // sheet-open path below; no state is read off it from the parent. Kept
+  // a no-op upward so we don't have to refactor the Card prop shape.
+  const noopSetPaused = useCallback(() => {}, []);
   // Global mute state. We optimistically start UNMUTED — if the user arrived
   // via a click on the Landing "Explore" CTA (or any in-app navigation), the
   // browser's sticky activation lets us autoplay with sound. If the user
@@ -1126,8 +1140,7 @@ export function BrowseFeed({
               shouldMount={Math.abs(idx - activeIndex) <= 1}
               isActive={isThisActive}
               cardRef={(el) => setCardRef(idx, el)}
-              paused={isThisActive ? pausedActive : true}
-              setPaused={isThisActive ? setPausedActive : () => {}}
+              setPaused={noopSetPaused}
               poolSize={poolFor(card, cardSource)}
               muted={muted}
               onAutoplayBlocked={() => {
@@ -1149,8 +1162,6 @@ export function BrowseFeed({
                   ? () => {
                       setSheetCardId(card.id);
                       setSheetOpen(true);
-                      // Pause the underlying listing video so the sheet has focus.
-                      setPausedActive(true);
                     }
                   : undefined
               }
