@@ -580,7 +580,7 @@ function Card({
             playsInline
             muted={muted}
             loop
-            preload="metadata"
+            preload="auto"
           />
         ) : poster ? (
           <img

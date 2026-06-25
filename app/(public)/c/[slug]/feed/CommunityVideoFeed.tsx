@@ -235,7 +235,7 @@ function VideoCard({
             playsInline
             muted={muted}
             loop
-            preload="metadata"
+            preload="auto"
           />
         ) : (
           poster && (
