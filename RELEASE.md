@@ -2,6 +2,33 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.59.0 — Smoother feed playback on phones (2026-06-25)
+
+**✨ Improvements**
+
+- First card on the Browse and Community video feeds now starts with sound
+  immediately on iPhone — no more swiping back and forth to "wake up" the
+  audio.
+- The play-button overlay no longer flashes onto the screen during normal
+  swipes. It only appears when you actively tap to pause a video.
+- Videos on iPhone start playing more readily because the active card and
+  its neighbors begin buffering ahead of time, instead of waiting for you
+  to swipe to them.
+
+**🔧 Technical**
+
+- Fixed the `<video muted>` literal-attribute trap (was always rendering
+  as muted on first mount regardless of the React prop).
+- New local `userTappedToPause` state replaces the parent `paused` round
+  trip for the play-icon overlay, removing the 200–800ms HLS-startup
+  flash.
+- `preload="metadata"` → `preload="auto"` on feed videos. On iOS native
+  HLS this is the only knob that triggers segment prefetch, since hls.js
+  is bypassed.
+- New on-screen perf debug overlay (`?vdbg=1` or
+  `localStorage.vdbg='1'`) for mobile QA. Shows last 30 video lifecycle
+  events plus buffered ranges with millisecond timestamps. Off by default.
+
 ## v0.58.0 — Real listings show real media (2026-06-24)
 
 ### 🔧 Technical

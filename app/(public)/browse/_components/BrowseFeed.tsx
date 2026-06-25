@@ -8,6 +8,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LeadModal } from '../../_components/LeadModal';
+import { FeedPerfDebugPanel } from './FeedPerfDebugPanel';
+import { vdbgBuffered, vdbgLog } from './feedPerfDebug';
 import { CommunityCarousel } from './CommunityCarousel';
 import { CommunitySheet, type CommunitySheetData } from './CommunitySheet';
 import { ActionButton } from '../../_components/feed/ActionButton';
@@ -144,10 +146,11 @@ interface CardProps {
   card: BrowseCard;
   source: Source;
   cycleIdx: number;
+  /** Index in the rendered feed; used for perf debug logging only. */
+  idx: number;
   shouldMount: boolean;
   isActive: boolean;
   cardRef: (el: HTMLElement | null) => void;
-  paused: boolean;
   setPaused: (b: boolean) => void;
   onSwipe: (delta: 1 | -1) => void;
   poolSize: number;
@@ -365,10 +368,10 @@ function Card({
   card,
   source,
   cycleIdx,
+  idx,
   shouldMount,
   isActive,
   cardRef,
-  paused,
   setPaused,
   onSwipe,
   poolSize,
@@ -379,8 +382,79 @@ function Card({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  // Show the play-button overlay ONLY when the user has actively tapped to
+  // pause this card. Decoupled from `paused` (which flips true during the
+  // play().then() round-trip on every swipe → caused a play-icon flash on
+  // every new card per phase55 root-cause). Resets when the card deactivates
+  // so a paused-then-swiped card replays from clean state next time it's
+  // active.
+  const [userTappedToPause, setUserTappedToPause] = useState(false);
+  useEffect(() => {
+    if (!isActive) setUserTappedToPause(false);
+  }, [isActive]);
 
   const sel = useMemo(() => pickVideo(card, source, cycleIdx), [card, source, cycleIdx]);
+
+  // Phase 56 perf debug: lifecycle events on the video element. Cheap when
+  // vdbg is off (vdbgLog short-circuits). Attaches once per shouldMount/sel
+  // pair to mirror the HLS effect lifetime.
+  useEffect(() => {
+    if (!shouldMount) return;
+    const v = videoRef.current;
+    if (!v) return;
+    const cf = sel.cfVideoId;
+    vdbgLog(idx, cf, 'card-mount', { isActive, shouldMount });
+    let firstFrameLogged = false;
+    const onLoadedMeta = () =>
+      vdbgLog(idx, cf, 'loadedmetadata', {
+        dur: Number.isFinite(v.duration) ? +v.duration.toFixed(2) : null,
+        rs: v.readyState,
+      });
+    const onCanPlay = () =>
+      vdbgLog(idx, cf, 'canplay', { rs: v.readyState, buf: vdbgBuffered(v) });
+    const onCanPlayThrough = () =>
+      vdbgLog(idx, cf, 'canplaythrough', { buf: vdbgBuffered(v) });
+    const onPlaying = () => {
+      vdbgLog(idx, cf, 'playing', { ct: +v.currentTime.toFixed(2), buf: vdbgBuffered(v) });
+      if (!firstFrameLogged) {
+        firstFrameLogged = true;
+        vdbgLog(idx, cf, 'first-frame', {});
+      }
+    };
+    const onWaiting = () =>
+      vdbgLog(idx, cf, 'stall-waiting', {
+        ct: +v.currentTime.toFixed(2),
+        buf: vdbgBuffered(v),
+      });
+    const onStalled = () =>
+      vdbgLog(idx, cf, 'stall-stalled', { ct: +v.currentTime.toFixed(2) });
+    const onError = () =>
+      vdbgLog(idx, cf, 'video-error', { code: v.error?.code, msg: v.error?.message });
+    const onProgress = () =>
+      vdbgLog(idx, cf, 'progress', { buf: vdbgBuffered(v) });
+    v.addEventListener('loadedmetadata', onLoadedMeta);
+    v.addEventListener('canplay', onCanPlay);
+    v.addEventListener('canplaythrough', onCanPlayThrough);
+    v.addEventListener('playing', onPlaying);
+    v.addEventListener('waiting', onWaiting);
+    v.addEventListener('stalled', onStalled);
+    v.addEventListener('error', onError);
+    v.addEventListener('progress', onProgress);
+    return () => {
+      vdbgLog(idx, cf, 'card-unmount', {});
+      v.removeEventListener('loadedmetadata', onLoadedMeta);
+      v.removeEventListener('canplay', onCanPlay);
+      v.removeEventListener('canplaythrough', onCanPlayThrough);
+      v.removeEventListener('playing', onPlaying);
+      v.removeEventListener('waiting', onWaiting);
+      v.removeEventListener('stalled', onStalled);
+      v.removeEventListener('error', onError);
+      v.removeEventListener('progress', onProgress);
+    };
+    // isActive intentionally omitted from deps — the listeners don't need
+    // to re-bind on activation; isActive is only used in the initial log.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldMount, sel.cfVideoId, idx]);
 
   let poster: string | null = null;
   try {
@@ -411,8 +485,10 @@ function Card({
     }
 
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      vdbgLog(idx, sel.cfVideoId, 'hls-native', { url: src });
       video.src = src;
     } else if (Hls.isSupported()) {
+      vdbgLog(idx, sel.cfVideoId, 'hls-mse', { url: src });
       // capLevelToPlayerSize:false → don't cap quality to the player's pixel
       //   size (desktop letterbox renders smallish but we still want HD).
       // MANIFEST_PARSED → jump to the top level for first playback so users
@@ -424,14 +500,26 @@ function Card({
         capLevelToPlayerSize: false,
       });
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        vdbgLog(idx, sel.cfVideoId, 'hls-manifest', {
+          levels: hls.levels.length,
+          pickedTop: hls.levels.length > 0,
+        });
         if (hls.levels.length > 0) {
           hls.nextLevel = hls.levels.length - 1;
         }
+      });
+      hls.on(Hls.Events.ERROR, (_evt, data) => {
+        vdbgLog(idx, sel.cfVideoId, 'hls-error', {
+          type: data.type,
+          details: data.details,
+          fatal: data.fatal,
+        });
       });
       hls.loadSource(src);
       hls.attachMedia(video);
       hlsRef.current = hls;
     } else {
+      vdbgLog(idx, sel.cfVideoId, 'hls-fallback', { url: src });
       video.src = src;
     }
 
@@ -452,18 +540,35 @@ function Card({
     const v = videoRef.current;
     if (!v) return;
     if (isActive && shouldMount) {
+      vdbgLog(idx, sel.cfVideoId, 'activate', { rs: v.readyState, buf: vdbgBuffered(v) });
       v.muted = muted;
+      vdbgLog(idx, sel.cfVideoId, 'play-call', {
+        muted: v.muted,
+        rs: v.readyState,
+        buf: vdbgBuffered(v),
+      });
       v.play()
-        .then(() => setPaused(false))
+        .then(() => {
+          vdbgLog(idx, sel.cfVideoId, 'play-resolved', {
+            rs: v.readyState,
+            buf: vdbgBuffered(v),
+          });
+          setPaused(false);
+        })
         .catch(() => {
           // Autoplay-with-sound was blocked. Retry muted — this always works.
           if (!v.muted) {
+            vdbgLog(idx, sel.cfVideoId, 'autoplay-blocked-retry-muted', {});
             v.muted = true;
             onAutoplayBlocked?.();
             v.play()
               .then(() => setPaused(false))
-              .catch(() => setPaused(true));
+              .catch(() => {
+                vdbgLog(idx, sel.cfVideoId, 'play-rejected-muted', {});
+                setPaused(true);
+              });
           } else {
+            vdbgLog(idx, sel.cfVideoId, 'play-rejected', {});
             setPaused(true);
           }
         });
@@ -485,12 +590,14 @@ function Card({
     const v = videoRef.current;
     if (!v) return;
     if (v.paused) {
+      setUserTappedToPause(false);
       v.play()
         .then(() => setPaused(false))
         .catch(() => {});
     } else {
       v.pause();
       setPaused(true);
+      setUserTappedToPause(true);
     }
   };
 
@@ -568,9 +675,9 @@ function Card({
             poster={poster ?? undefined}
             className="relative h-full w-full object-cover md:object-contain"
             playsInline
-            muted
+            muted={muted}
             loop
-            preload="metadata"
+            preload="auto"
           />
         ) : poster ? (
           <img
@@ -667,7 +774,7 @@ function Card({
         </>
       )}
 
-      {paused && shouldMount && (
+      {userTappedToPause && shouldMount && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-black/40 text-cream backdrop-blur">
             <PlayIcon />
@@ -840,7 +947,11 @@ export function BrowseFeed({
   // per-card source + cycle index. key = listing.id
   const [sourceByCard, setSourceByCard] = useState<Record<string, Source>>({});
   const [cycleByCard, setCycleByCard] = useState<Record<string, number>>({});
-  const [pausedActive, setPausedActive] = useState(true);
+  // `setPaused` plumbed to Card lets the play/pause effect signal play-state
+  // upstream if needed. Currently consumed only as a hook for the
+  // sheet-open path below; no state is read off it from the parent. Kept
+  // a no-op upward so we don't have to refactor the Card prop shape.
+  const noopSetPaused = useCallback(() => {}, []);
   // Global mute state. We optimistically start UNMUTED — if the user arrived
   // via a click on the Landing "Explore" CTA (or any in-app navigation), the
   // browser's sticky activation lets us autoplay with sound. If the user
@@ -1088,6 +1199,8 @@ export function BrowseFeed({
   }, [active, activeSource]);
 
   return (
+    <>
+    <FeedPerfDebugPanel activeIndex={activeIndex} />
     <FeedShell
       scrollerRef={scrollerRef}
       cards={Array.from({ length: totalCards }, (_, idx) => {
@@ -1123,11 +1236,11 @@ export function BrowseFeed({
               card={card}
               source={cardSource}
               cycleIdx={cardCycle}
+              idx={idx}
               shouldMount={Math.abs(idx - activeIndex) <= 1}
               isActive={isThisActive}
               cardRef={(el) => setCardRef(idx, el)}
-              paused={isThisActive ? pausedActive : true}
-              setPaused={isThisActive ? setPausedActive : () => {}}
+              setPaused={noopSetPaused}
               poolSize={poolFor(card, cardSource)}
               muted={muted}
               onAutoplayBlocked={() => {
@@ -1149,8 +1262,6 @@ export function BrowseFeed({
                   ? () => {
                       setSheetCardId(card.id);
                       setSheetOpen(true);
-                      // Pause the underlying listing video so the sheet has focus.
-                      setPausedActive(true);
                     }
                   : undefined
               }
@@ -1339,5 +1450,6 @@ export function BrowseFeed({
         );
       })()}
     </FeedShell>
+    </>
   );
 }

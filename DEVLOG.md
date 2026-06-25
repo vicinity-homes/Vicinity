@@ -2,6 +2,43 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-25 — Phase 56: feed autoplay redux + iPhone perf debug overlay
+
+**Objective**: Fix-forward after phase55 rollback. Vivian's two original bugs ("black frame + no sound on first card", "play-button flash on every swipe") plus a follow-up report that iPhone playback is choppier than desktop.
+
+**Branch**: `phase56/feed-autoplay-redux` (3 commits, merged to main).
+
+**Fixes shipped**:
+1. `<video muted>` → `<video muted={muted}>` in BrowseFeed.tsx + CommunityVideoFeed.tsx. The literal-attribute form rendered as `muted={true}` regardless of prop, so the first mount was always silent until the `useEffect([muted])` reconciled. Root cause of "swipe back-and-forth and sound returns".
+2. PlayIcon overlay decoupled from parent `paused` state. New local `userTappedToPause` state, set true ONLY in `onTap` when user actively pauses, reset on card deactivation. Eliminates the 200–800ms play-icon flash that appeared during HLS startup on every swipe.
+3. `preload="metadata"` → `preload="auto"` on the feed `<video>` (both feeds). On the iPhone native HLS path (`canPlayType('application/vnd.apple.mpegurl')`) hls.js's 20s rolling buffer is bypassed, so segments only started downloading after `v.play()` — `preload="auto"` lets the active card + its ±1 neighbors warm in the background. Bandwidth ceiling 3x, bounded by existing `shouldMount` window.
+4. `?vdbg=1` perf debug overlay (`feedPerfDebug.ts` + `FeedPerfDebugPanel.tsx`). On-screen ring buffer that mirrors all video lifecycle events with ms timestamps and buffered ranges. Mobile Safari users can't see the JS console without a Mac+USB cable, so the panel renders directly on the page. Logged: `card-mount`, `hls-native|mse|fallback`, `hls-manifest`, `hls-error`, `loadedmetadata`, `canplay(through)`, `progress`, `playing`, `first-frame`, `stall-waiting`, `stall-stalled`, `video-error`, `activate`, `play-call`, `play-resolved`, `autoplay-blocked-retry-muted`, `play-rejected[-muted]`. Toggle via `?vdbg=1` query param or `localStorage.setItem('vdbg','1')`.
+
+**Phase55 anti-patterns explicitly avoided**:
+- No `setState` writes inside the `[isActive, shouldMount, muted, ...]` play/pause effect beyond what was already there. The state writes that broke phase55 (setUserPaused(false) inside the effect) are not reintroduced.
+- Unmute listeners not added in this phase; the existing ones (untouched) do not depend on `activeIndex`.
+- `userTappedToPause` is local-only — no parent round-trip on every play().then() resolve.
+
+**Cleanup performed**:
+- Removed orphaned `paused` prop on `CardProps` (overlay now driven by local state).
+- Removed orphaned `pausedActive` state and `setPausedActive` calls in `BrowseFeed` (was write-only after the prop removal; the comment "Pause the underlying listing video" was stale — that line never actually paused video).
+
+**Verification**:
+- `npx tsc --noEmit` clean.
+- `pnpm build` clean — all routes compile.
+- Local desktop playback verified smooth.
+- iPhone perf instrumentation deployed for Vivian QA on the merged build.
+
+**Files**:
+- `app/(public)/browse/_components/BrowseFeed.tsx` — fixes 1+2+3, instrumentation 4.
+- `app/(public)/c/[slug]/feed/CommunityVideoFeed.tsx` — fixes 1+2+3 mirror.
+- `app/(public)/browse/_components/feedPerfDebug.ts` (new).
+- `app/(public)/browse/_components/FeedPerfDebugPanel.tsx` (new).
+
+**Pending**: Vivian to test merged main with `?vdbg=1` on iPhone; logs will determine whether iPhone choppiness needs additional fix (manifest+segment prefetch via `fetch()`, or HLS first-segment quality stepdown).
+
+---
+
 ## 2026-06-25 — Phase 55 ROLLBACK: feed autoplay polish broke first-paint
 
 **Objective**: Revert phase55 (commit `22f754e`) — Vivian reported "全是黑屏 视频和声音都没有 过几秒才都出现". Phase55 made playback start observably slower / blanker on the first card.
