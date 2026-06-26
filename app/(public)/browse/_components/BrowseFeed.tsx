@@ -604,9 +604,17 @@ function Card({
 
   // Keep <video>.muted in sync with the global mute toggle while the card
   // is mounted (parent flips it from the Sound button).
+  //
+  // Phase58.1: gate on `!v.paused`. This effect runs on mount alongside the
+  // play/pause effect above, and without the gate it would clobber Plan E's
+  // `v.muted = true` before play() resolves — iOS would then reject the
+  // unmuted play() on an unblessed element, leaving the card black until
+  // the user tapped. Once the video is actually playing, syncing mute is
+  // safe and matches the user's Sound-button choice.
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
+    if (v.paused) return;
     v.muted = muted;
   }, [muted]);
 

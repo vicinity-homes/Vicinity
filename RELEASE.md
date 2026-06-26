@@ -2,6 +2,19 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.59.3 — Fix later videos staying frozen until tap (2026-06-26)
+
+**🐛 Bug Fixes**
+
+- Fixed a leftover iPhone bug from v0.59.2: the first couple of videos played
+  fine, but cards further down the feed would stay frozen on a still frame
+  with no play icon, requiring a tap on the screen to wake them up. A second
+  internal effect was racing the autoplay handshake and silently disabling
+  it. With that resolved, the feed plays through end-to-end without any
+  manual taps.
+
+---
+
 ## v0.59.2 — Fix mid-feed freeze on iPhone (2026-06-26)
 
 **🐛 Bug Fixes**

@@ -202,10 +202,12 @@ function VideoCard({
     }
   }, [isActive, shouldMount, muted, onAutoplayBlocked]);
 
-  // Keep mute in sync.
+  // Keep mute in sync. Phase58.1: gate on `!v.paused` so we don't clobber
+  // Plan E's muted-first start before play() resolves on iOS.
   useEffect(() => {
     const v = videoElRef.current;
     if (!v) return;
+    if (v.paused) return;
     v.muted = muted;
   }, [muted]);
 

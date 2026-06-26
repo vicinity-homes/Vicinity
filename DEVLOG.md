@@ -2,6 +2,26 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-26 — Phase 58.1: fix mute-sync effect clobbering Plan E
+
+**Objective**: Vivian reported "后面几个视频还是卡住,虽然没有播放键,需要点击屏幕才播放" after phase58 shipped. Symptom: black/stalled card, no PlayIcon, but tapping the screen kicks it into life — i.e. play() was never resolving.
+
+**Root cause**: a second `useEffect` exists in both `BrowseFeed.tsx` and `CommunityVideoFeed.tsx` whose job is to mirror the global Sound button to `v.muted`. It runs on mount alongside the play/pause effect, with `[muted]` deps. Plan E's effect sets `v.muted = true` first; **then** the sync effect immediately overwrites it with `v.muted = false` (because `muted=false` is the default). iOS Safari sees `play()` called on a freshly-loaded, unblessed, unmuted video element → rejects → silent stall. The phase57 logs missed this because the symptom was "stalls forever" rather than the "autoplay-blocked-retry-muted" branch we instrumented.
+
+**Fix**: gate the sync effect on `!v.paused`. Once the video is actually playing, syncing mute is safe (the user pressed the Sound button intentionally). Before play() resolves, leave `v.muted` alone — Plan E's listener will flip it to the desired value at the `playing` event.
+
+**Actions**:
+- `BrowseFeed.tsx`: add `if (v.paused) return;` to the mute-sync effect.
+- `CommunityVideoFeed.tsx`: same.
+
+**Verification**: `npx tsc --noEmit` clean, `npx -y pnpm build` green.
+
+**Learnings**: when a hot path has TWO effects writing the same DOM property, ordering matters. React runs effects in declaration order, so the later one wins on mount. Either consolidate into one effect or gate the secondary one. Adding "Plan E only assigns `muted` once" as a §Phase55 anti-pattern guard isn't enough — we need to audit ALL `v.muted = ...` writes in these files when Plan E ships.
+
+**Next steps**: Vivian retests on preview. If smooth, this is the iPhone autoplay saga done.
+
+---
+
 ## 2026-06-26 — Phase 58: revert prefetch (B'), keep muted-first (E)
 
 **Objective**: Phase 57 shipped both Plan B' (active HLS prefetch) and Plan E (muted-first autoplay). Vivian's next round of iPhone vdbg screenshots showed the feed freezing for ~12 seconds mid-scroll ("视频卡死"), with the active card stuck at `stall-stalled buf:0-4`, neighbor cards also stalled, and zero events for 12s until the user force-swiped.
