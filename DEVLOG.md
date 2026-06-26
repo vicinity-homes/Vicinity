@@ -2,31 +2,6 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
-## 2026-06-26 — Phase 58.2: State / City / County dropdowns on community form
-
-**Objective**: Vivian asked for State, City, and (where possible) County to be dropdowns when filling a new community — the free-text inputs let typos and inconsistent capitalisation through and slowed her down.
-
-**Actions**:
-- Built `lib/data/us-states.ts` (50 states + DC + PR, USPS code → name).
-- Vendored Census 2024 Gazetteer (counties + incorporated places, LSAD suffixes stripped) into `lib/data/us-geo.json` (~486 KB).
-- New route `app/api/geo/route.ts` returns one state's slice of counties + cities; `Cache-Control: public, immutable, 1y` so the edge serves it for free.
-- `CommunityEditor.tsx`:
-  - State input → strict `<select>` of US_STATES.
-  - City + County inputs → `<input list>` + `<datalist>` typed combobox, populated by `/api/geo?state=XX` whenever state changes.
-  - Switching state clears city + county (stale "Atlanta, TX" guard).
-  - Layout: state column widened to 10rem to fit "District of Columbia (DC)"; ZIP stays 7rem.
-
-**Decisions**:
-- *Combobox over strict select.* Census Gazetteer doesn't cover brand-new master-planned communities or every CDP, and agents will absolutely hit those — locking the field would block legitimate data. The datalist gives suggestions without removing the escape hatch. Captures 95% of the typo-prevention value without the brittleness.
-- *Slice-per-state API over shipping the full JSON to the client.* 486 KB across 52 states; the client only ever needs one slice (~10–30 KB for most states, ~100 KB for CA). One fetch per state pick, edge-cached for a year — the data only updates yearly.
-- *Strip LSAD suffixes ("city", "town", "CDP", "borough"…)* from place names so the suggestions read as "Atlanta" not "Atlanta city". Counties keep their full name ("Gwinnett County", "Orleans Parish") because that's the natural way to write them.
-
-**Issues**: None. `tsc --noEmit` and `next build` clean.
-
-**Learnings**: For US geographic reference data, the Census Gazetteer (https://www2.census.gov/geo/docs/maps-data/data/gazetteer/) is the canonical source — public domain, refreshed annually, ~10 MB raw → ~500 KB usable JSON after trimming.
-
-**Next steps**: Same dropdown pattern is a candidate for the listing edit form's address fields, but that path already uses Google Place Details which writes city/state/county directly — no manual entry, no need to retrofit.
-
 ## 2026-06-26 — Phase 58.1: passive-voice copy on buyer empty states
 
 **Objective**: Vivian's quick follow-up: don't say "agents are uploading…" — buyers don't think about who's behind the platform. Use passive voice.
