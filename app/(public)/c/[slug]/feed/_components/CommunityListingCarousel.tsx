@@ -1,21 +1,13 @@
 /**
  * CommunityListingCarousel — Scenario B · L3
  *
- * Phase 34b (V1 redo, 2026-06-17): fullscreen horizontal-swipe carousel
- * over the listings of a community. Opens after a buyer taps a row in
- * CommunityListingsSheet (L2). Per V1 prototype:
- *
- * - Horizontal swipe / arrow keys / desktop nav arrows cycle listings.
- * - Top-left "‹ Back · <community>" returns to L0 (the community feed),
- *   not back into the sheet — same simplification as Scenario A's L2:
- *   the sheet was a transient lookup, the user's anchor is the
- *   neighborhood. Closing the carousel also closes the sheet.
- * - Counter "1 / N" + segmented progress bar at the top.
- * - Each slide:
- *     • If the listing has a hero video → HLS player (autoplay muted).
- *     • Else → hero photo cover.
- *   Bottom overlay shows price · address · city · bd/ba/sqft (real
- *   fields only; nulls are omitted, no placeholders).
+ * Phase 62 (2026-06-26): rewritten from a horizontal pager to a vertical
+ * snap feed with the standard right-rail (Like / Save / Contact). Brings
+ * this third feed surface into parity with BrowseFeed and the community
+ * video feed so the buyer's interaction model is identical wherever they
+ * are. Like/Save target the listing (the user's anchor at this depth);
+ * Contact opens LeadModal listing-targeted, with the community owner's
+ * name as the display label (lead routing is by listingId on the server).
  *
  * Constraints:
  * - No mute button (system volume keys per phase34a.T2).
@@ -24,9 +16,22 @@
  */
 'use client';
 
+import { saveListing, unsaveListing, listSavedListingIds } from '@/app/_actions/saved-listings';
+import { getOrCreateDeviceId } from '@/lib/buyer/device-id';
+import { listLiked, toggleLike as toggleLikeAction } from '@/lib/buyer/likes';
 import { hlsUrl, thumbnailUrl } from '@/lib/cloudflare/stream';
 import Hls from 'hls.js';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { LeadModal } from '../../../../_components/LeadModal';
+import { ActionButton } from '../../../../_components/feed/ActionButton';
+import { FeedShell } from '../../../../_components/feed/FeedShell';
+import { FEED_RAIL_BOTTOM, FEED_Z } from '../../../../_components/feed/constants';
+import {
+  BackArrowIcon,
+  BookmarkIcon,
+  CommentIcon,
+  HeartIcon,
+} from '../../../../_components/feed/icons';
 import type { CommunityListingItem } from '../CommunityVideoFeed';
 
 interface Props {
@@ -34,6 +39,9 @@ interface Props {
   listings: CommunityListingItem[];
   startIndex: number;
   backLabel: string;
+  /** Community owner's name — used as the agent display label in LeadModal.
+   *  When null, Contact is hidden (no owner to route to). */
+  agentName: string | null;
   onClose: () => void;
 }
 
@@ -49,149 +57,280 @@ export function CommunityListingCarousel({
   listings,
   startIndex,
   backLabel,
+  agentName,
   onClose,
 }: Props) {
-  const [active, setActive] = useState(0);
-  const trackRef = useRef<HTMLDivElement | null>(null);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const cardRefs = useRef<Map<number, HTMLElement>>(new Map());
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  useEffect(() => {
-    if (open) {
-      setActive(Math.max(0, Math.min(startIndex, listings.length - 1)));
-    }
-  }, [open, startIndex, listings.length]);
+  // Liked / saved hydrated once on open from the buyer's device.
+  const [likedSet, setLikedSet] = useState<Set<string>>(() => new Set());
+  const [savedSet, setSavedSet] = useState<Set<string>>(() => new Set());
 
+  const [leadOpen, setLeadOpen] = useState(false);
+
+  // Lock body scroll while open + Esc to close + ArrowUp/Down navigation.
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
-      else if (e.key === 'ArrowLeft') setActive((i) => Math.max(0, i - 1));
-      else if (e.key === 'ArrowRight') setActive((i) => Math.min(listings.length - 1, i + 1));
+      else if (e.key === 'ArrowDown') {
+        setActiveIndex((i) => {
+          const next = Math.min(listings.length - 1, i + 1);
+          scrollToIndex(next);
+          return next;
+        });
+      } else if (e.key === 'ArrowUp') {
+        setActiveIndex((i) => {
+          const next = Math.max(0, i - 1);
+          scrollToIndex(next);
+          return next;
+        });
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => {
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevOverflow;
       window.removeEventListener('keydown', onKey);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, listings.length, onClose]);
 
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
-  function onTouchStart(e: React.TouchEvent) {
-    const t = e.touches[0];
-    if (!t) return;
-    touchStart.current = { x: t.clientX, y: t.clientY };
+  // Scroll to startIndex on open.
+  useEffect(() => {
+    if (!open) return;
+    const target = Math.max(0, Math.min(startIndex, listings.length - 1));
+    setActiveIndex(target);
+    // Defer to next paint so the snap scroller is in the DOM.
+    const id = requestAnimationFrame(() => scrollToIndex(target, false));
+    return () => cancelAnimationFrame(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, startIndex, listings.length]);
+
+  // Hydrate liked/saved on first open.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const deviceId = getOrCreateDeviceId();
+      const ids = listings.map((l) => l.id);
+      if (ids.length === 0) return;
+      const [savedIds, likedIds] = await Promise.all([
+        listSavedListingIds({ deviceId }),
+        listLiked({ deviceId, kind: 'listing' }),
+      ]);
+      if (cancelled) return;
+      const have = new Set(ids);
+      setSavedSet(new Set(savedIds.filter((id) => have.has(id))));
+      setLikedSet(new Set(likedIds.filter((id) => have.has(id))));
+    })().catch(() => {
+      /* ignore — UI starts empty, user can still toggle */
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, listings]);
+
+  // Intersection observer to track active index.
+  useEffect(() => {
+    if (!open) return;
+    const root = scrollerRef.current;
+    if (!root) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        let bestIdx = -1;
+        let bestRatio = 0;
+        for (const e of entries) {
+          if (e.intersectionRatio > bestRatio) {
+            bestRatio = e.intersectionRatio;
+            const idxAttr = (e.target as HTMLElement).dataset.idx;
+            bestIdx = idxAttr ? Number(idxAttr) : -1;
+          }
+        }
+        if (bestIdx >= 0 && bestRatio > 0.6) setActiveIndex(bestIdx);
+      },
+      { root, threshold: [0.6, 0.9] },
+    );
+    cardRefs.current.forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+  }, [open, listings.length]);
+
+  function scrollToIndex(idx: number, smooth = true) {
+    const el = cardRefs.current.get(idx);
+    if (!el) return;
+    el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
   }
-  function onTouchEnd(e: React.TouchEvent) {
-    const start = touchStart.current;
-    touchStart.current = null;
-    if (!start) return;
-    const t = e.changedTouches[0];
-    if (!t) return;
-    const dx = t.clientX - start.x;
-    const dy = t.clientY - start.y;
-    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
-    if (dx < 0) setActive((i) => Math.min(listings.length - 1, i + 1));
-    else setActive((i) => Math.max(0, i - 1));
-  }
+
+  const setCardRef = useCallback((idx: number, el: HTMLElement | null) => {
+    if (el) cardRefs.current.set(idx, el);
+    else cardRefs.current.delete(idx);
+  }, []);
+
+  const active = listings[Math.min(activeIndex, listings.length - 1)] ?? null;
+  const isLiked = active ? likedSet.has(active.id) : false;
+  const isSaved = active ? savedSet.has(active.id) : false;
+
+  const toggleLike = useCallback(() => {
+    if (!active) return;
+    const id = active.id;
+    const wasLiked = likedSet.has(id);
+    setLikedSet((s) => {
+      const next = new Set(s);
+      if (wasLiked) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    (async () => {
+      try {
+        const deviceId = getOrCreateDeviceId();
+        await toggleLikeAction({ deviceId, kind: 'listing', targetId: id, liked: !wasLiked });
+      } catch {
+        // Roll back on failure.
+        setLikedSet((s) => {
+          const next = new Set(s);
+          if (wasLiked) next.add(id);
+          else next.delete(id);
+          return next;
+        });
+      }
+    })();
+  }, [active, likedSet]);
+
+  const toggleSave = useCallback(() => {
+    if (!active) return;
+    const id = active.id;
+    const wasSaved = savedSet.has(id);
+    setSavedSet((s) => {
+      const next = new Set(s);
+      if (wasSaved) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    (async () => {
+      try {
+        const deviceId = getOrCreateDeviceId();
+        if (wasSaved) await unsaveListing({ deviceId, listingId: id });
+        else await saveListing({ deviceId, listingId: id });
+      } catch {
+        setSavedSet((s) => {
+          const next = new Set(s);
+          if (wasSaved) next.add(id);
+          else next.delete(id);
+          return next;
+        });
+      }
+    })();
+  }, [active, savedSet]);
+
+  const openContact = useCallback(() => setLeadOpen(true), []);
 
   if (!open || listings.length === 0) return null;
 
   const total = listings.length;
-  const safeActive = Math.min(active, total - 1);
+  const safeActive = Math.min(activeIndex, total - 1);
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={`${listings[safeActive]?.address ?? 'Listing'} carousel`}
-      className="fixed inset-0 z-[60] flex flex-col bg-black"
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
+      className="fixed inset-0 z-[60] bg-black"
     >
-      {/* Top bar */}
-      <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-3 pt-3">
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Back to community"
-          className="flex h-11 items-center gap-2 rounded-full border border-line bg-bg pr-3 pl-2 text-ink backdrop-blur-md transition-colors hover:border-line-strong hover:text-ink"
-        >
-          <span className="text-xl leading-none">‹</span>
-          <span className="flex flex-col text-left leading-tight">
-            <span className="font-semibold text-[12px]">Back</span>
-            <span className="max-w-[40vw] truncate text-[10px] text-ink2">{backLabel}</span>
-          </span>
-        </button>
-        <div className="flex h-9 items-center rounded-full bg-bg px-3 font-medium text-[12px] text-ink backdrop-blur-md tabular-nums">
-          {safeActive + 1} / {total}
-        </div>
-      </div>
-
-      {/* Progress */}
-      <div className="absolute inset-x-3 top-16 z-10 flex gap-1">
-        {listings.map((l, i) => (
-          <div
-            key={`${l.id}-prog`}
-            className={`h-0.5 flex-1 rounded-full ${i <= safeActive ? 'bg-ink' : 'bg-surface/20'}`}
+      <FeedShell
+        scrollerRef={scrollerRef}
+        cards={listings.map((l, i) => (
+          <ListingSlide
+            key={`${l.id}-${i}`}
+            listing={l}
+            index={i}
+            shouldMount={Math.abs(i - safeActive) <= 1}
+            isActive={i === safeActive}
+            cardRef={(el) => setCardRef(i, el)}
           />
         ))}
-      </div>
-
-      {/* Track */}
-      <div className="relative flex-1 overflow-hidden">
+      >
+        {/* Top bar: back + counter */}
         <div
-          ref={trackRef}
-          className="flex h-full transition-transform duration-300 ease-out"
-          style={{ transform: `translateX(-${safeActive * 100}%)` }}
+          className={`absolute inset-x-0 top-0 ${FEED_Z.topbar} flex items-center justify-between px-3 pt-3`}
         >
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Back to community"
+            className="flex h-11 items-center gap-2 rounded-full border border-cream/20 bg-ink/55 pr-3 pl-2 text-cream backdrop-blur-md transition-colors hover:border-cream hover:text-cream"
+            style={{ touchAction: 'manipulation' }}
+          >
+            <BackArrowIcon />
+            <span className="flex flex-col text-left leading-tight">
+              <span className="font-semibold text-[12px]">Back</span>
+              <span className="max-w-[40vw] truncate text-[10px] text-cream/70">{backLabel}</span>
+            </span>
+          </button>
+          <div className="flex h-9 items-center rounded-full border border-cream/20 bg-ink/55 px-3 font-medium text-[12px] text-cream backdrop-blur-md tabular-nums">
+            {safeActive + 1} / {total}
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className={`absolute inset-x-3 top-16 ${FEED_Z.topbar} flex gap-1`}>
           {listings.map((l, i) => (
-            <ListingSlide
-              key={`${l.id}-${i}`}
-              listing={l}
-              shouldMount={Math.abs(i - safeActive) <= 1}
-              isActive={i === safeActive}
+            <div
+              key={`${l.id}-prog`}
+              className={`h-0.5 flex-1 rounded-full ${
+                i <= safeActive ? 'bg-cream' : 'bg-cream/20'
+              }`}
             />
           ))}
         </div>
 
-        {/* Desktop arrows */}
-        {safeActive > 0 && (
-          <button
-            type="button"
-            onClick={() => setActive((i) => Math.max(0, i - 1))}
-            aria-label="Previous listing"
-            className="-translate-y-1/2 absolute top-1/2 left-3 hidden h-11 w-11 items-center justify-center rounded-full border border-line bg-bg text-ink backdrop-blur-md transition-colors hover:border-line-strong hover:text-ink md:flex"
-          >
-            ‹
-          </button>
-        )}
-        {safeActive < total - 1 && (
-          <button
-            type="button"
-            onClick={() => setActive((i) => Math.min(total - 1, i + 1))}
-            aria-label="Next listing"
-            className="-translate-y-1/2 absolute top-1/2 right-3 hidden h-11 w-11 items-center justify-center rounded-full border border-line bg-bg text-ink backdrop-blur-md transition-colors hover:border-line-strong hover:text-ink md:flex"
-          >
-            ›
-          </button>
-        )}
+        {/* Right rail */}
+        <div
+          className={`absolute right-3 ${FEED_Z.rail} flex flex-col items-center gap-3`}
+          style={{ bottom: FEED_RAIL_BOTTOM }}
+        >
+          <ActionButton onClick={toggleLike} label="Like" active={isLiked} activeColor="rose">
+            <HeartIcon filled={isLiked} />
+          </ActionButton>
+          <ActionButton onClick={toggleSave} label="Save" active={isSaved}>
+            <BookmarkIcon filled={isSaved} />
+          </ActionButton>
+          {agentName && (
+            <ActionButton onClick={openContact} label="Contact">
+              <CommentIcon />
+            </ActionButton>
+          )}
+        </div>
+      </FeedShell>
 
-        {/* Phase 45.24 (2026-06-21): "← swipe →" hint removed for the
-         * community listing carousel — gesture is self-evident. */}
-      </div>
+      {/* Lead modal — listing-targeted. Source auto-resolves to 'listing-page'. */}
+      {agentName && active && (
+        <LeadModal
+          open={leadOpen}
+          onClose={() => setLeadOpen(false)}
+          agent={{ name: agentName }}
+          listing={{ address: active.address }}
+          listingId={active.id}
+        />
+      )}
     </div>
   );
 }
 
 function ListingSlide({
   listing,
+  index,
   shouldMount,
   isActive,
+  cardRef,
 }: {
   listing: CommunityListingItem;
+  index: number;
   shouldMount: boolean;
   isActive: boolean;
+  cardRef: (el: HTMLElement | null) => void;
 }) {
   const ref = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -242,10 +381,7 @@ function ListingSlide({
     };
   }, [shouldMount, listing.heroCfVideoId]);
 
-  // Sound: chip tap is a user gesture, so unmuted autoplay should be
-  // permitted. Try with sound first; fall back to muted if the browser
-  // still blocks it. (phase34b.1 fix: chip-launched videos used to be
-  // silent because we forced muted=true.)
+  // Play active card; pause others. Try unmuted, fall back to muted.
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
@@ -269,7 +405,11 @@ function ListingSlide({
   if (listing.sqft != null) bbs.push(`${listing.sqft.toLocaleString()} sqft`);
 
   return (
-    <div className="relative h-full w-full shrink-0 basis-full">
+    <section
+      ref={cardRef}
+      data-idx={index}
+      className="relative h-[100dvh] w-full snap-start snap-always bg-black"
+    >
       {hasVideo && shouldMount ? (
         <video
           ref={ref}
@@ -286,20 +426,22 @@ function ListingSlide({
       ) : null}
 
       {/* Bottom overlay: price + address + bbs (real fields only). */}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-5 pt-16 pb-10">
+      <div
+        className={`absolute inset-x-0 bottom-0 ${FEED_Z.caption} bg-gradient-to-t from-black/85 via-black/45 to-transparent px-5 pt-16 pb-10 pr-20`}
+      >
         {listing.price != null && (
-          <div className="font-serif text-2xl text-ink leading-tight drop-shadow">
+          <div className="font-serif text-2xl text-cream leading-tight drop-shadow">
             {formatPrice(listing.price)}
           </div>
         )}
-        <div className="mt-1 text-[14px] text-ink2 drop-shadow">{listing.address}</div>
-        <div className="text-[12px] text-ink2 drop-shadow">
+        <div className="mt-1 text-[14px] text-cream/85 drop-shadow">{listing.address}</div>
+        <div className="text-[12px] text-cream/70 drop-shadow">
           {listing.city}, {listing.state}
         </div>
         {bbs.length > 0 && (
-          <div className="mt-1.5 text-[12px] text-ink2 drop-shadow">{bbs.join(' · ')}</div>
+          <div className="mt-1.5 text-[12px] text-cream/70 drop-shadow">{bbs.join(' · ')}</div>
         )}
       </div>
-    </div>
+    </section>
   );
 }
