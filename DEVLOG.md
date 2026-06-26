@@ -2,6 +2,18 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-26 — Phase 58.1: passive-voice copy on buyer empty states
+
+**Objective**: Vivian's quick follow-up: don't say "agents are uploading…" — buyers don't think about who's behind the platform. Use passive voice.
+
+**Actions**:
+- `ListingGrid.tsx` sub: "Check back soon — agents are uploading new tours." → "New tours will be uploaded soon — check back later."
+- `CommunityGrid.tsx` sub: "Check back soon — agents are adding new neighborhoods." → "New neighborhoods will be added soon — check back later."
+
+**Decisions**: Passive voice keeps the buyer surface noun-focused (tours / neighborhoods) without surfacing the agent role.
+
+**Resolution**: Shipped as patch on top of phase58.
+
 ## 2026-06-26 — Phase 58: extend EmptyHubState to buyer surfaces (For You + Communities)
 
 **Objective**: Vivian's follow-up after phase57: the buyer-side "No listings yet" (For You / `/browse`) and "No communities yet" (`/communities`) pages still looked nothing like the agent-side hubs — a single sentence on a blank cream background or a thin pill-shaped notice. She asked for the same friendly treatment across all four list surfaces.

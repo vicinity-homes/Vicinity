@@ -31,7 +31,7 @@ export function CommunityGrid({
       <EmptyHubState
         icon={<Building2 className="h-6 w-6" strokeWidth={1.5} />}
         headline="No communities yet"
-        sub="Check back soon — agents are adding new neighborhoods."
+        sub="New neighborhoods will be added soon — check back later."
       />
     );
   }

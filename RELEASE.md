@@ -2,6 +2,13 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.59.3 — Buyer empty-state copy: passive voice (2026-06-26)
+
+### ✨ Improvements
+- Reworded the For You and Communities empty states to avoid mentioning
+  agents directly: "New tours will be uploaded soon — check back later."
+  and "New neighborhoods will be added soon — check back later."
+
 ## v0.59.2 — Friendlier empty states on For You and Communities (2026-06-26)
 
 ### ✨ Improvements

@@ -68,7 +68,7 @@ export function ListingGrid({
       <EmptyHubState
         icon={<Home className="h-6 w-6" strokeWidth={1.5} />}
         headline="No listings yet"
-        sub="Check back soon — agents are uploading new tours."
+        sub="New tours will be uploaded soon — check back later."
       />
     );
   }
