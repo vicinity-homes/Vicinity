@@ -2,6 +2,30 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-26 — Phase 58: revert prefetch (B'), keep muted-first (E)
+
+**Objective**: Phase 57 shipped both Plan B' (active HLS prefetch) and Plan E (muted-first autoplay). Vivian's next round of iPhone vdbg screenshots showed the feed freezing for ~12 seconds mid-scroll ("视频卡死"), with the active card stuck at `stall-stalled buf:0-4`, neighbor cards also stalled, and zero events for 12s until the user force-swiped.
+
+**Root cause**: prefetch overload. Three `<video>` elements are mounted simultaneously (active + ahead + behind), each negotiating its own HLS playlist + segments. Adding our own `fetch()` calls for master/variant/segments on top of that saturated iOS Safari's media engine and socket pool. The buffer even regressed (0–8 → 0–4) before stalling — classic resource-starvation signature.
+
+**Plan E (muted-first) verdict**: works perfectly. vdbg shows `stall-waiting → playing → first-frame → unmute-after-playing` as designed. No `autoplay-blocked-retry-muted` fallbacks. Sound is seamless after the first frame. Keep it.
+
+**Actions**:
+- Removed prefetch effect + `prefetchHlsHead` import from `BrowseFeed.tsx`.
+- Removed prefetch effect + import from `c/[slug]/feed/CommunityVideoFeed.tsx`.
+- Deleted `app/(public)/browse/_components/feedPrefetch.ts` (orphan).
+- Kept Plan E (muted-first) intact in both feeds.
+
+**Decisions**:
+- Did NOT try to "fix" prefetch with throttling / serialization. The simpler answer is "let the browser manage its own HTTP connections," and the data shows that's enough once muted-first removes the autoplay-rejection delay.
+- Did NOT keep `feedPrefetch.ts` as a deprecated stub. Dead code rots; if we ever need prefetch we'll write the new version with the lessons learned (worker-based, single-flight queue, drop on swipe).
+
+**Verification**: `npx tsc --noEmit` clean, `npx -y pnpm build` green.
+
+**Next steps**: Vivian retests on iPhone preview. If smooth, merge to main and decide whether to keep `?vdbg=1` overlay (off-by-default) or remove it. If still issues, revisit pool size (currently 3 mounted) or `preload="auto"` aggressiveness.
+
+---
+
 ## 2026-06-25 — Phase 57: feed prefetch + muted-first autoplay (B' + E)
 
 **Objective**: After phase56 shipped vdbg instrumentation, Vivian's iPhone screenshots showed a clear pattern on every swipe:

@@ -24,7 +24,6 @@ import {
 import { getOrCreateDeviceId } from '@/lib/buyer/device-id';
 import { listLiked, toggleLike as toggleLikeAction } from '@/lib/buyer/likes';
 import { hlsUrl, thumbnailUrl } from '@/lib/cloudflare/stream';
-import { prefetchHlsHead } from '@/app/(public)/browse/_components/feedPrefetch';
 
 import {
   COMMUNITY_VIDEO_CATEGORIES,
@@ -172,22 +171,7 @@ function VideoCard({
     };
   }, [shouldMount, video.cfVideoId]);
 
-  // Phase57 (Plan B'): active prefetch on iOS native-HLS path. See BrowseFeed
-  // for full rationale. -1 idx means "not tracked in vdbg overlay" (this feed
-  // doesn't render the panel; logs flow to console only).
-  useEffect(() => {
-    if (!shouldMount) return;
-    const el = videoElRef.current;
-    if (!el) return;
-    if (!el.canPlayType('application/vnd.apple.mpegurl')) return;
-    let src: string;
-    try {
-      src = hlsUrl(video.cfVideoId);
-    } catch {
-      return;
-    }
-    return prefetchHlsHead(src, -1, video.cfVideoId);
-  }, [shouldMount, video.cfVideoId]);
+  // Phase58: prefetch (Plan B') reverted — see BrowseFeed.tsx note.
 
   // Play/pause on activation.
   // Phase57 (Plan E): muted-first start, then flip to desired mute state once
