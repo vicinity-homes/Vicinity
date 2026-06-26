@@ -2,6 +2,20 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.60.0 — State, City, County are now dropdowns when filling a community (2026-06-26)
+
+### ✨ Improvements
+- The State, City, and County fields on the New / Edit Community form
+  are no longer free-text. State is a strict dropdown of all 50 US
+  states (plus DC and PR), and once you pick a state, City and County
+  offer auto-suggestions from the official US Census 2024 Gazetteer for
+  that state — start typing and matching cities/counties for the picked
+  state appear inline. You can still type a value that isn't in the list
+  (for new developments or unincorporated areas), so nothing is locked
+  out — the lists just remove the typos and the "is it 'GA' or
+  'Georgia'?" guesswork. Switching states automatically clears the City
+  and County so you don't accidentally save "Atlanta, TX".
+
 ## v0.59.3 — Buyer empty-state copy: passive voice (2026-06-26)
 
 ### ✨ Improvements
