@@ -27,11 +27,13 @@
 
 import { CommunityGrid } from '@/app/_components/CommunityGrid';
 import { GridPageShell } from '@/app/_components/GridPageShell';
+import { Building2 } from 'lucide-react';
 import { fetchCommunityListCards } from '@/lib/communities/list';
 import { startTimer } from '@/lib/perf/timing';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { CreateCommunityButton } from './CreateCommunityButton';
+import { EmptyHubState } from '@/app/dashboard/_components/EmptyHubState';
 
 export default async function CommunitiesListPage() {
   const t = startTimer('dashboard-communities');
@@ -54,11 +56,12 @@ export default async function CommunitiesListPage() {
   if (cards.length === 0) {
     return (
       <GridPageShell>
-        <div className="rounded border border-dashed border-line bg-surface px-6 py-12 text-center">
-          <p className="text-sm text-ink2">
-            No communities yet. <CreateCommunityButton /> to start adding schools and POIs.
-          </p>
-        </div>
+        <EmptyHubState
+          icon={<Building2 size={24} strokeWidth={1.6} aria-hidden />}
+          headline="No communities yet"
+          sub="Create your first community to start adding schools, POIs and tours."
+          cta={<CreateCommunityButton />}
+        />
       </GridPageShell>
     );
   }
