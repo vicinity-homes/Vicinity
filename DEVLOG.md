@@ -2,6 +2,25 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-26 — Phase 62: CommunityListingCarousel goes vertical with rail
+
+**Objective**: Qiaoxu reported that entering listings via the community feed → "Live here" chip used a horizontal pager and lacked the right-rail (Like / Save / Contact) the other two feed surfaces have. Three feed surfaces, three different gesture/affordance shapes — bad consistency story for buyers.
+
+**Actions**:
+- `app/(public)/c/[slug]/feed/_components/CommunityListingCarousel.tsx`: rewritten. Replaced the `flex` translateX pager with `FeedShell axis="vertical"` (snap scroller). Added the standard right-rail using `ActionButton` for Like / Save / Contact, hooked to `lib/buyer/likes.ts` (`kind: 'listing'`) and `app/_actions/saved-listings.ts`. Liked/saved sets hydrated once on open via `Promise.all([listSavedListingIds, listLiked])`. ArrowUp/Down nav, IntersectionObserver for active index, Esc to close. Top bar keeps Back chip + counter; segmented progress bar retained.
+- `app/(public)/c/[slug]/feed/CommunityVideoFeed.tsx`: pass `agentName={owner?.name ?? null}` so the carousel's LeadModal has a display label. Lead routing remains by `listingId` server-side.
+
+**Decisions**:
+- Like/Save target the **listing** (the user's anchor at this depth), not the community. Contrast with the L0 community feed where Save targets the community itself. The carousel is one level deeper — buyers are evaluating individual homes here, not the neighborhood.
+- Contact opens LeadModal listing-targeted with the community owner's name as the agent label. Server resolves `agent_id` from `listing_id` regardless, so this is purely a display choice.
+- Hidden the rail's Contact button when the community has no owner (legacy `created_by NULL` with no fallback agent — same rule as the L0 feed).
+- No mute button (system volume keys per phase34a.T2).
+- No Share button on the carousel — listing-level Share lives on the public listing page (`/v/[agentSlug]/[listingSlug]`); the carousel is an in-feed evaluation surface, not a deep-link destination.
+
+**Verification**: `npx tsc --noEmit` clean. `npx next build` green. Visual sign-off after Vercel preview.
+
+**Next steps**: None planned. Three feed surfaces are now in shape parity.
+
 ## 2026-06-26 — Phase 61: feed description "more" toggle is tappable
 
 **Objective**: Tianrou reported the bottom-of-card description on the buyer feed (`/browse/feed`) couldn't be expanded. Caption is in the right place but the "more" affordance does nothing.

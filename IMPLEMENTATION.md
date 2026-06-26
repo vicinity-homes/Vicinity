@@ -234,6 +234,12 @@ Next:
 
 <!-- session log entries below -->
 
+### 2026-06-26 (phase62)
+Shipped:
+- phase62: CommunityListingCarousel rewrite — vertical FeedShell + Like/Save/Contact rail. Now matches BrowseFeed and CommunityVideoFeed gesture/affordance shape.
+Next:
+- none queued.
+
 ---
 
 ## Phase 21 — Persistent Save (anonymous device-id, scope C+X) — ✅ done 2026-06-13

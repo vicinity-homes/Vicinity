@@ -2,6 +2,16 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.64.0 — Listings from a community now swipe up/down with Like / Save / Contact (2026-06-26)
+
+### ✨ Improvements
+- Tap **Live here** on a community feed and the listings now swipe up and down
+  (vertical) instead of left/right — same gesture as the rest of the app.
+- Right-side buttons (**Like**, **Save**, **Contact**) now show on every
+  listing in this view too, matching the For You feed and the community
+  video feed. Like/Save remember your taps across sessions; Contact opens
+  a lead form addressed to the community's agent.
+
 ## v0.63.0 — Listing description "more" can actually expand now (2026-06-26)
 
 ### 🐛 Bug Fixes
