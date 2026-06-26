@@ -41,6 +41,7 @@
  */
 
 import { deleteCommunity, updateCommunity } from '@/app/dashboard/communities/actions';
+import { US_STATES } from '@/lib/data/us-states';
 import { COMMUNITY_PROPERTY_TYPES } from '@/lib/zod/community';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
@@ -124,6 +125,35 @@ export function CommunityEditor({
   const [priceMax, setPriceMax] = useState(community.price_max?.toString() ?? '');
   const [hoaFee, setHoaFee] = useState(community.hoa_fee_monthly?.toString() ?? '');
   const [website, setWebsite] = useState(community.website ?? '');
+
+  // Phase 58 (2026-06-26): State → County / City cascading dropdowns.
+  // The state select is strict (50 USPS codes + DC + PR). Once a state is
+  // picked, /api/geo?state=XX returns Census 2024 Gazetteer slices which
+  // we feed into a <datalist> for City and County — a typed combobox so
+  // an agent can still enter a custom value (new developments, CDPs not
+  // yet in Census data) without us shipping a 20k-row dropdown.
+  const [geoOptions, setGeoOptions] = useState<{ counties: string[]; cities: string[] }>({
+    counties: [],
+    cities: [],
+  });
+  useEffect(() => {
+    const code = state.trim().toUpperCase();
+    if (code.length !== 2) {
+      setGeoOptions({ counties: [], cities: [] });
+      return;
+    }
+    const ac = new AbortController();
+    fetch(`/api/geo?state=${encodeURIComponent(code)}`, { signal: ac.signal })
+      .then((r) => (r.ok ? r.json() : { counties: [], cities: [] }))
+      .then((data: { counties?: string[]; cities?: string[] }) => {
+        setGeoOptions({ counties: data.counties ?? [], cities: data.cities ?? [] });
+      })
+      .catch(() => {
+        // Network / abort — silently fall back to an empty datalist; the
+        // input is still free-text so the agent isn't blocked.
+      });
+    return () => ac.abort();
+  }, [state]);
 
   // `saveState` only reflects EXPLICIT Save-button clicks. Silent auto-save
   // does not flip it (owner ask 2026-06-24: "auto save doesn't need to click
@@ -332,36 +362,53 @@ export function CommunityEditor({
         />
       </Field>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_5rem_7rem]">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[10rem_1fr_7rem]">
+        <Field label="State" required error={fieldErrors.state}>
+          <select
+            value={state}
+            onChange={(e) => {
+              setState(e.target.value);
+              clearFieldError('state');
+              // City + County belong to the previous state — clear them so
+              // the agent doesn't ship "Atlanta, TX" by leaving stale text
+              // behind. The datalist they're typing against just changed.
+              setCity('');
+              setCounty('');
+              clearFieldError('city');
+              clearFieldError('county');
+            }}
+            disabled={!canEditMetadata}
+            aria-invalid={!!fieldErrors.state}
+            className={inputCls(!!fieldErrors.state)}
+          >
+            <option value="">Select…</option>
+            {US_STATES.map((s) => (
+              <option key={s.code} value={s.code}>
+                {s.name} ({s.code})
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field label="City" required error={fieldErrors.city}>
           <input
             type="text"
+            list="community-cities"
             value={city}
             onChange={(e) => {
               setCity(e.target.value);
               clearFieldError('city');
             }}
             maxLength={80}
-            placeholder="Atlanta"
-            disabled={!canEditMetadata}
+            placeholder={state ? 'Start typing…' : 'Pick a state first'}
+            disabled={!canEditMetadata || !state}
             aria-invalid={!!fieldErrors.city}
             className={inputCls(!!fieldErrors.city)}
           />
-        </Field>
-        <Field label="State" required error={fieldErrors.state}>
-          <input
-            type="text"
-            value={state}
-            onChange={(e) => {
-              setState(e.target.value.toUpperCase());
-              clearFieldError('state');
-            }}
-            maxLength={2}
-            placeholder="GA"
-            disabled={!canEditMetadata}
-            aria-invalid={!!fieldErrors.state}
-            className={inputCls(!!fieldErrors.state)}
-          />
+          <datalist id="community-cities">
+            {geoOptions.cities.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
         </Field>
         <Field label="ZIP" required error={fieldErrors.zip}>
           <input
@@ -383,17 +430,23 @@ export function CommunityEditor({
       <Field label="County" error={fieldErrors.county}>
         <input
           type="text"
+          list="community-counties"
           value={county}
           onChange={(e) => {
             setCounty(e.target.value);
             clearFieldError('county');
           }}
           maxLength={80}
-          placeholder="Gwinnett County"
-          disabled={!canEditMetadata}
+          placeholder={state ? 'Start typing…' : 'Pick a state first'}
+          disabled={!canEditMetadata || !state}
           aria-invalid={!!fieldErrors.county}
           className={inputCls(!!fieldErrors.county)}
         />
+        <datalist id="community-counties">
+          {geoOptions.counties.map((c) => (
+            <option key={c} value={c} />
+          ))}
+        </datalist>
       </Field>
 
       <Field label="Highlights" error={fieldErrors.highlights}>
