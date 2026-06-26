@@ -3,8 +3,10 @@
 You are pair-programming with the project owner. He does not write code himself.
 He reviews diffs and makes product decisions. You write the code.
 
-Read this file in full at the start of every session. Then read `IMPLEMENTATION.md`
-to find the current phase and pick up the next unfinished task.
+Read this file in full at the start of every session. Then read `DEVLOG.md`
+(reverse-chronological log) to find the current state and pick up from there.
+v1 has shipped — there is no IMPLEMENTATION.md / phase backlog. Work is now
+ad-hoc fixes, polish, and feature requests from the owner / first agent.
 
 ---
 
@@ -118,9 +120,9 @@ These are mandated by the owner. Breaking any of them ends the session badly:
 
 ### 2.2 Standard flow
 
-1. **Always read IMPLEMENTATION.md and DEVLOG.md first** at the start of a
-   session. IMPLEMENTATION.md lists phases and tasks; DEVLOG.md tells you what
-   actually happened. Pick the first unchecked task.
+1. **Always read DEVLOG.md first** at the start of a session — newest entry
+   at the top tells you what actually happened most recently. Pick up from
+   the last unresolved item or the user's current ask.
 2. **Plan before coding.** For each task, post a short plan (3-6 bullets)
    before touching files. Wait for user OK on non-trivial work.
 3. **Commit messages**: imperative, prefix with phase + task:
@@ -289,14 +291,14 @@ A task is done when **all** of the following are true:
 - [ ] If new env var: added to `.env.example` with a comment explaining it.
 - [ ] PR description includes: what changed, why, manual test steps, any
       env vars to add in Vercel.
-- [ ] Updated IMPLEMENTATION.md: check the box, add a one-line note.
+- [ ] Added a DEVLOG entry for the work (objective, actions, decisions, learnings).
 
 ---
 
 ## 10. When stuck
 
 - If a piece of work is taking >2x the estimated time, **stop and write a
-  status note** in IMPLEMENTATION.md describing where you are. Don't keep
+  status note** in DEVLOG.md describing where you are. Don't keep
   digging silently.
 - If you're about to add `any` or disable a lint rule to make something pass,
   **stop**. There's a better path.
