@@ -2,6 +2,24 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.59.2 — Fix mid-feed freeze on iPhone (2026-06-26)
+
+**🐛 Bug Fixes**
+
+- Fixed an issue where the video feed would freeze for ~12 seconds mid-scroll
+  on iPhone after a few swipes. The aggressive pre-loading we added in
+  v0.59.1 turned out to overload iOS Safari's media engine when several
+  cards were mounted at once, causing both the active card and its neighbors
+  to stall together.
+
+**✨ Improvements**
+
+- Kept the v0.59.1 "muted-first autoplay" fix that eliminates the swipe-back-
+  and-forth-to-get-sound problem. That part was working as intended; only
+  the pre-loading layer needed to come out.
+
+---
+
 ## v0.59.1 — Feed swipe is now snappy on iPhone (2026-06-25)
 
 **✨ Improvements**

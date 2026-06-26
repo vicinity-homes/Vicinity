@@ -10,7 +10,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LeadModal } from '../../_components/LeadModal';
 import { FeedPerfDebugPanel } from './FeedPerfDebugPanel';
 import { vdbgBuffered, vdbgLog } from './feedPerfDebug';
-import { prefetchHlsHead } from './feedPrefetch';
 import { CommunityCarousel } from './CommunityCarousel';
 import { CommunitySheet, type CommunitySheetData } from './CommunitySheet';
 import { ActionButton } from '../../_components/feed/ActionButton';
@@ -532,27 +531,9 @@ function Card({
     };
   }, [shouldMount, sel.cfVideoId]);
 
-  // Phase57 (Plan B'): active prefetch of HLS head on iOS native-HLS path.
-  // `preload="auto"` is silently downgraded to `metadata` on cellular/low-power,
-  // so neighbor cards never warm their byte cache. We `fetch()` the manifest +
-  // first 2 segments ourselves; browser HTTP cache holds them and the active
-  // `<video>.src = url` later hits cache → first-frame in <300ms instead of 1s.
-  // Aborted on unmount or source change. Skipped on hls.js path (it has its
-  // own buffer). Skipped when shouldMount is false (out of pool window).
-  useEffect(() => {
-    if (!shouldMount) return;
-    const video = videoRef.current;
-    if (!video) return;
-    if (!video.canPlayType('application/vnd.apple.mpegurl')) return;
-    let src: string;
-    try {
-      src = hlsUrl(sel.cfVideoId);
-    } catch {
-      return;
-    }
-    const cancel = prefetchHlsHead(src, idx, sel.cfVideoId);
-    return cancel;
-  }, [shouldMount, sel.cfVideoId, idx]);
+  // Phase58: prefetch (Plan B') reverted — iOS media engine choked when 3
+  // mounted <video>s competed with fetch() for sockets, causing 12s stalls
+  // mid-feed. Plan E (muted-first below) alone gives smooth swipes.
 
   // Play/pause on active changes.
   //
