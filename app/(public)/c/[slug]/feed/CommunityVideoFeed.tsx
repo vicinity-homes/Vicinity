@@ -634,6 +634,7 @@ export function CommunityVideoFeed({
         listings={listings}
         startIndex={listingCarouselStartIdx}
         backLabel={community.name}
+        agentName={owner?.name ?? null}
         onClose={() => {
           // Per V1 prototype: closing L3 returns straight to L0 (community
           // feed), not back to the sheet — sheet was a transient lookup.
