@@ -2,6 +2,33 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-26 — Phase 57: unify hub empty states (Listing + Community)
+
+**Objective**: Vivian shipped phase56 fix, deleted her last listing → landed on `/dashboard` empty state. Two complaints: (1) the listing empty state had no clickable CTA — just a "tap + New listing" instruction pointing at the FAB, (2) listing vs community empty states looked nothing alike (different copy, different layout, community had an inline `Create one` text link, listing had nothing).
+
+**Actions**:
+- New shared component `app/dashboard/_components/EmptyHubState.tsx` — icon disc + headline + subhead + single CTA slot. Plus `HUB_CTA_CLASS` const = ink pill button styling that both create-buttons import.
+- New client component `app/dashboard/_components/CreateListingButton.tsx` — mirrors `CreateCommunityButton`, calls `createStubListing()` and pushes to the new edit page.
+- `CreateCommunityButton.tsx` rewritten: same `HUB_CTA_CLASS` ink pill (was a small underlined inline-text "Create one" before), Plus icon, "New community" copy.
+- `DashboardListingGrid.tsx`: empty state slot now renders `<EmptyHubState icon=<Home/> headline="No listings yet" sub="…" cta=<CreateListingButton/>>`.
+- `app/dashboard/communities/page.tsx`: empty state slot now renders the same `<EmptyHubState>` with `<Building2/>` icon and `<CreateCommunityButton/>`.
+
+**Decisions**:
+- Single shared chrome component, caller-supplied CTA. Considered fully generic `<EmptyHubState createAction=…>` with the action-call logic inside, rejected: the two existing actions return different shapes and route to different paths, and a future "No leads yet" empty state probably doesn't even have a create action. Letting the caller pass the CTA keeps the abstraction at the "two ad-hoc dashed boxes → one component with a CTA slot" level — exactly the duplication that was visible.
+- Pill button instead of underlined text-link for the CTA. The community page had a tiny "Create one" text link buried mid-sentence — easy to miss, no clear primary affordance. Pill matches the rest of the app's primary-action chrome (Danger zone delete button, public-side ink CTAs in /a/[agentSlug] and /nearby).
+- Headlines are bare ("No listings yet", "No communities yet") instead of full sentences. Sub-copy carries the orientation.
+- Icons: `Home` for listing, `Building2` for community. Lucide already in use; matches the existing dashboard icon language.
+
+**Issues**: None. tsc + `next build` clean first try.
+
+**Resolution**: phase57 branch, merged to main once tsc/build clean.
+
+**Learnings**:
+- When the user reports two pages "are inconsistent", the underlying ask is usually "I want one of these to look like the other one"; resist refactoring both to a third design. Here Listing was the bare one and Community had the (slightly hacky) `Create one` inline link — the right move was extracting the better idea (a real CTA) into a shared component, not redesigning the visual language.
+- The original community empty state used a shrinkwrapped inline text link inside a sentence — phrase-based affordances scan poorly on mobile because thumb targets are imprecise. Pill buttons with a fixed footprint are the safer default for any "create your first X" CTA.
+
+**Next steps**: Vivian eyeballs both empty states on Vercel preview. If `My Leads` is the next surface that gets an empty state, reuse `EmptyHubState` (no CTA — leads are buyer-initiated, not agent-created).
+
 ## 2026-06-26 — Phase 56: leads.listing_id missing ON DELETE CASCADE
 
 **Objective**: Fix "server-side exception (digest 881108286)" Vivian hit when deleting her last listing from `/dashboard/listings/[id]/edit` Danger zone. Reported as "last listing can not be deleted", but the actual trigger is "any listing that has ever received a lead".

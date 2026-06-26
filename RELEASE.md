@@ -2,6 +2,16 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.59.1 — Friendlier empty states for My Listing and My Community (2026-06-26)
+
+### ✨ Improvements
+- The "No listings yet" and "No communities yet" pages now share the same
+  visual treatment: a small icon, a one-line headline, a one-line subhead,
+  and a single primary "+ New listing" / "+ New community" pill button so
+  the agent has a clear next step without hunting for the floating ➕.
+  Previously the two pages used different copy, different layouts, and
+  My Listing had no in-page CTA at all.
+
 ## v0.59.0 — Listings with leads can now be deleted (2026-06-26)
 
 ### 🐛 Bug Fixes

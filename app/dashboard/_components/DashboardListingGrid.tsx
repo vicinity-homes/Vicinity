@@ -14,7 +14,11 @@
  * future surfaces (analytics tab, etc.) can still consume it.
  */
 
+import { Home } from 'lucide-react';
+
 import { ListingGrid, type ListingGridItem } from '@/app/_components/ListingGrid';
+import { CreateListingButton } from './CreateListingButton';
+import { EmptyHubState } from './EmptyHubState';
 
 export type DashboardItem = ListingGridItem & {
   rawStatus: string;
@@ -28,11 +32,12 @@ export function DashboardListingGrid({ items }: { items: DashboardItem[] }) {
     <ListingGrid
       items={items}
       emptyState={
-        <div className="mx-auto max-w-md rounded-2xl border border-line border-dashed bg-surface px-8 py-16 text-center">
-          <p className="text-ink2 text-sm">
-            No listings yet — tap + New listing to add one.
-          </p>
-        </div>
+        <EmptyHubState
+          icon={<Home size={24} strokeWidth={1.6} aria-hidden />}
+          headline="No listings yet"
+          sub="Create your first listing to start uploading tours and collecting leads."
+          cta={<CreateListingButton />}
+        />
       }
     />
   );

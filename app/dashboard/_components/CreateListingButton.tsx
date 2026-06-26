@@ -1,25 +1,22 @@
 'use client';
 
 /**
- * CreateCommunityButton — empty-state CTA.
+ * CreateListingButton — empty-state CTA for /dashboard (My Listing).
  *
- * Phase 50.17 (2026-06-23): replaces the `<Link href="/communities/new">`
- * with a client button that calls the createStubCommunity server action
- * and pushes to the new hub. Mirrors the FAB flow in UploadSheet so the
- * agent has exactly one entry point pattern across the app.
- *
- * Phase 57 (2026-06-26): switched to the shared HUB_CTA_CLASS pill so
- * Listing / Community empty states are visually identical.
+ * Phase 57 (2026-06-26): mirrors CreateCommunityButton. Calls
+ * createStubListing() and pushes to the new edit page so the empty
+ * state has a click target instead of just instructing the agent to
+ * find the FAB.
  */
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Plus } from 'lucide-react';
 
-import { createStubCommunity } from './actions';
-import { HUB_CTA_CLASS } from '@/app/dashboard/_components/EmptyHubState';
+import { createStubListing } from '@/app/dashboard/listings/actions';
+import { HUB_CTA_CLASS } from './EmptyHubState';
 
-export function CreateCommunityButton() {
+export function CreateListingButton() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -27,12 +24,12 @@ export function CreateCommunityButton() {
   function onClick() {
     setError(null);
     startTransition(async () => {
-      const result = await createStubCommunity();
+      const result = await createStubListing();
       if (!result.ok) {
         setError('Could not create — please retry.');
         return;
       }
-      router.push(`/dashboard/communities/${result.data.id}`);
+      router.push(`/dashboard/listings/${result.data.id}/edit`);
     });
   }
 
@@ -40,7 +37,7 @@ export function CreateCommunityButton() {
     <span className="inline-flex flex-col items-center gap-1">
       <button type="button" onClick={onClick} disabled={pending} className={HUB_CTA_CLASS}>
         <Plus size={16} strokeWidth={2} aria-hidden />
-        {pending ? 'Creating…' : 'New community'}
+        {pending ? 'Creating…' : 'New listing'}
       </button>
       {error ? <span className="text-[11px] text-rose-600">{error}</span> : null}
     </span>
