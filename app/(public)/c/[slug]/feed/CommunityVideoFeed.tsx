@@ -177,7 +177,11 @@ function VideoCard({
   // Phase57 (Plan E): muted-first start, then flip to desired mute state once
   //   `playing` fires. Avoids the iOS Safari sound-autoplay rejection that
   //   forced users to swipe back-and-forth to "wake up sound" on every card.
+  // Phase58.2: track hasStartedPlaying ref so the mute-sync effect below can
+  //   tell when it's actually safe to apply v.muted (after `playing` fires,
+  //   not just after play() returns — see BrowseFeed for full rationale).
   // Phase55 anti-pattern guard: NO state writes in this effect.
+  const hasStartedPlayingRef = useRef(false);
   useEffect(() => {
     const v = videoElRef.current;
     if (!v) return;
@@ -185,6 +189,7 @@ function VideoCard({
       v.muted = true;
       const desiredMuted = muted;
       const onPlaying = () => {
+        hasStartedPlayingRef.current = true;
         if (!desiredMuted) v.muted = false;
       };
       v.addEventListener('playing', onPlaying, { once: true });
@@ -199,15 +204,18 @@ function VideoCard({
       };
     } else {
       v.pause();
+      hasStartedPlayingRef.current = false;
     }
   }, [isActive, shouldMount, muted, onAutoplayBlocked]);
 
-  // Keep mute in sync. Phase58.1: gate on `!v.paused` so we don't clobber
-  // Plan E's muted-first start before play() resolves on iOS.
+  // Keep mute in sync. Phase58.2: gate on hasStartedPlayingRef. `v.paused`
+  // flips false synchronously when play() is called, so the prior 58.1 gate
+  // still clobbered Plan E's muted-first start. Only after `playing` fires
+  // is it safe to mirror the global Sound button.
   useEffect(() => {
     const v = videoElRef.current;
     if (!v) return;
-    if (v.paused) return;
+    if (!hasStartedPlayingRef.current) return;
     v.muted = muted;
   }, [muted]);
 

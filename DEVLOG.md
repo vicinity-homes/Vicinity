@@ -2,6 +2,35 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-26 — Phase 58.2: real fix — gate mute-sync on `playing` event, not `v.paused`
+
+**Objective**: Vivian retested phase58.1 and reported the same symptom on the longer videos in the feed: "还是需要点击屏幕才播放,好像就是两个长视频,其他的没有这个问题". Black/stalled card, no PlayIcon, requires a tap to wake up.
+
+**Root cause** (the real one this time): `v.paused` is a useless gate. Per HTML spec, calling `video.play()` flips `v.paused` to `false` **synchronously** — long before iOS Safari has actually decoded a frame and started playback. So on mount the order is:
+
+1. Plan E effect: `v.muted = true; v.play()` → `v.paused = false` immediately.
+2. Mute-sync effect (`[muted]` deps, runs once on mount): `v.paused === false` → my 58.1 gate **doesn't skip** → `v.muted = false` → clobbers Plan E.
+3. iOS sees an unmuted, unblessed `<video>` → silently rejects play() → no `playing` event ever fires → card sits black until the user taps (which counts as a fresh user gesture and bypasses the rejection).
+
+Why "long videos" surfaced it: longer Cloudflare Stream renditions take longer to deliver the first segment, widening the window between play() being called and `playing` firing. Short videos sometimes win the race; long ones lose every time.
+
+**Real fix**: introduce a `hasStartedPlayingRef` that flips `true` only inside the `playing` once-listener (i.e. when a frame is actually on screen). Reset on deactivation. The mute-sync effect now gates on this ref. Before the ref flips, mute-sync is a no-op; Plan E owns `v.muted`. After the ref flips, mute-sync is safe and Sound-button changes propagate immediately.
+
+**Actions**:
+- `BrowseFeed.tsx`: add `hasStartedPlayingRef`, set in `onPlaying`, clear on deactivate, use as the mute-sync gate.
+- `CommunityVideoFeed.tsx`: same.
+
+**Verification**: `npx tsc --noEmit` clean, `npx -y pnpm build` green.
+
+**Learnings**:
+- `v.paused` is a *control state*, not a *playback state*. Use `playing` event for the latter.
+- Phase58.1 was a plausible-sounding fix that didn't address the actual race. Don't ship two-line gates without proving the timing model.
+- vdbg already records `play-call` and `play-resolved` and `unmute-after-playing`. Next time, if `play-call` is followed by no `play-resolved` and no `unmute-after-playing`, that's the silent-stall fingerprint — add a doc note here so we recognize it faster.
+
+**Next steps**: Vivian retests on preview, especially on the long videos that previously needed tapping. If smooth, iPhone autoplay saga officially closed.
+
+---
+
 ## 2026-06-26 — Phase 58.1: fix mute-sync effect clobbering Plan E
 
 **Objective**: Vivian reported "后面几个视频还是卡住,虽然没有播放键,需要点击屏幕才播放" after phase58 shipped. Symptom: black/stalled card, no PlayIcon, but tapping the screen kicks it into life — i.e. play() was never resolving.

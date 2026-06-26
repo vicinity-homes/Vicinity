@@ -389,6 +389,13 @@ function Card({
   // so a paused-then-swiped card replays from clean state next time it's
   // active.
   const [userTappedToPause, setUserTappedToPause] = useState(false);
+  // Phase58.2: tracks whether `playing` has fired since (re)activation. Only
+  // after the frame is on screen is it safe to mirror the global Sound button
+  // to v.muted — before that, doing so clobbers Plan E's muted-first start
+  // and iOS silently rejects the unmuted play() (no PlayIcon, just black).
+  // `v.paused` does NOT work as a gate: it flips false synchronously when
+  // play() is called, long before iOS actually starts playback.
+  const hasStartedPlayingRef = useRef(false);
   useEffect(() => {
     if (!isActive) setUserTappedToPause(false);
   }, [isActive]);
@@ -570,6 +577,7 @@ function Card({
       });
       const onPlaying = () => {
         // Frame on screen — safe to apply user's desired mute state.
+        hasStartedPlayingRef.current = true;
         if (!desiredMuted) {
           v.muted = false;
           vdbgLog(idx, sel.cfVideoId, 'unmute-after-playing', {});
@@ -598,6 +606,7 @@ function Card({
       };
     } else {
       v.pause();
+      hasStartedPlayingRef.current = false;
       setPaused(true);
     }
   }, [isActive, shouldMount, setPaused, sel.cfVideoId]);
@@ -605,16 +614,17 @@ function Card({
   // Keep <video>.muted in sync with the global mute toggle while the card
   // is mounted (parent flips it from the Sound button).
   //
-  // Phase58.1: gate on `!v.paused`. This effect runs on mount alongside the
-  // play/pause effect above, and without the gate it would clobber Plan E's
-  // `v.muted = true` before play() resolves — iOS would then reject the
-  // unmuted play() on an unblessed element, leaving the card black until
-  // the user tapped. Once the video is actually playing, syncing mute is
-  // safe and matches the user's Sound-button choice.
+  // Phase58.2: gate on `hasStartedPlayingRef`. The previous gate (`v.paused`)
+  // didn't work — `v.paused` flips false synchronously when play() is called,
+  // long before iOS actually starts playback, so we still clobbered Plan E's
+  // muted-first start during the play() round-trip. iOS would then reject
+  // the unmuted play(), leaving the card stuck on a still frame until the
+  // user tapped. The ref only flips true at `playing` (frame visible), which
+  // is the actual safe point to apply the user's Sound-button choice.
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) return;
+    if (!hasStartedPlayingRef.current) return;
     v.muted = muted;
   }, [muted]);
 

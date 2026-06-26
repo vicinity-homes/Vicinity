@@ -2,6 +2,19 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.59.4 — Long videos no longer need a tap to play (2026-06-26)
+
+**🐛 Bug Fixes**
+
+- Fixed the iPhone tap-to-play issue affecting longer videos. The previous
+  fix relied on a check that turned out to fire too early in the playback
+  lifecycle, so longer clips (whose first frame takes a fraction of a second
+  longer to deliver) still slipped through. Now the autoplay handshake waits
+  until the video is genuinely on screen before letting other state changes
+  touch it. End-to-end swipe-through with sound, no taps required.
+
+---
+
 ## v0.59.3 — Fix later videos staying frozen until tap (2026-06-26)
 
 **🐛 Bug Fixes**
