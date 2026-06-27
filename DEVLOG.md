@@ -2,6 +2,20 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-06-27 — Phase 67.2: Leads parity + clickable rows + source enum
+
+**Asked** (Qiaoxu, Slack): per-listing leads view should follow the same pattern as `/dashboard/leads`; Source should be a 2-value enum (Listing / Community); the row should be clickable, not just the name.
+
+**Changes**:
+- `app/dashboard/leads/leads-live.tsx` — Source column collapsed to a type enum ("Listing" | "Community"). The community *name* moves into the Listing column for community leads (since Source no longer carries it). Row is now wrapped by an absolutely-positioned `<Link>` overlay (`absolute inset-0 z-0`) — the entire row is the click target. Inner cells default to `pointer-events-none` so clicks fall through; action clusters (Email / SMS / Mark) opt back in via `pointer-events-auto` and `e.stopPropagation()` so they don't trigger navigation. Hover state added (`hover:bg-line/15`) for affordance.
+- `app/dashboard/listings/[id]/edit/ListingLeadsPanel.tsx` — rewritten from the old left-bar list into the same grid table pattern (sticky desktop column header, mobile stacked card, Email/SMS icon buttons, clickable rows). Listing column omitted (every row belongs to the same listing); Source hardcoded to "Listing" since this panel only joins on `listing_id`.
+
+**Why overlay link instead of `useRouter` onClick**: keeps middle-click / cmd-click / right-click → "open in new tab" working natively; no JS needed; preserves accessibility (focusable link with `sr-only` text). Pointer-events trick is cleaner than nested `<a>` (invalid HTML).
+
+**Verification**: `npx tsc --noEmit` clean, `npx next build` clean. Manual check needed: clicking row opens detail; clicking Email/SMS icon opens mailto/sms without navigating; clicking Mark toggle stays on list and toggles state.
+
+---
+
 ## 2026-06-27 — Phase 67: My Leads table redesign
 
 **Asked** (Qiaoxu, Slack): show listing name per row, add column headers, allow both phone and email for contact, community contact doesn't need listing and source is community name.

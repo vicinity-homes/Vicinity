@@ -87,12 +87,10 @@ function buildSms(l: LeadRow): string | null {
 }
 
 function sourceLabel(l: LeadRow): string {
-  // Community leads: show the community name; the raw `source` field is
-  // typically the literal string "community-feed" which doesn't help an
-  // agent triage. Listing leads keep the raw source tag (e.g. "listing-page",
-  // utm strings). Falls back to "—" when neither is present.
-  if (l.community_id) return l.communities?.name ?? 'Community';
-  return l.source ?? '—';
+  // Phase 67.2: Source is now a simple type enum ("Listing" / "Community")
+  // — agents already see *which* listing or community in the Listing column,
+  // so collapsing source to a 2-value tag keeps the column scannable.
+  return l.community_id ? 'Community' : 'Listing';
 }
 
 export function LeadsLive({ initial }: { initial: LeadRow[] }) {
@@ -326,10 +324,10 @@ function LeadItem({
 }) {
   const open = !lead.followed_up_at;
   const listingAddr = lead.listings?.address ?? null;
-  // Community leads have no listing column — show em-dash. Listing leads
-  // without a resolvable address (legacy / deleted listing) show "(unknown)".
+  // Phase 67.2: "Listing" column doubles as the target — community leads
+  // show the community name here (since Source is now just the type enum).
   const listingCell = lead.community_id
-    ? '—'
+    ? (lead.communities?.name ?? '(unknown community)')
     : (listingAddr ?? '(unknown listing)');
   const preview = lead.message ?? listingAddr ?? lead.communities?.name ?? '';
   const mailto = buildMailto(lead);
@@ -337,12 +335,26 @@ function LeadItem({
 
   return (
     <li
-      className={`block sm:grid sm:grid-cols-[10px_minmax(0,180px)_minmax(0,1fr)_auto_minmax(0,140px)_auto_auto] sm:items-center sm:gap-4 border-t border-line/60 px-3 py-3 first:border-t-0 ${
+      className={`relative block sm:grid sm:grid-cols-[10px_minmax(0,180px)_minmax(0,1fr)_auto_minmax(0,140px)_auto_auto] sm:items-center sm:gap-4 border-t border-line/60 px-3 py-3 first:border-t-0 hover:bg-line/15 ${
         open ? '' : 'opacity-55'
       }`}
     >
+      {/* Phase 67.2: row-level overlay link — full row navigates to detail.
+          Sits at z-0 underneath; action icons + name link below ride at z-10
+          so they handle their own clicks. Aria-hidden because the visible
+          name link still announces the destination to screen readers. */}
+      <Link
+        href={`/dashboard/leads/${lead.id}`}
+        prefetch={false}
+        aria-hidden
+        tabIndex={-1}
+        className="absolute inset-0 z-0"
+      >
+        <span className="sr-only">Open lead {lead.name}</span>
+      </Link>
+
       {/* MOBILE LAYOUT: stacked card. Hidden ≥ sm. */}
-      <div className="sm:hidden">
+      <div className="sm:hidden relative z-10 pointer-events-none">
         <div className="flex items-start gap-2">
           <span
             aria-hidden
@@ -354,23 +366,19 @@ function LeadItem({
             }
           />
           <div className="min-w-0 flex-1">
-            <Link
-              href={`/dashboard/leads/${lead.id}`}
-              prefetch={false}
-              className={`block truncate text-sm hover:underline ${
+            <span
+              className={`block truncate text-sm ${
                 open ? 'font-medium text-ink' : 'text-ink2'
               }`}
               title={lead.name}
             >
               {lead.name}
-            </Link>
-            {/* Listing line (or community) */}
+            </span>
+            {/* Listing / Community line */}
             <p className="truncate text-[11px] text-ink2" title={listingCell}>
-              {lead.community_id
-                ? (lead.communities?.name ?? 'Community')
-                : listingCell}
+              {listingCell}
             </p>
-            {/* Source + received as small muted line */}
+            {/* Source · Received */}
             <p className="text-[11px] text-muted">
               {sourceLabel(lead)} · {timeAgo(lead.created_at)}
             </p>
@@ -380,12 +388,15 @@ function LeadItem({
               </p>
             ) : null}
           </div>
-          {/* Right-aligned action cluster */}
-          <div className="flex shrink-0 items-center gap-1.5">
+          {/* Right-aligned action cluster — re-enables pointer events */}
+          <div className="flex shrink-0 items-center gap-1.5 pointer-events-auto">
             {mailto ? (
               <a
                 href={mailto}
-                onClick={() => onMark('now')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMark('now');
+                }}
                 aria-label={`Email ${lead.name}`}
                 title={`Email ${lead.email}`}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line text-ink2 hover:border-ink/30 hover:bg-line/30 hover:text-ink"
@@ -396,7 +407,10 @@ function LeadItem({
             {sms ? (
               <a
                 href={sms}
-                onClick={() => onMark('now')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMark('now');
+                }}
                 aria-label={`Text ${lead.name}`}
                 title={`Text ${lead.phone}`}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line text-ink2 hover:border-ink/30 hover:bg-line/30 hover:text-ink"
@@ -406,7 +420,11 @@ function LeadItem({
             ) : null}
             <button
               type="button"
-              onClick={() => onMark(open ? 'now' : null)}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onMark(open ? 'now' : null);
+              }}
               aria-label={open ? 'Mark as followed up' : 'Mark as new'}
               title={open ? 'Mark as followed up' : 'Mark as new'}
               className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-ink2 hover:bg-line/30 hover:text-ink ${
@@ -419,12 +437,15 @@ function LeadItem({
         </div>
       </div>
 
-      {/* DESKTOP LAYOUT: grid row. Hidden < sm — uses contents so cells go straight into the parent grid. */}
+      {/* DESKTOP LAYOUT: grid row. Cells use `contents` so they flow into the
+          parent grid — but children are pointer-events-none so clicks fall
+          through to the overlay link, except the action cluster which opts
+          back in. */}
       <div className="contents max-sm:hidden">
         {/* Status dot */}
         <span
           aria-hidden
-          className="hidden sm:block h-2 w-2 rounded-full"
+          className="hidden sm:block relative z-10 pointer-events-none h-2 w-2 rounded-full"
           style={
             open
               ? { backgroundColor: OPEN_DOT_COLOR }
@@ -432,17 +453,15 @@ function LeadItem({
           }
         />
         {/* Name + preview */}
-        <div className="hidden sm:block min-w-0">
-          <Link
-            href={`/dashboard/leads/${lead.id}`}
-            prefetch={false}
-            className={`block truncate text-sm hover:underline ${
+        <div className="hidden sm:block relative z-10 pointer-events-none min-w-0">
+          <span
+            className={`block truncate text-sm ${
               open ? 'font-medium text-ink' : 'text-ink2'
             }`}
             title={lead.name}
           >
             {lead.name}
-          </Link>
+          </span>
           {preview ? (
             <p className="truncate text-[11px] text-muted" title={preview}>
               {preview}
@@ -451,17 +470,20 @@ function LeadItem({
         </div>
         {/* Listing */}
         <span
-          className="hidden sm:block min-w-0 truncate text-sm text-ink2"
+          className="hidden sm:block relative z-10 pointer-events-none min-w-0 truncate text-sm text-ink2"
           title={listingCell}
         >
           {listingCell}
         </span>
         {/* Contact icons */}
-        <div className="hidden sm:flex shrink-0 items-center gap-1.5">
+        <div className="hidden sm:flex relative z-10 shrink-0 items-center gap-1.5">
           {mailto ? (
             <a
               href={mailto}
-              onClick={() => onMark('now')}
+              onClick={(e) => {
+                e.stopPropagation();
+                onMark('now');
+              }}
               aria-label={`Email ${lead.name}`}
               title={`Email ${lead.email} (auto-marks as followed up)`}
               className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-line text-ink2 hover:border-ink/30 hover:bg-line/30 hover:text-ink"
@@ -480,7 +502,10 @@ function LeadItem({
           {sms ? (
             <a
               href={sms}
-              onClick={() => onMark('now')}
+              onClick={(e) => {
+                e.stopPropagation();
+                onMark('now');
+              }}
               aria-label={`Text ${lead.name}`}
               title={`Text ${lead.phone} (auto-marks as followed up)`}
               className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-line text-ink2 hover:border-ink/30 hover:bg-line/30 hover:text-ink"
@@ -499,22 +524,26 @@ function LeadItem({
         </div>
         {/* Source */}
         <span
-          className="hidden sm:block min-w-0 truncate text-xs text-ink2"
+          className="hidden sm:block relative z-10 pointer-events-none min-w-0 truncate text-xs text-ink2"
           title={sourceLabel(lead)}
         >
           {sourceLabel(lead)}
         </span>
         {/* Received */}
-        <span className="hidden sm:block shrink-0 text-muted text-[11px] tabular-nums">
+        <span className="hidden sm:block relative z-10 pointer-events-none shrink-0 text-muted text-[11px] tabular-nums">
           {timeAgo(lead.created_at)}
         </span>
         {/* Mark toggle */}
         <button
           type="button"
-          onClick={() => onMark(open ? 'now' : null)}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onMark(open ? 'now' : null);
+          }}
           aria-label={open ? 'Mark as followed up' : 'Mark as new'}
           title={open ? 'Mark as followed up' : 'Mark as new'}
-          className={`hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-full border text-ink2 hover:bg-line/30 hover:text-ink ${
+          className={`hidden sm:inline-flex relative z-10 h-7 w-7 items-center justify-center rounded-full border text-ink2 hover:bg-line/30 hover:text-ink ${
             open ? 'border-line' : 'border-line bg-line/20'
           }`}
         >
