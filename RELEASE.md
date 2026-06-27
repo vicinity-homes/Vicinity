@@ -2,6 +2,12 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.70.0 — Clickable lead rows + listing-level inbox parity (2026-06-27)
+
+- **Click anywhere on a lead row** to open it — not just the name. Email / SMS icons and the ✓ Mark toggle still do their own thing without navigating away. Cmd-click / middle-click still open in a new tab.
+- **Source column** is now a clean type enum: **Listing** or **Community**. The community name moved into the Listing column for community leads, so a single glance tells you both *what kind* of lead and *which* listing or community it came from.
+- **Per-listing leads panel** (inside the listing edit hub) now uses the same table pattern as the main inbox — column headers, clickable rows, Email/SMS icon buttons. No more dual UIs to learn.
+
 ## v0.69.0 — Lead inbox table + dual contact fields (2026-06-27)
 
 - **My Leads is now a real table**: column headers (Name · Listing · Contact · Source · Received), per-row listing address, per-row source — community leads show the community name instead of the literal "community-feed" tag.
