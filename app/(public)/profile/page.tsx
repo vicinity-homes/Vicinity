@@ -51,7 +51,7 @@ export default async function ProfilePage() {
           <div className="mt-6 rounded-xl border border-line bg-surface p-5">
             <div className="font-serif text-lg text-ink">Sign in to save your work</div>
             <p className="mt-1 text-ink2 text-sm">
-              Log in or create an account to save listings, follow communities, and (for
+              Log in or create an account to save listings, follow neighborhoods, and (for
               agents) publish your own tours.
             </p>
             <div className="mt-4 flex flex-col gap-2">
@@ -128,6 +128,17 @@ export default async function ProfilePage() {
                 View public profile
               </Link>
             ) : null}
+            {/* Phase 66 (2026-07-02): Analytics moved off Agent Hub sub-tabs
+             * and lives here per owner (笑云 feedback — reduce Agent Hub
+             * frictions). Simple link, not a sub-tab. Destination URL is
+             * unchanged (/dashboard/analytics) so the analytics page and
+             * its data pipes stay put. */}
+            <Link
+              href="/dashboard/analytics"
+              className="w-full rounded-full border border-line px-6 py-3 text-center text-ink2 text-sm transition hover:text-ink"
+            >
+              Analytics
+            </Link>
             {/* Phase 36 (2026-06-18): "Preview as buyer" removed — agents
              * already share the buyer surface as their default. */}
             <form action="/api/auth/signout" method="post">

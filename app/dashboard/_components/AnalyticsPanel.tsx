@@ -22,7 +22,7 @@ function fmtNum(n: number): string {
 function emptyHint(kind: EntityKind): string {
   return kind === 'listing'
     ? 'No traffic yet. Share the listing URL on Facebook / Instagram / Email to start collecting data.'
-    : 'No traffic yet. Share the community page URL on Facebook / Instagram / Email to start collecting data.';
+    : 'No traffic yet. Share the neighborhood page URL on Facebook / Instagram / Email to start collecting data.';
 }
 
 export async function AnalyticsPanel({

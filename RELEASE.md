@@ -2,6 +2,16 @@
 
 Newest at the top. Each release covers a meaningful product change visible to users.
 
+## v0.66.0 — Fewer distractions, "Neighborhood" everywhere (2026-07-02)
+
+### ✨ Improvements
+- **For You** and **Neighborhood** tabs no longer show the Nearby sub-tab — the top of the page is now just a clean "Explore" title, one less thing to think about.
+- **"Community"** is renamed to **"Neighborhood"** across the whole app (bottom nav, buttons, page titles, empty states, favorites, agent hub, leads, upload flow). Same feature, name that reads better to buyers.
+- **Analytics** moved out of the Agent Hub top tabs and onto the **Me** page — one less tab in the way while working on listings and neighborhoods. Same page and data underneath.
+
+### ⚠️ Known Issues
+- MLS auto-populate for listing details is coming next — right now agents still have to type listing fields manually.
+
 ## v0.72.2 — Explore community page back link (2026-06-27)
 
 - The buyer-facing community page (`/c/<slug>`, reached from Explore → Community grid) now shows a top-left "← Back" chip in the hero, matching the dashboard style. Tapping it returns to the Explore community grid.

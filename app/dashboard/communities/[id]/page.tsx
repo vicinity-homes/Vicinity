@@ -117,7 +117,7 @@ export default async function CommunityEditorPage({
   if (!community) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-12 text-center sm:px-6">
-        <p className="text-sm text-ink2">Community not found.</p>
+        <p className="text-sm text-ink2">Neighborhood not found.</p>
       </div>
     );
   }
@@ -290,7 +290,7 @@ export default async function CommunityEditorPage({
               <section className="rounded-2xl border border-line bg-surface p-4 sm:p-6">
                 {!canEditMetadata && (
                   <p className="mb-4 rounded border border-line bg-bg px-3 py-2 text-xs text-ink2">
-                    Only the agent who created this community can edit metadata. You can still
+                    Only the agent who created this neighborhood can edit metadata. You can still
                     upload videos and photos.
                   </p>
                 )}

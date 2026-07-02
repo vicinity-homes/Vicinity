@@ -259,7 +259,7 @@ export default async function SearchPage({
           </div>
         </header>
         <div className="mx-auto max-w-md px-6 py-24 text-center">
-          <p className="text-ink2">Search listings and communities</p>
+          <p className="text-ink2">Search listings and neighborhoods</p>
         </div>
       </main>
     );
@@ -327,7 +327,7 @@ export default async function SearchPage({
             {allCommunities.length > 0 && (
               <section className="pb-8">
                 <h2 className="mb-3 px-1 text-[11px] text-ink2 tracking-[0.22em] uppercase">
-                  Communities
+                  Neighborhoods
                 </h2>
                 <CommunityGrid communities={allCommunities} />
               </section>

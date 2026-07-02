@@ -77,7 +77,7 @@ export function CommunitySheet({ open, data, onClose, onOpenCarousel }: Props) {
       {/* Backdrop mask — tap to dismiss. */}
       <button
         type="button"
-        aria-label="Close community details"
+        aria-label="Close neighborhood details"
         onClick={onClose}
         className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity ${
           open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
@@ -87,7 +87,7 @@ export function CommunitySheet({ open, data, onClose, onOpenCarousel }: Props) {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={`${data.name} community`}
+        aria-label={`${data.name} neighborhood`}
         className={`fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-2xl border-line border-t bg-bg text-ink shadow-2xl transition-transform duration-300 ${
           open ? 'translate-y-0' : 'translate-y-full'
         }`}
@@ -149,7 +149,7 @@ export function CommunitySheet({ open, data, onClose, onOpenCarousel }: Props) {
         {data.videos.length > 0 ? (
           <>
             <h3 className="mt-5 px-4 font-medium text-[11px] text-ink2 uppercase tracking-widest">
-              Community videos · {data.videos.length}
+              Neighborhood videos · {data.videos.length}
             </h3>
             <div
               className="mt-2 flex gap-2 overflow-x-auto px-4 pb-5"

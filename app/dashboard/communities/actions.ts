@@ -81,7 +81,7 @@ export async function createStubCommunity(): Promise<ActionResult<{ id: string }
     const { data: created, error } = (await (supabase as any)
       .from('communities')
       .insert({
-        name: 'Untitled community',
+        name: 'Untitled neighborhood',
         slug,
         state: 'GA',
         status: 'inactive',

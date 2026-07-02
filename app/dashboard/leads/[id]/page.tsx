@@ -81,7 +81,7 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
   const communityName = lead.communities?.name ?? null;
   const isCommunityLead = lead.community_id != null;
   const target = isCommunityLead
-    ? (communityName ?? 'a community')
+    ? (communityName ?? 'a neighborhood')
     : (addr ?? '(unknown listing)');
 
   // Pre-filled mailto. Subject + body reference the listing or community.
@@ -146,17 +146,17 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
         <dl className="grid grid-cols-[120px_1fr] gap-y-3 text-sm">
           {isCommunityLead ? (
             <>
-              <dt className="text-muted">Community</dt>
+              <dt className="text-muted">Neighborhood</dt>
               <dd>
                 {lead.communities?.slug ? (
                   <Link
                     href={`/c/${lead.communities.slug}`}
                     className="text-ink hover:underline"
                   >
-                    {communityName ?? '(unknown community)'}
+                    {communityName ?? '(unknown neighborhood)'}
                   </Link>
                 ) : (
-                  <span>{communityName ?? '(unknown community)'}</span>
+                  <span>{communityName ?? '(unknown neighborhood)'}</span>
                 )}
               </dd>
             </>

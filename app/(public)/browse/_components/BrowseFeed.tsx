@@ -629,7 +629,7 @@ function Card({
             e.stopPropagation();
             onOpenCommunitySheet();
           }}
-          aria-label={`Explore ${card.community.name} community`}
+          aria-label={`Explore ${card.community.name} neighborhood`}
           className="absolute top-20 left-3 z-10 flex max-w-[70%] items-center gap-2 rounded-[10px] bg-ink/65 px-3 py-1.5 text-cream backdrop-blur-md transition-colors hover:bg-ink/75"
           style={{ touchAction: 'manipulation' }}
         >

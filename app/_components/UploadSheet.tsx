@@ -76,7 +76,7 @@ export function useUploadSheet() {
       }
       const result = await createStubCommunity();
       if (!result.ok) {
-        setCreateError('Could not create community — please retry.');
+        setCreateError('Could not create neighborhood — please retry.');
         return;
       }
       close();
@@ -152,7 +152,7 @@ export function useUploadSheet() {
               }
             />
             <TypeTile
-              label="Community"
+              label="Neighborhood"
               hint="A neighborhood you cover"
               loading={creating === 'communities'}
               disabled={creating !== null}

@@ -279,7 +279,7 @@ export function CommunityListingCarousel({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Back to community"
+            aria-label="Back to neighborhood"
             className="flex h-11 items-center gap-2 rounded-full border border-cream/20 bg-ink/55 pr-3 pl-2 text-cream backdrop-blur-md transition-colors hover:border-cream hover:text-cream"
             style={{ touchAction: 'manipulation' }}
           >

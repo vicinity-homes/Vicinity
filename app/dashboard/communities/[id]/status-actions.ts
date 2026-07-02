@@ -37,7 +37,7 @@ export async function setCommunityStatus(
     .select('id, slug, created_by')
     .eq('id', communityId)
     .maybeSingle()) as { data: { id: string; slug: string; created_by: string | null } | null };
-  if (!row) return { ok: false, error: 'Community not found' };
+  if (!row) return { ok: false, error: 'Neighborhood not found' };
   if (row.created_by != null && row.created_by !== agentRow.id) {
     return { ok: false, error: 'Only the creating agent can change status' };
   }
@@ -77,7 +77,7 @@ export async function deleteCommunityAction(communityId: string): Promise<Commun
     .select('id, created_by')
     .eq('id', communityId)
     .maybeSingle()) as { data: { id: string; created_by: string | null } | null };
-  if (!row) return { ok: false, error: 'Community not found' };
+  if (!row) return { ok: false, error: 'Neighborhood not found' };
   if (row.created_by != null && row.created_by !== agentRow.id) {
     return { ok: false, error: 'Only the creating agent can delete' };
   }

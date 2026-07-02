@@ -274,7 +274,7 @@ export function CommunityMarketingPanel({ communityId }: Props) {
               setOutput(e.target.value);
               if (!outputEdited) setOutputEdited(true);
             }}
-            placeholder="Click Generate to draft a community marketing body…"
+            placeholder="Click Generate to draft a neighborhood marketing body…"
             rows={14}
             className="block w-full rounded-md border border-line bg-bg px-3 py-2 font-mono text-sm leading-relaxed"
           />

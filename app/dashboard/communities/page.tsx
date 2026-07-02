@@ -58,8 +58,8 @@ export default async function CommunitiesListPage() {
       <GridPageShell>
         <EmptyHubState
           icon={<Building2 size={24} strokeWidth={1.6} aria-hidden />}
-          headline="No communities yet"
-          sub="Create your first community to start adding schools, POIs and tours."
+          headline="No neighborhoods yet"
+          sub="Create your first neighborhood to start adding schools, POIs and tours."
           cta={<CreateCommunityButton />}
         />
       </GridPageShell>

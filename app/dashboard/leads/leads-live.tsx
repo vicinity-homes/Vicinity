@@ -90,7 +90,7 @@ function sourceLabel(l: LeadRow): string {
   // Phase 67.2: Source is now a simple type enum ("Listing" / "Community")
   // — agents already see *which* listing or community in the Listing column,
   // so collapsing source to a 2-value tag keeps the column scannable.
-  return l.community_id ? 'Community' : 'Listing';
+  return l.community_id ? 'Neighborhood' : 'Listing';
 }
 
 export function LeadsLive({ initial }: { initial: LeadRow[] }) {
@@ -236,7 +236,7 @@ export function LeadsLive({ initial }: { initial: LeadRow[] }) {
         <div className="flex items-center gap-2">
           <input
             type="search"
-            placeholder="Search name, email, listing, community…"
+            placeholder="Search name, email, listing, neighborhood…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-ink placeholder-cream/40 focus:border-line-strong focus:outline-none sm:w-72"
@@ -327,7 +327,7 @@ function LeadItem({
   // Phase 67.2: "Listing" column doubles as the target — community leads
   // show the community name here (since Source is now just the type enum).
   const listingCell = lead.community_id
-    ? (lead.communities?.name ?? '(unknown community)')
+    ? (lead.communities?.name ?? '(unknown neighborhood)')
     : (listingAddr ?? '(unknown listing)');
   const preview = lead.message ?? listingAddr ?? lead.communities?.name ?? '';
   const mailto = buildMailto(lead);

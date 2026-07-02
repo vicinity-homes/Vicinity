@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { CommunitiesNearbyClient } from './CommunitiesNearbyClient';
 
 export const metadata: Metadata = {
-  title: 'Nearby Communities · Vicinity',
-  description: 'Communities with videos near your current location.',
+  title: 'Nearby Neighborhoods · Vicinity',
+  description: 'Neighborhoods with videos near your current location.',
 };
 
 export const dynamic = 'force-dynamic';

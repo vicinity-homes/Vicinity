@@ -420,7 +420,7 @@ export function CommunityEditor({
           }}
           rows={4}
           maxLength={2000}
-          placeholder="Tell buyers what makes this community feel like home — vibe, who lives here, what you'd notice on a Saturday morning."
+          placeholder="Tell buyers what makes this neighborhood feel like home — vibe, who lives here, what you'd notice on a Saturday morning."
           disabled={!canEditMetadata}
           aria-invalid={!!fieldErrors.description}
           className={`${inputCls(!!fieldErrors.description)} resize-y`}
@@ -608,7 +608,7 @@ export function CommunityDangerZone({ communityId }: { communityId: string }) {
   function handleDelete() {
     if (
       !confirm(
-        'Permanently delete this community? Schools, POIs, photos, videos and saved entries for it will be removed. Listings will be detached but not deleted. This cannot be undone.',
+        'Permanently delete this neighborhood? Schools, POIs, photos, videos and saved entries for it will be removed. Listings will be detached but not deleted. This cannot be undone.',
       )
     )
       return;
@@ -633,7 +633,7 @@ export function CommunityDangerZone({ communityId }: { communityId: string }) {
       <div className="rounded-2xl border border-rose-400 bg-rose-50 p-5 sm:p-6">
         <h2 className="font-semibold text-ink text-sm">Danger zone</h2>
         <p className="mt-1 text-ink2 text-xs">
-          Deleting a community is permanent and removes its schools, POIs, photos, videos, and
+          Deleting a neighborhood is permanent and removes its schools, POIs, photos, videos, and
           saved entries. Listings will be detached but not deleted.
         </p>
         <button
@@ -642,7 +642,7 @@ export function CommunityDangerZone({ communityId }: { communityId: string }) {
           disabled={isPending}
           className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-rose-600 px-5 py-3 font-medium text-sm text-white transition hover:bg-rose-700 active:scale-[0.99] disabled:opacity-60 sm:w-auto sm:min-w-[240px]"
         >
-          {isPending ? 'Deleting…' : 'Delete this community'}
+          {isPending ? 'Deleting…' : 'Delete this neighborhood'}
         </button>
         {err && <p className="mt-2 text-rose-700 text-xs">{err}</p>}
       </div>

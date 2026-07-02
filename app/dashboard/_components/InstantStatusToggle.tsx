@@ -143,7 +143,7 @@ export function InstantStatusToggle({
       ? 'bg-gray-400'
       : 'bg-ink2/40';
 
-  const noun = kind === 'community' ? 'community' : 'listing';
+  const noun = kind === 'community' ? 'neighborhood' : 'listing';
 
   return (
     <>

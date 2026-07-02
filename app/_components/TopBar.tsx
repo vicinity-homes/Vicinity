@@ -81,9 +81,14 @@ function TopBarInner({
         <Search size={18} aria-hidden="true" />
       </button>
 
-      {/* Middle — sub-tabs */}
+      {/* Middle — sub-tabs, or a centred section title on Nearby-less
+        * pages (/browse and /communities post-Phase 66). */}
       <div className="min-w-0 flex-1">
-        {subTabs ? <SubTabRow tabs={subTabs} pathname={pathname} /> : null}
+        {subTabs ? (
+          <SubTabRow tabs={subTabs} pathname={pathname} />
+        ) : (
+          <SectionTitle pathname={pathname} />
+        )}
       </div>
 
       {/* Right — avatar / sign-in */}
@@ -100,6 +105,27 @@ function TopBarInner({
         )}
       </div>
     </>
+  );
+}
+
+function SectionTitle({ pathname }: { pathname: string }) {
+  // Phase 66 (2026-07-02): centred title for pages that no longer expose
+  // sub-tabs. /browse and /communities now show "Explore" centred here
+  // (owner: 笑云 feedback — dropped Nearby sub-tab). Any other route with
+  // no sub-tabs (e.g. /profile) renders nothing.
+  let title: string | null = null;
+  if (pathname === '/browse' || pathname.startsWith('/browse/')) {
+    title = 'Explore';
+  } else if (pathname === '/communities' || pathname.startsWith('/communities/')) {
+    // The bottom-nav tab is "Neighborhood"; the middle slot on the
+    // top-level page keeps the same visual verb the buyer expects.
+    title = 'Explore';
+  }
+  if (!title) return null;
+  return (
+    <div className="flex w-full items-center justify-center">
+      <span className="font-medium text-ink text-sm">{title}</span>
+    </div>
   );
 }
 
@@ -192,7 +218,7 @@ function SearchExpanded({ onClose }: { onClose: () => void }) {
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Search homes, communities…"
+        placeholder="Search homes, neighborhoods…"
         aria-label="Search"
         className="min-w-0 flex-1 bg-transparent text-ink text-base outline-none placeholder:text-muted"
         onKeyDown={(e) => {

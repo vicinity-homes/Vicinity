@@ -278,7 +278,7 @@ export const CommunityPhotoPanel = forwardRef<CommunityPhotoPanelHandle, Props>(
             </div>
             <p className="mb-4 text-ink2 text-xs">
               Photos here are <span className="text-ink2">not visible to buyers</span> — they're raw
-              material the platform can use to generate community videos later. JPEG / PNG / WebP,
+              material the platform can use to generate neighborhood videos later. JPEG / PNG / WebP,
               up to 10 MB each.
             </p>
           </>

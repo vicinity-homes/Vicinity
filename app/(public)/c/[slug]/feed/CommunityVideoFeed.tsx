@@ -246,7 +246,7 @@ function VideoCard({
           poster && (
             <img
               src={poster}
-              alt={video.title ?? 'Community video'}
+              alt={video.title ?? 'Neighborhood video'}
               className="relative h-full w-full object-contain"
             />
           )
@@ -494,7 +494,7 @@ export function CommunityVideoFeed({
   if (videos.length === 0) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-bg text-muted text-sm">
-        No videos in this community yet.
+        No videos in this neighborhood yet.
       </div>
     );
   }
@@ -542,7 +542,7 @@ export function CommunityVideoFeed({
         <button
           type="button"
           onClick={onShare}
-          aria-label="Share community"
+          aria-label="Share neighborhood"
           className="flex h-11 w-11 items-center justify-center rounded-full border border-cream/20 bg-ink/55 text-cream backdrop-blur-md transition-colors hover:border-cream hover:text-cream"
           style={{ touchAction: 'manipulation' }}
         >

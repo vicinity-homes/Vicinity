@@ -160,7 +160,7 @@ function VideosGrid({
   if (videos.length === 0) {
     return (
       <div className="rounded border border-line border-dashed bg-surface px-6 py-12 text-center">
-        <p className="text-ink2 text-sm">No videos in this community yet.</p>
+        <p className="text-ink2 text-sm">No videos in this neighborhood yet.</p>
       </div>
     );
   }
@@ -174,7 +174,7 @@ function VideosGrid({
             key={v.id}
             href={`/c/${communitySlug}/feed?start=${v.id}`}
             coverUrl={coverUrl}
-            alt={meta?.label ?? 'Community video'}
+            alt={meta?.label ?? 'Neighborhood video'}
             fallback={
               <div className="grid h-full w-full place-items-center text-muted text-xs">
                 No cover
@@ -184,7 +184,7 @@ function VideosGrid({
               meta ? (
                 <GridCardCaption title={meta.label} sub={meta.blurb} />
               ) : (
-                <span className="sr-only">Community video</span>
+                <span className="sr-only">Neighborhood video</span>
               )
             }
           />
@@ -198,7 +198,7 @@ function ListingsGrid({ listings }: { listings: BrowseCard[] }) {
   if (listings.length === 0) {
     return (
       <div className="rounded border border-line border-dashed bg-surface px-6 py-12 text-center">
-        <p className="text-ink2 text-sm">No active listings in this community yet.</p>
+        <p className="text-ink2 text-sm">No active listings in this neighborhood yet.</p>
       </div>
     );
   }

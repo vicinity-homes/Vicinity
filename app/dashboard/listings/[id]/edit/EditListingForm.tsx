@@ -659,7 +659,7 @@ export function EditListingForm({ listingId, initial, communities, listingContex
       </fieldset>
 
       <Field
-        label="Community"
+        label="Neighborhood"
         optional
       >
         <select

@@ -54,14 +54,14 @@ export function getPrimaryTabs(role: ViewerRole): Tab[] {
       { href: '/dashboard', label: 'Agent Hub', icon: Briefcase, matchPrefix: true },
       { href: '/browse', label: 'For You', icon: Compass, matchPrefix: true },
       { href: '/upload', label: 'New', icon: Plus, fab: true },
-      { href: '/communities', label: 'Community', icon: Building2, matchPrefix: true },
+      { href: '/communities', label: 'Neighborhood', icon: Building2, matchPrefix: true },
       { href: '/profile', label: 'Me', icon: User },
     ];
   }
 
   return [
     { href: '/browse', label: 'For You', icon: Compass, matchPrefix: true },
-    { href: '/communities', label: 'Community', icon: Building2, matchPrefix: true },
+    { href: '/communities', label: 'Neighborhood', icon: Building2, matchPrefix: true },
     { href: '/saved', label: 'Favorites', icon: Bookmark },
     { href: '/profile', label: 'Me', icon: User },
   ];
@@ -79,25 +79,20 @@ export type SubTab = {
  * Resolve sub-tabs for the current pathname.
  */
 export function getSubTabs(pathname: string, role: ViewerRole): SubTab[] | null {
-  if (pathname === '/browse' || pathname.startsWith('/browse/')) {
-    return [
-      { href: '/browse', label: 'Explore' },
-      { href: '/browse/nearby', label: 'Nearby' },
-    ];
-  }
-  if (pathname === '/communities' || pathname.startsWith('/communities/')) {
-    return [
-      { href: '/communities', label: 'Explore' },
-      { href: '/communities/nearby', label: 'Nearby' },
-    ];
-  }
+  // Phase 66 (2026-07-02): Nearby sub-tabs removed per owner (笑云 feedback,
+  // "reduce frictions"). /browse and /communities used to render
+  // [Explore, Nearby]; now they render nothing here — TopBar centres a
+  // static "Explore" title in the middle slot instead. The /browse/nearby
+  // and /communities/nearby routes are still live but no longer navigable
+  // from the chrome.
   if (pathname === '/saved' || pathname.startsWith('/saved/')) {
     // Phase 45.11: Listing / Community are now the global TopBar sub-tabs
     // for Favorites. SavedClient no longer renders its own pill row.
     // Phase 45.12 (2026-06-20): singular per owner ("Listing" / "Community").
+    // Phase 66 (2026-07-02): community → neighborhood UI rename.
     return [
       { href: '/saved', label: 'Saved Listing' },
-      { href: '/saved/communities', label: 'Saved Community' },
+      { href: '/saved/communities', label: 'Saved Neighborhood' },
     ];
   }
   if (pathname === '/profile' || pathname.startsWith('/profile/')) {
@@ -106,11 +101,12 @@ export function getSubTabs(pathname: string, role: ViewerRole): SubTab[] | null 
   if (role === 'agent' && (pathname === '/dashboard' || pathname.startsWith('/dashboard'))) {
     // Phase 45.12 (2026-06-20): "My …" prefix per owner so agents read the
     // tabs as their own inventory, not a generic catalog.
+    // Phase 66 (2026-07-02): Analytics moved to /profile per owner
+    // (笑云 feedback). community → neighborhood UI rename.
     return [
       { href: '/dashboard', label: 'My Listing' },
-      { href: '/dashboard/communities', label: 'My Community' },
+      { href: '/dashboard/communities', label: 'My Neighborhood' },
       { href: '/dashboard/leads', label: 'My Leads' },
-      { href: '/dashboard/analytics', label: 'Analytics' },
     ];
   }
   return null;

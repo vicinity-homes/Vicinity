@@ -93,7 +93,7 @@ export function CommunitiesNearbyClient() {
     return (
       <div className="mx-auto max-w-md px-6 py-24 text-center">
         <p className="text-ink2">
-          Enable location access in your browser to see communities near you.
+          Enable location access in your browser to see neighborhoods near you.
         </p>
       </div>
     );
@@ -114,7 +114,7 @@ export function CommunitiesNearbyClient() {
     return (
       <div className="mx-auto max-w-md px-6 py-24 text-center">
         <p className="text-ink2">
-          No community videos within {data?.radius ?? radius} mi.{' '}
+          No neighborhood videos within {data?.radius ?? radius} mi.{' '}
           <Link href="/profile" className="text-ink hover:underline">
             Adjust your search radius in Preferences
           </Link>{' '}

@@ -10,7 +10,7 @@ import { SavedClient } from './_components/SavedClient';
 
 export const metadata: Metadata = {
   title: 'Favorites · Vicinity',
-  description: 'Listings and communities you have saved or liked while browsing.',
+  description: 'Listings and neighborhoods you have saved or liked while browsing.',
 };
 
 export default function SavedPage() {

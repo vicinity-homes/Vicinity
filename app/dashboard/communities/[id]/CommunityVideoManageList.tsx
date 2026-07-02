@@ -247,7 +247,7 @@ function ManageRow({
               disabled={!canBeCover || busy || disabled}
               title={
                 canBeCover
-                  ? 'Use this video as the community cover'
+                  ? 'Use this video as the neighborhood cover'
                   : 'Available once processing finishes'
               }
               className="w-full whitespace-nowrap rounded border border-line px-2 py-1 text-xs text-ink2 hover:border-line-strong hover:text-ink disabled:opacity-30 sm:w-auto"

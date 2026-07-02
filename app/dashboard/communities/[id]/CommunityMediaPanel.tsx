@@ -156,7 +156,7 @@ export function CommunityMediaPanel({
     <section className="rounded-2xl border border-line bg-surface p-4 sm:p-6">
       <div className="mb-4">
         <span className="text-muted text-xs">
-          Upload videos and photos · same category tags both · pick any one as the community cover
+          Upload videos and photos · same category tags both · pick any one as the neighborhood cover
         </span>
       </div>
 

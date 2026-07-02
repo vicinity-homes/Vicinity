@@ -159,7 +159,7 @@ export function CommunityCarousel({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`${videos[safeActive]?.line1 ?? 'Community'} video carousel`}
+      aria-label={`${videos[safeActive]?.line1 ?? 'Neighborhood'} video carousel`}
       className="fixed inset-0 z-[60] flex items-center justify-center bg-bg"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}

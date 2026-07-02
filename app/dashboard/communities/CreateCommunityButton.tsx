@@ -40,7 +40,7 @@ export function CreateCommunityButton() {
     <span className="inline-flex flex-col items-center gap-1">
       <button type="button" onClick={onClick} disabled={pending} className={HUB_CTA_CLASS}>
         <Plus size={16} strokeWidth={2} aria-hidden />
-        {pending ? 'Creating…' : 'New community'}
+        {pending ? 'Creating…' : 'New neighborhood'}
       </button>
       {error ? <span className="text-[11px] text-rose-600">{error}</span> : null}
     </span>

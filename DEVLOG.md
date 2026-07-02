@@ -2,6 +2,38 @@
 
 Institutional memory for the project. Updated incrementally, not at session end.
 
+## 2026-07-02 — Phase 66: Reduce agent friction — drop Nearby, Community→Neighborhood, move Analytics to Me
+
+**Asked** (owner, after 笑云 tested as agent):
+1. `/browse` and `/communities` — drop the Nearby sub-tab, centre "Explore" as a static title in the top-nav middle slot.
+2. Rename everything user-visible related to "community" to "neighborhood".
+3. Agent Hub — move the Analytics sub-tab out of `/dashboard` and onto `/profile` (Me page).
+
+**Scope decisions** (confirmed with owner up front, all conservative):
+- Nearby routes/pages/API kept intact (`/browse/nearby`, `/communities/nearby`, `/api/nearby`, `/api/communities/nearby`) — only the nav entries removed. Cheap rollback if 笑云 wants Nearby back.
+- Rename is UI-only. URL paths (`/communities`, `/c/[slug]`, `/dashboard/communities`), DB tables (`communities`, `community_photos`, `saved_communities`), Supabase queries (`.from('communities')`), TS identifiers (`CommunityBody`, `getCommunity`, `community_id`), file names, imports, and comments all untouched. Only user-visible strings changed.
+- Analytics on `/profile` is a plain `<Link href="/dashboard/analytics">` under "View public profile" — not a sub-tab (owner: "just add a simple link"). The `/dashboard/analytics` page and its data pipes are unchanged; the Agent Hub sub-tab bar simply no longer surfaces it.
+
+**Implementation**:
+- `app/_components/nav-config.ts` — `getSubTabs` returns `null` for `/browse` and `/communities` (used to return `[Explore, Nearby]`); dropped the `Analytics` entry from the agent-role dashboard sub-tabs; renamed bottom-nav slot 4 label `Community` → `Neighborhood`; renamed `Saved Community` → `Saved Neighborhood`; renamed `My Community` → `My Neighborhood`.
+- `app/_components/TopBar.tsx` — added `SectionTitle` component that renders a centered "Explore" label in the middle slot on `/browse*` and `/communities*` when there are no sub-tabs.
+- `app/(public)/profile/page.tsx` — added Analytics `<Link>` for agents in the CTA stack (below "View public profile", above sign-out).
+- ~30 files under `app/`, `lib/zod/community-video-categories.ts` — user-visible string sweep: JSX text nodes, aria-labels, placeholders, alt text, Metadata `title`/`description`, human-readable error messages ("Community not found" → "Neighborhood not found"), toast strings, empty-state copy. Casing preserved (Community→Neighborhood, communities→neighborhoods).
+
+**Deliberately not touched**:
+- `kind: 'community'` and similar enum values inside code (API contract).
+- Slug fallback `nameToSlug(name) || 'community'` in `dashboard/communities/actions.ts:138` — it's a URL identifier, not UI text.
+- LLM prompt strings in `lib/ai/anthropic.ts` — internal generation instructions, not user chrome.
+- `docs/`, `supabase/migrations/`, `__tests__/`, `scripts/`, `public/prototype/`, `public/design-mocks/` — out of scope per owner ("UI only").
+
+**Verification**: `npx tsc --noEmit` clean. `npx next build` clean. `/nearby`, `/browse/nearby`, `/communities/nearby` still build and route (kept intentionally for rollback).
+
+**Learnings**:
+- Sub-agent hit the 50-tool-call limit at file 13 of 26 during the string sweep. Pattern: hand the sub-agent the "obvious mechanical" pass, then finish the tail (~15 files) directly with `patch` calls in parallel. Faster than restarting a fresh sub-agent for the remainder.
+- `git status` clean + on `main` + `origin/main..HEAD` empty is the right pre-flight for any small fix (per phase60 反例 B).
+
+**Next steps**: 笑云 will work on MLS auto-populate for listing data tomorrow — separate track.
+
 ## 2026-06-27 — Phase 67.9: Explore community hero ← Back
 
 **Asked**: "also add back link to community explore tab hero pic" — i.e. the buyer-facing `/c/[slug]` page reached from the Explore community grid.

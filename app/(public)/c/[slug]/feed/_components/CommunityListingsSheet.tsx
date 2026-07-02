@@ -119,7 +119,7 @@ export function CommunityListingsSheet({
         <div className="flex-1 overflow-y-auto pb-[env(safe-area-inset-bottom)]">
           {listings.length === 0 ? (
             <div className="px-4 py-12 text-center text-[13px] text-ink2">
-              No homes for sale in this community yet.
+              No homes for sale in this neighborhood yet.
             </div>
           ) : (
             <ul className="divide-y divide-cream/10">

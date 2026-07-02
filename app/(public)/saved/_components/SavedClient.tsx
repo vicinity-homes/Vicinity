@@ -101,7 +101,7 @@ function FavoritesEmpty() {
             href="/communities"
             className="rounded-full border border-line-strong px-5 py-2 font-medium text-ink text-sm transition hover:bg-surface/30"
           >
-            Explore community
+            Explore neighborhood
           </Link>
         </div>
       </div>
